@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# brew command wrapper for brew-file
+brew () {
+  # Emulate ksh / local options if zsh
+  [ -z "$ZSH_VERSION" ] || emulate -L ksh
+
+  # Set exe
+  local exe="command brew"
+
+  # Do wrap
+  # Check args
+  local nargs=0
+  local a
+  for a in "$@";do
+    if [[ ! "$a" =~ ^- ]];then
+      ((nargs++))
+    fi
+  done
+  local cmd=$1
+  local cmd2=$2
+
+  # No auto update for tap listing
+  local env=""
+  if [ "$cmd" = "tap" ] && [ $nargs -eq 1 ];then
+    env="HOMEBREW_NO_AUTO_UPDATE=1"
+  fi
+
+  case "$cmd" in
+    # brew file
+    file)
+      shift
+      exe="brew-file"
+      ;;
+    # brew install/uninstall/tap
+    install|reinstall|tap|rm|remove|uninstall|untap)
+      if [ $nargs -gt 1 ];then
+        exe="brew-file brew"
+      fi
+      ;;
+    # brew cask install/uninstall
+    cask)
+      if [ $nargs -gt 2 ];then
+        if [ "$cmd2" = "rm" ] || [ "$cmd2" = "remove" ] || \
+            [ "$cmd2" = "uninstall" ] || [ "$cmd2" = "install" ] || \
+            [ "$cmd2" = "instal" ];then
+          exe="brew-file brew"
+        fi
+      fi
+      ;;
+    *)
+      if echo " brew init dump set_repo set_local pull push clean clean_non_request casklist get_files version "|grep -q -- " $1 ";then
+        exe="brew-file"
+      fi
+      ;;
+  esac
+
+  # Remove noinit option for pure brew command
+  if [ "$exe" = "command brew" ] &&  [ "$1" = "noinit" ];then
+    shift
+  fi
+
+  # Execute command
+  local brewfile=$(brew-file cat)
+  eval $env $exe "$@"
+  ret=$?
+
+  # Commands after brew command
+  if ! diff <(echo "$brewfile") <(brew-file cat) >/dev/null;then
+    _post_brewfile_update
+  fi
+
+  return $?
+}
+
+_post_brewfile_update () {
+  :
+}
+
+# Wrap the brew command completion, to use the completion on `brew file`.
+if ! type -a _brew >& /dev/null;then
+  return
+elif [ -z "$ZSH_VERSION" ] && ! type -a _brew_file >& /dev/null;then
+  return
+elif [ -n "$ZSH_VERSION" ];then
+  if ! type -a _brew-file >& /dev/null;then
+    return
+  fi
+  _brew-file
+fi
+
+_brew_completion_wrap () {
+  if [ -n "$ZSH_VERSION" ];then
+    local cword=$CURRENT
+    local w
+    w=("${words[@]}")
+    local first=${w[2]}
+  else
+    local cword=$COMP_CWORD
+    local w=("${COMP_WORDS[@]}")
+    local first=${w[1]}
+  fi
+
+  local cur=${w[cword]}
+
+  if [ "$first" = "file" ];then
+    _brew_file "$@"
+  else
+    _brew
+    if [ $cword -eq 1 ];then
+      if [ -n "$ZSH_VERSION" ];then
+        # Use longest brew's subcommand 'reinstall' to align with other brew commands.
+        _values 'Subcommands' 'file[manage Brewfile]'
+      else
+        COMPREPLY=($(compgen -W "${COMPREPLY[*]} file" -- "$cur"))
+      fi
+    fi
+  fi
+}
+if [ -n "$ZSH_VERSION" ];then
+  compdef _brew_completion_wrap brew
+else
+  complete -o bashdefault -o default -F _brew_completion_wrap brew
+fi
+
+# mas command wrapper for brew-file
+mas () {
+  # Emulate ksh / local options if zsh
+  [ -z "$ZSH_VERSION" ] || emulate -L ksh
+
+  # Set exe
+  exe="command mas"
+
+  # Do wrap
+  if type -a brew-file >/dev/null 2>&1;then
+    # Check args
+    cmd=$1
+
+    case "$cmd" in
+      purchase|install|uninstall)
+        exe="brew-file brew mas"
+        ;;
+      *)
+        ;;
+    esac
+  fi
+
+  # Execute command
+  eval $exe "$@"
+  return $?
+}
