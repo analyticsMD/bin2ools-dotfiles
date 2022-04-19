@@ -1,0 +1,6 @@
+
+# always add grep colors 
+export GREP_OPTIONS="--color=always"
+
+# add less colors.
+alias less="less -R"

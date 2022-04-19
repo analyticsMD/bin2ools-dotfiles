@@ -1,0 +1,13 @@
+
+get_rds() {  
+
+  declare -a clusters
+  while IFS= read line; do 
+    clusters+=( $line ) 
+  done< <(${BT}/cmd/aws/rds/get_clusters | gsed -r -e 's/\..*//')
+  printf '%s\n' ${clusters[@]}
+
+} 
+
+get_rds
+

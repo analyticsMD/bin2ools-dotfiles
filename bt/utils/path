@@ -1,0 +1,301 @@
+#!/usr/bin/env /usr/local/bin/bash
+# shellcheck disable=SC2148,SC2034
+
+# ---------------------------------------------------------------
+# helper functions.
+# ---------------------------------------------------------------
+q_pushd()  { pushd "${1}" >/dev/null 2>&1 || ok  ;}
+q_popd()   { popd "${1}" >/dev/null  2>&1 || ok  ;}
+join_by()  { local IFS="$1"; shift; echo "$*"    ;}
+to_debug() { [[ "${BT_DEBUG}" = *path* ]] && >&2 "${@:2}" ;}
+to_err()   { >&2 "${@:1}" ;}
+
+
+[[ -n "${debug}" ]] && \
+  export BT_DEBUG="path:${BT_DEBUG}"  # add path to other debugging.
+
+needs_arg() { \
+    [ -z "$OPTARG" ] && { 
+        die "No arg for --$OPT option"
+        usage 
+    }
+}
+
+
+usage () {
+    echo " usage "
+    echo " -----"
+    echo " -e emergency   - give me bin and usr paths."
+    echo " -m <mode>      - mode='$mode' <dev, user, or custom>"
+    echo " -w wipe        - wipe existing path."
+    echo " -D dynamic     - build dynamic path."
+    echo " -d debug       - debugging messages on."
+    echo " -c cached      - use latest cached paths."
+    echo " -s sourced     - send sourceable output."
+    echo " -p print       - show the current path."
+    echo " -h help        - print this message."
+    echo " -x export      - export the verified path."
+    exit 1
+}
+
+dir="${BASH_SOURCE%/*}"
+if [[ ! -d "${dir}" ]]; then dir="${PWD}"; fi
+#. "${HOME}/.bashrc"
+
+
+#export BT_DEBUG=path
+while getopts twDdrcsepxhm:-: OPT; do
+
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+        OPTARG="${OPTARG#"$OPT"}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        e | emergency )   emergency=true ;;
+        m | mode )        needs_arg; mode="$OPTARG" ;;
+        w | wipe )        wipe=true ;;
+        D | dynamic )     dynamic=true ;;
+        d | debug )       debug=true ;;
+        t | write )       write=true ;;
+        r | dryrun )      dryrun=true ;;
+        c | cached )      cached=true ;;    # use cached paths.
+        s | sourced )     sourced=true ;;   # make output sourceable.
+        p | print )       print=true ;;      # show current path.
+        x | xport )       xport=true ;;    # export path.
+        h | help )        help=true ;;
+        ??* )             die "Illegal option --$OPT" ;;  # bad long option
+        \? )              exit 2 ;;  # bad short option (error reported via getopts)
+    esac
+done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+
+# -----------------------------------------------------------------
+# SETTINGS
+# -----------------------------------------------------------------
+# Behavioral settings for path-related components in bintools. 
+
+[[ -n "${help}" ]] && { 
+  usage 
+  exit 1
+} 
+
+# ----------------------------------------------------------------- 
+# PATH SETTINGS & SHIMS 
+# -----------------------------------------------------------------
+# Bin2ools defines a series of "path spaces" based on the host OS.
+# Paths are dynamic, and based on rules.
+
+declare -A spaces=( ["PIPX_SPACE"]=""      \
+                    ["MODE_SPACE"]=""      \
+                    ["USR_SPACE"]=""       \
+                    ["UTILS_SPACE"]=""     \
+                    ["BIN_SPACE"]=""       )
+
+
+declare -a order=( "PIPX_SPACE"      \
+                   "MODE_SPACE"      \
+                   "USR_SPACE"       \
+                   "UTILS_SPACE"     \ 
+                   "BIN_SPACE"       ) 
+
+
+  # -----------------------------------------------------------
+  #  Only parallel shims! 
+  # -----------------------------------------------------------
+  #echo "eval $(which env_parallel.bash)"
+
+  declare -a pipx_space=()
+  pipx_space+=( "${HOME}/.local/bin"             )
+  pipx_space+=( "${HOME}/.local/pipx"            )
+  pipx_space+=( "${HOME}/.brew/bin"              )
+  pipx_space+=( "${HOME}/.brew/sbin"             )
+
+  spaces["PIPX_SPACE"]="$(printf %s "$(printf :%s "${pipx_space[@]}" | sort | uniq)")"
+
+  export BT=${HOME}/.bt
+  # vars
+  declare -a user=()
+  user+=( "${BT}/bin"   )
+  user+=( "${BT}/cmd"   )
+  user+=( "${BT}/inst"  )
+  user+=( "${BT}/lib"   )
+  user+=( "${BT}/gen"   )
+  user+=( "${BT}/utils" )
+  user+=( "${BT}/src"   )
+
+  declare -a mode_space=( "${user[@]}" )
+  spaces["MODE_SPACE"]="$(printf %s "$(printf :%s "${mode_space[@]}" | sort | uniq)")"
+
+  to_debug path                               \
+     echo -ne "----------------------------------------------------------- \n \
+               MODE_SPACE:  ${spaces["MODE_SPACE"]}                       \n \
+              ----------------------------------------------------------- \n" 
+
+  # -----------------------------------------------------------
+  # usr paths
+  # -----------------------------------------------------------
+  # On macos and linux, /usr is where user space programs live.
+  path_tmp="$(strings /usr/local/bin/bash | \
+      perl -nle 'print if s/^(\/.*\:\/.*)(\:\.)$/\1/')"
+  spaces["USR_SPACE"]=":/usr/local/homebrew/bin:${path_tmp}"
+
+  to_debug path                               \
+     echo -ne "----------------------------------------------------------- \n \
+               USR_SPACE:  ${spaces["USR_SPACE"]}                       \n \
+              ----------------------------------------------------------- \n" 
+
+
+  # -----------------------------------------------------------
+  # system paths
+  # -----------------------------------------------------------
+  # On macos and linux, /bin is where system space programs live.
+  path_tmp="$(strings /usr/local/bin/bash | \
+              perl -nle 'print if m/^\/bin.*\:\/.*/')"
+  spaces["BIN_SPACE"]=":${path_tmp}"
+  
+  to_debug path                               \
+     echo -ne "----------------------------------------------------------- \n \
+              BIN_SPACE:  ${spaces["BIN_SPACE"]}                          \n \
+              ----------------------------------------------------------- \n" \
+
+
+  # -----------------------------------------------------------
+  # UTILS paths
+  # -----------------------------------------------------------
+  # Paths for custom components, libraries, etc. 
+  # Built dynamically, per OS.
+
+  declare -a utils_space=()
+  utils_space+=( "/usr/local/opt/mysql-client/bin" )
+  spaces["UTILS_SPACE"]="$(printf :%s "$(echo "${utils_space[@]}" | sort | uniq)")"
+
+  to_debug path                               \
+     echo -ne "----------------------------------------------------------- \n \
+               UTILS_SPACE:  ${spaces["UTILS_SPACE"]}                     \n \
+               ----------------------------------------------------------- \n" \
+
+
+# -----------------------------------------------------------------
+# PATH CLEANUP
+# -----------------------------------------------------------------
+# We've now generated a complate path, and ensured is 
+# contains no duplicates. Next part of path curation 
+# is just keeping things clean.
+
+  # ordered set of path spaces. 
+  declare -a ordered=() 
+  for ((o=0; o < "${#order[@]}"; o++)); do
+    ordered+=( ${order[$o]} ); 
+  done  
+  #echo ORDERED_PATH=$(join_by : "${ordered[@]}")
+  to_debug path echo PATH: "${PATH}"
+  
+
+# -----------------------------------------------------------------
+# PATH PRUNING
+# -----------------------------------------------------------------
+# remove non-existant dirs.  
+  
+declare -A pruned=()
+declare -a verified=()
+for o in "${ordered[@]}"; do 
+  spc="${spaces["${o}"]}"
+  [[ -z "${spc}" || "${spc}" ==  "" ]] && continue  
+  to_debug path echo "SPACE: ${spc}"
+  IFS=':' read -ra dirs <<< "$spc"
+  for d in ${dirs[@]}; do
+    [[ "$d" =~ ^[\s]+$ ]] && { 
+       to_debug path echo ". removed blank."
+       continue
+    }
+    [[ ! -e "${d}" ]] && {
+       to_debug path echo "- ${d} does not exist."
+       continue
+    } 
+    to_debug path echo "+ ${d} exists."
+    verified+=( "${d}" )
+  done
+  pruned["${o}"]="$( join_by : "${verified[@]}" )"
+  verified=()
+done
+
+# print path spaces in order.
+FULL_PATH=""
+for o in "${ordered[@]}"; do 
+   FULL_PATH="${FULL_PATH}:${pruned[$o]}"
+done
+FULL_PATH="$(echo "${FULL_PATH}" | perl -pe 's/^://')"
+
+umask 0077
+mkdir -p "${BT}/cache"
+umask 0022
+
+[[ -n "${debug}"        || 
+   -n "${sourced}"      || 
+   -n "${wipe}"         || 
+   -n "${emergency}"    || 
+   -n "${dynamic}"      || 
+   -n "${xport}"        || 
+   -n "${cached}"       || 
+   -n "${mode}"         || 
+   -n "${print}"        ]] && { 
+
+
+  [[ -n "${wipe}" ]] && {
+    export PATH="/usr:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin:/etc"
+    to_debug path echo "WARNING: replaced \$PATH with emergency static \$PATH"
+    echo PATH="${PATH}"
+    return
+  } 
+
+  [[ -n "${mode}" || -n "${cached}" ]] && {  
+
+    umask 0077
+    "${BT}"/cmd/path -s | tee         \
+    "${BT}/cache/path_info.${mode}" > \
+    "${BT}/cache/path_info" &&        \
+    chmod u+x "${BT}/cache/path_info" \
+    "${BT}/cache/path_info.${mode}"
+    umask 0022
+
+    echo "cached & exported PATH:"
+    echo "-----------------------"
+    echo "${FULL_PATH}"
+  } 
+ 
+  [[ -n "${sourced}" ]] && { 
+    echo export PATH="$(join_by : ${FULL_PATH})" 
+    to_err echo "# -----------------------------------------"
+    to_err echo "# NOTE: Use  'source <( echo \"\$(cmd/path -s)\")'" 
+    to_err echo "# ----- when running subscripts to embed a  "
+    to_err echo "# ----- fresh \$PATH in a spawned process."
+    to_err echo "# -----------------------------------------"
+    source <( echo "$(export PATH="$(join_by : ${FULL_PATH} 2>/dev/null)")" ) 
+  } 
+
+    [[ -n "${print}" ]] && {
+      to_err echo ==================  
+      to_err echo YOUR CURRENT PATH: 
+      to_err echo ==================  
+      echo "${PATH}"
+      exit
+    }
+
+  } || { 
+
+  to_err echo PATH: "${PATH}" 
+} 
+
+# protect whitespace.
+#ESCAPED="$(echo "${FULL_PATH}" | \
+#  /usr/local/bin/perl -pe 's/^([\:]+).*\/.*([\:]+)/\:/g;  s/ /\\ /g')"
+
+[[ -n "${ESCAPED}" ]] && { 
+  echo ESCPAPED: "${ESCAPED}"
+}
+#"$(join_by : "${verified[@]}")"
+

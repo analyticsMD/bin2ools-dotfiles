@@ -1,0 +1,73 @@
+// BT peek object.
+
+{
+
+    // A bit field of assertions which tell us whether
+    // each profile type in QV's standard role chain
+    // is currently active. By duplicating bt_creds
+    // files, we can maintain one such active chain
+    // per account, simultaneously.
+    //
+    // The bits go from left-to-right, and each one
+    // asserts a different profile in the standard chain.
+    // Here are the bits in order:
+    //
+    // [sso] [team] [role] [guild]
+    //   0     1      2       3
+    //
+    // So, if you see a bit field with "1110", it means
+    // the profiles are active in this account for sso,
+    // team, and role profiles -- but not for any guild
+    // at the moment.
+ 
+    "assert": "0000",
+    "account": {"prod": 351480950201}, 
+
+    // Position is a user assert. It indicates the user
+    // has chosen a profile position OTHER than the highest.  
+    // If set to 'default' and 0, this field is disregarded.
+
+    "position": {"default": 0},
+
+    // HINTS
+    // -----
+    // Hints are another way to keep data we use
+    // for UI decisions close at hand. A hint consists
+    // of 1.) A temporary account id token (which we
+    // can use to reverse the account_id), and also
+    // the last few digits of the most recent credential.
+    // With these keys cached in the shell prompt, it's
+    // easy to notice when something changes, so we can
+    // inform other shells and tools about the change.
+
+    "aws_ids":  [ "NOTSEEN", "NOTSEEN", "NOTSEEN", "NOTSEEN" ],
+    "tokens":   [ "NOTSEEN", "NOTSEEN", "NOTSEEN", "NOTSEEN" ],
+    "profiles": [ "NONE",    "NONE",    "NONE",    "NONE"    ],
+
+
+    // CHAINS
+    // ------
+    // This are preconfigured chains for easy navigation 
+    // to specific accounts with specific privileges. 
+    // They generally make maintaining complex multi-account
+    // infrstructures easier, and are therefore integral 
+    // to the BT system. 
+
+    "chains": {
+        "default" : ["sso", "team", "role", "guild"]
+    },
+
+    // Expires are a discreet measure of when an active
+    // credential will expire. They consist of a unix
+    // era timestamp, and an integer that represents
+    // the number of seconds remaining in the credentials.
+    // Expires represent a fixed point in the future --
+    // but they can jump forward as credentials are
+    // autorenewed throughout the day. Field ordering
+    // is the same as for the assertions bit field:
+    // [sso] [team] [role] [guild]
+
+    "expires": [0, 0, 0, 0]
+
+}
+

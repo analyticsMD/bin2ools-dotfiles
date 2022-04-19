@@ -1,0 +1,155 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# Generator for aws config and credentials files. 
+# ----------------------------------------------- 
+# NOTE: Bintools uses its own config and credentials
+# files which are separate from the default AWS 
+# files located under ~/.aws.  This is to avoid 
+# collisions with files people have already populated
+# under ~/.aws.
+# ----------------------------------------------- 
+
+source bt_env   # Whole environment. Separate from bootstrapping.
+                # --  includes BT vars, BT state vars,
+                # --  includes shared PATH vars.
+                # --  includes AWS defaults.
+                # --  includes sourcing of other BT libs.
+                # --  sanity functions.
+
+
+#x(SETTINGS, "quiet")
+
+export BT_SETTINGS=quiet # sets to an array.
+
+# important arrays: 
+# -----------------
+# enumeration of AWS accounts
+declare -A ACCOUNTS
+declare -a role_types
+
+debug "role_types: " && declare -p role_types
+
+for r in ${role_types[@]:1}; do 
+  echo "role_type: $r"
+  declare -a $r && declare -p $r
+  arr="${r}[@]"
+  for s in "${!arr[@]:1}"; do echo "$r: $s"; done
+done
+
+[[ -n "${USR}" && -n "${BT_TEAM}" ]] || { 
+  echo -ne "FATAL: Could not find critical variables: \n"
+  echo -ne "TEAM: ${BT_TEAM}\nUSR: ${USR}\n" 
+  exit 1
+}
+
+# important vars
+identity=$(find_in_accounts identity | gawk '{print $2}')
+prod=$(    find_in_accounts prod     | gawk '{print $2}')
+
+
+# other vars
+CREDENTIAL_CMD="aws-sso-credential-process" 
+CREDENTIAL_CMD+=" --profile qventus " 
+CREDENTIAL_CMD+=" --start-url ${AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL} "
+CREDENTIAL_CMD+=" --region ${AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION} "
+CREDENTIAL_CMD+=" --role-name aws_team_${BT_TEAM} " 
+CREDENTIAL_CMD+=" --account-id ${identity} "
+
+
+# Header file. 
+HDR="${BT}/inst/txt/bt_header"
+
+# ---------------------------------------------
+# Generate aws credential files.
+# ---------------------------------------------
+# ${HOME}/.aws/bt_config 
+# ${HOME}/.aws/bt_creds 
+# ---------------------------------------------
+# NOTE: Bintools credentials are separated from 
+# default AWS credentials to avoid collision.
+#
+gen_bt_config () { 
+
+
+  [[ -e "${HOME}/.aws/bt_config" && ! -f "${HOME}/.aws/bt_config" ]] \
+  && warn "FATAL: bt_config file is present but not a file!"
+
+  [ -f "${HOME}/.aws/bt_config" ] && chmod 0600 ${AWS_CONFIG_FILE}
+  umask 077 
+  #echo EOF: ${AWS_CONFIG_FILE}
+
+echo '' > ${CREDS}
+
+cat <<-EOF >> ${CONFIG}
+
+# ___FEDERATED_SSO_ROLE___ 
+
+[profile ${BT_TEAM}]
+credential_process   = ${CREDENTIAL_CMD} 
+sso_account_id       = ${identity}
+sso_role_name        = aws_team_${BT_TEAM}
+
+# ___${BT_TEAM}_ROLE___
+
+# This team role chains to the SSO role 
+# for each group member in Okta.
+
+[profile aws_team_${BT_TEAM}]
+source_profile       = ${BT_TEAM}
+role_arn             = arn:aws:iam::${identity}:role/aws_team_${BT_TEAM}
+sso_account_id       = ${identity}
+sso_role_name        = aws_team_${BT_TEAM}
+
+EOF
+
+
+  # ACCT PROFILES IN A LOOP
+  # -----------------------
+  # Generates an account profile for each eligible account, 
+  # given the team type.
+  #
+  while IFS=' ' read -r acct num; do {
+    debug echo num: $num acct: $acct
+    [ "$acct" == "identity" ] && continue
+
+    end=team
+    for p in $(find_in primary); do 
+      [[ "${BT_TEAM}" == "$p" ]] && end=${BT_TEAM} && break
+    done
+    cat <<EOF >> ${CONFIG}
+
+# ___${BT_TEAM}_ROLE_IN_${acct}___
+
+[profile ${acct}-${BT_TEAM}]
+source_profile       = aws_team_${BT_TEAM}
+role_arn             = arn:aws:iam::${num}:role/qv-gbl-${acct}-${end}
+sso_account_id       = ${identity}
+sso_role_name        = aws_team_${BT_TEAM}
+
+EOF
+  }; done< <(find_in_accounts)
+
+  while IFS=' ' read -r acct num; do {
+    while IFS=' ' read -r guild; do {
+      echo num: $num acct: $acct
+      [ "$acct" == "identity" ] && continue
+
+      cat <<EOF >> ${AWS_CONFIG_FILE}
+
+# ___GUILD_${guild}_IN_${acct}___
+
+[profile ${acct}-guild-${guild}]
+source_profile     = ${BT_TEAM}
+role_arn           = arn:aws:iam::${num}:role/qv-gbl-${acct}-${guild}
+sso_account_id     = ${identity}
+sso_role_name      = aws_team_${BT_TEAM}
+EOF
+
+    }; done< <(find_in guild)
+  }; done< <(find_in_accounts)
+
+
+gen_bt_config
+regen_creds
+
+

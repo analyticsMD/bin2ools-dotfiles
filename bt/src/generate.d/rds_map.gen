@@ -1,0 +1,16 @@
+############################################################################
+#                                                                          #
+# WARNING: This file is dynamically generated as part of BINTOOLS.         #
+#          Changes made here are likely to be overwritten without notice.  # 
+#          ----------------------------------------------------------------#
+#          To make changes to this document, find the corresponding        #
+#          generator script under ${BT}/utils/gen and edit the             # 
+#          appropriate sections.                                           #
+#                                                                          #
+# NOTE:    In a pinch, you can also rename this file by prepending one or  # 
+#          more underscores (_) and it will be preserved.                  #
+#                                                                          #
+############################################################################
+
+
+declare -A rds_map=()

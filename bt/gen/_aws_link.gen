@@ -1,0 +1,100 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+source ${BT}/settings
+source ${BT}/lib/bt_arr
+
+# new commands: 
+# --refresh   # force get new
+# --show-commands   # show new creds (suitable for transport via ssh)
+# --unset           # clear current tokens in shell
+# --output-profile  # write to awsume managed profile (which can then be used by another local).
+# --auto-refresh    # run the refresher.
+# --source-profile  # use a particular profile to run the assume-role call for the next role to assume.
+# --region
+# --session-name
+# --role-duration  # 44320
+#  assume_role_with_saml (for future dev)
+# --credentials-file 
+# -- config-file
+
+# REmember: ALWAYs geek. 
+#                        --shell shell
+ #                       --autocomplete-file autocomplete_file
+  #                      [--alias-file alias_file]
+#                          --shell shell
+
+#                        --autocomplete-file autocomplete_file
+#                        [--alias-file alias_file]
+
+# TODO:  No links. Instead, generate an alias file under generate.d
+# commands in a file for all locations and guilds the individual can access.
+
+# Generate login aliaes for the current user. 
+# 
+generate_login_aliases() { 
+
+  # USER hash. 
+  # Elements: USER, BT_TEAM, LEVEL, ACCOUNTS, GUILDS.,
+  USER=$(get_usr)
+  TEAM=$("get_team")
+  ACCESS=$("get_level")
+  ACCOUNTS=$("get_accounts")
+  guilds=$("get_guilds")
+ 
+  status=match_user
+
+  [[ "${status}" =~ unmatched ]] && \
+  die "FATAL: user \""${HOME##*/}"\" cannot be found in AWS, and is NOT in Okta." 
+  echo "Is their account name different then their MacOS HOME_DIR?"
+ 
+
+  # if the user's team has access to primary roles,
+  # then generate aliases to all accounts.
+  if contains $primary_roles $this_team; then 
+    for role in "${primary_roles[@]}"; do
+      for acct in "${all[@]}"; do
+        link_to "${acct}" "${role}" 
+      done
+    done
+  fi
+
+  # otherwise, symlink aliases to only 
+  # non-restricted accounts. 
+  if contains "$delegated_roles" $this_team; then
+    for role in "${delegated_roles[@]}"; do 
+      for acct in "${non-res[@]}"; do
+        link_to "${acct}" "${role}" 
+      done 
+    done 
+  fi
+} 
+
+
+generate_login_aliases() { 
+  user=get_usr
+  team=$(get_team user)
+  all=("${non-res[@]}" "${res[@]}")  # accounts
+
+  # if user has primary team membership generate aliases to all accounts.
+  if contains $primary_roles $this_team; then 
+    for role in "${primary_roles[@]}"; do
+      for acct in "${all[@]}"; do
+        link_to "${acct}" "${role}" 
+      done
+    done
+  fi
+
+  # otherwise, generate only unrestricted accounts. 
+  if contains "$delegated_roles" $this_team; then
+    for role in "${delegated_roles[@]}"; do 
+      for acct in "${non-res[@]}"; do
+        generate_alias "${acct}" "${role}" 
+      done 
+    done 
+  fi
+} 
+
+generate_alias () { 
+  echo "foo"
+} 
+

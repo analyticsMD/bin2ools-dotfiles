@@ -1,0 +1,16 @@
+
+# chamber
+
+ch() {
+
+    #CHAMBER_KMS_KEY_ALIAS=alias/${1}-${2}-secret-key \
+    AWS_REGION=us-west-2 \
+    aws-vault exec ${1} -- \
+    chamber \
+        -b ssm \
+        --kms-key-alias "alias/${1}-${2}-secret-key" \
+        "${ARGS[@]:2}"
+}
+
+alias c_gov='CHAMBER_KMS_KEY_ALIAS=alias/prod-netccndemo-secret-key aws-vault exec gov -- chamber'
+

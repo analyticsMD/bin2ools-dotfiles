@@ -1,0 +1,6 @@
+
+function ansible_poc { 
+  #ansible qa-app-04-app-cron -i ~/src/playbooks/inventory/ansible_ssm.ini  -m ping
+  ansible "${1}" -i ~/src/playbooks/inventory/ansible_ssm.ini "${@:2}" 
+} 
+

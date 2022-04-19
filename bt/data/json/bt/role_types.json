@@ -1,0 +1,15 @@
+
+// TODO: These static arrays need to be added to json
+//       configurations stored in ssm, or more likely
+//       in ConsoleMe... 
+//
+
+"role_types": {
+    "primary": ["admin", "arch", "sec", "devops"],
+    "delegated": ["int", "ds", "dp", "app", "qa"],
+    "unrestricted": ["identity", "prod", "cnc", "demo", "qa", "dev", "devdata"],
+    "restricted": ["dns","master","audit","security"],
+    "guild": ["cicd", "terraform", "eks", "dba", "ml", "ssm"] 
+}
+
+

@@ -1,0 +1,73 @@
+alias sso="aws-sso-util login && aws_profile qventus"
+
+
+
+params["region"]="${AWS_DEFAULT_SSO_REGION}"
+# test the imported profile (the fast way).
+if [[ -n "${profile[*]}" ]]; then
+  debug echo "Found profile: ${profile}"
+  # shellcheck disable=SC2236,SC2015
+  if [[ ! -z "${profile[expiration]+_}" ]]; then
+  # if active, write the profile back..
+    seconds="$(echo "${profile[expiration]}" | ddiff -E -qf %s now)"
+  fi
+fi
+
+# color
+alias clr_diff='diff --color=auto'
+alias clr_gdiff='gdiff --color=auto'
+alias clr_grep='grep --color=auto'
+alias clr_ggrep='ggrep --color=auto'
+alias ip='ip -color=auto'
+export LESS='-R'
+#export LESS='-R --use-color -Dd+r$Du+b'
+
+
+alias tree_source="tree -a -C ${BT}/sources --noreport --dirsfirst -F"
+
+alias who="aws-whoami             | \
+           ggrep Arn              | \
+           gawk '{print $2}'      | \
+           perl -pe 's/.*\///'    | \
+           gawk -F'@' '{print $1}'"
+
+alias gcal="echo Google calendar.  Post to chat. "
+
+alias  lib="cd ${BT}/lib"
+alias  ss="cd ${BT}/sources"
+alias  cmd="cd ${BT}/cmd"
+alias  gen="cd ${BT}/utils/gen"
+alias  utils="cd ${BT}/utils"
+alias  sec="cd ${BT}/sec"
+alias  log="cd ${BT}/log"
+alias  in="cd ${BT}/inst"
+
+alias _x="cd ${BT}/examples"
+alias _s="cd ${BT}/sources"
+alias _l="cd ${BT}/lib"
+alias _c="cd ${BT}/cmc"
+alias _i="cd ${BT}/inst"
+alias _sec="cd ${BT}/sec"
+
+# edit aliases
+
+alias py_37="source ~/pythons/3.7.7/bin/activate"
+alias turds='find . -name "\.*\.sw[a-z]" | xargs rm'
+
+# edit 
+alias re_source='source ~/.bash_profile'
+alias re_='vim ~/.bash_profile && source ~/.bash_profile'
+alias re_prof="vi ~/.bash_profile && source ~/.bash_profile"
+alias re_al="vi ~/.bash_aliases && source ~/.bash_aliases"
+alias re_func="vi ~/.bash_functions && source ~/.bash_functions"
+
+alias c_gov='CHAMBER_KMS_KEY_ALIAS=alias/prod-netccndemo-secret-key aws-vault exec gov -- chamber'
+
+# fast
+alias py_37="source ~/pythons/3.7.7/bin/activate"
+
+# scripted 
+alias gen_="generate"
+
+# colorize
+#alias less="less -R"

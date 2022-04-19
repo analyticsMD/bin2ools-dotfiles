@@ -1,0 +1,5 @@
+alias z=fzf
+alias rr="source ${BT}/sources/generate.d/rds.cmpl"
+
+[ -f /usr/local/etc/profile.d/autojump.sh ] && \
+. /usr/local/etc/profile.d/autojump.sh

@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+
+import re
+import sys
+import boto3
+import os.path
+import argparse
+from do_profile import do_profile
+
+# globals
+#user = os.environ['USER']
+user = 'prod'
+keypath = "~/.ssh"  
+terms = ['private_ip_address', 'public_ip_address', 'instance_id', 'key_name'];
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '-e',
+    '--env',
+    type=str,
+    help="AWS profile to use when querying for instances.  NOTE: 'all' runs across all environments."
+)
+parser.add_argument(
+    '-r',
+    '--region',
+    type=str,
+    help="AWS region to use  when querying for instances.  NOTE: 'all' runs across all regions."
+)
+parser.add_argument(
+    '-f',
+    '--filter',
+    default=False,
+    help='Filter hosts matching a string.  Default: False'
+)
+
+argv = vars(parser.parse_args())
+filter = argv['filter']
+region = argv['region']
+env = argv['env']
+
+def map_profiles_to_regions(env):
+    all, profiles, regions = {}, [], []
+    # NOTE: Explicitly using awscli2 path
+    region_cmd = f"/usr/local/bin/aws configure get region --profile "
+    profile_cmd = f"/usr/local/bin/aws configure list-profiles"
+
+    # build map of profiles->regions
+    for p in [p.rstrip() for p in os.popen(f"{profile_cmd}").readlines()]:
+        r = os.popen(f"{region_cmd} {p}").readline().strip()
+        if len(r) <  1:
+            print(f"# profile: {p} has no region. Skipping.")
+            continue
+        else:
+            all[p] = r
+
+    for p, r in all.items():
+        if p != 'default': 
+            profiles.append(p) 
+            regions.append(r)
+    return (profiles, regions)
+
+def filter_hosts(qvh, pattern='__blank__'): 
+   filtered = []
+   pat = str(pattern)
+   for h in qvh:
+       if re.search(pat, h['hostname']):
+            filtered.append(h)
+   return filtered 
+
+(profiles, regions) = map_profiles_to_regions(all)
+# print header
+# print(f"Include config.d/*\n\n")
+
+# create array of arrays
+for profile, region in zip(profiles, regions):
+    print(f"# {'-' * 80}")
+    print(f"# profile: {profile}, region: {region}")
+    print(f"# {'-' * 80}")
+    # fetches a list of dicts.
+    qvh = do_profile(profile, terms, region)
+    # filter hosts by pattern
+    if filter:
+        qvh = filter_hosts(qvh, filter) 
+                
+    done = False
+    for dct in qvh: 
+        # remove errors
+        
+        flags = f""" --target {dct['instance_id']}"""
+        cmd = f"""aws ssm start-session"""
+        wrapper = f"""aws-vault exec {user} --"""
+        hostname = re.sub(r'\s', '_', dct['hostname'])
+        print(f"alias {hostname}=\"{wrapper} {cmd} {flags}\"")
+        print(f"\n")     
+        next

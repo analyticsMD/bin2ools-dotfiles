@@ -1,0 +1,64 @@
+# matches underscores in interesting ways. 
+
+function _bc_magicmatch() {
+  local cur=${COMP_WORDS[COMP_CWORD]} # the current token ($2 iff bash>=4.3)
+  local pat prefix
+
+  ## kick-in condition
+  #[[ $cur =~ ^(.*/)?([^/]+) ]] && {    # match (path/)(name)
+  #[[ $cur =~ ^(.*/)?([^/]+) ]] && {    # match (path/)(name)
+  [[ $cur =~ ^.+*_(.+_.+_+_)+k ]] && {    # match (path/)(name)
+
+    prefix=${BASH_REMATCH[1]}
+    pat=${BASH_REMATCH[2]}
+    prefix=$(compgen -W "$prefix")     # expand specials, like ~
+
+    ## first form: "-" in input for "_" in expanded names
+    #pat="${pat//-/*_}*"  # sprinkle "*" in to allow expansion
+
+    ## second form: "-" in input matches [_-] in expanded names
+    #pat="${pat//-/*[_-]}*"  # sprinkle "*" in to allow expansion
+
+    ## third form: for no "-" at all in input
+    [[ $pat =~ ${pat//?/(.)} ]]  # split into character array
+    IFS="*" pat="${BASH_REMATCH[*]:1}*" # add IFS separator, skipping index 0
+
+    readarray -t COMPREPLY  < <(compgen -G "${prefix:+$prefix}$pat")
+    return
+  }
+  COMPREPLY=() # revert to completion defaults
+}
+
+# bind completion function
+complete -D -o bashdefault -o default -o nospace -F _bc_magicmatch
+## or selectively, for a subset of commands (works with bash<4.1)
+# complete -o bashdefault -o default -o nospace -F _bc_magicmatch cmd1 cmd2 ...
+
+
+
+
+
+#complete -W "
+#  dignity-mirthdb-rds \
+#  dignity-mirthdb3-rds-cluster \
+#  ech-db \
+#  ech-mirthdb-cluster \
+#  emory-mirthdb-for-nginx2 \
+#  emory-replication-jump \
+#  mama-mirth-cluster \
+#  fairview-mirth \
+#  medstar-mirthdb \
+#  medstar2-db-test \
+#  mercynet-mirth2-bk-db-cluster \
+#  natividad-mirthdb \
+#  natividad3-serverless-rds \
+#  nyp-mirthdb-cluster \
+#  nyp-mirthdb2 \
+#  phs \
+#  scl-mirth-bookeeping-cluster \
+#  sutter-mirthdb-cluster \
+#  sutter-mirthdb2 \
+#" mmt
+
+
+

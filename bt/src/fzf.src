@@ -1,0 +1,88 @@
+
+
+# CTRL-X-1 - Invoke Readline functions by name
+__fzf_readline ()
+{
+    builtin eval "
+        builtin bind ' \
+            \"\C-x3\": $(
+                builtin bind -l | command fzf +s +m --toggle-sort=ctrl-r
+            ) \
+        '
+    "
+}
+
+#builtin bind -x '"\C-x2": __fzf_readline';
+#builtin bind '"\C-x1": "\C-x2\C-x3"'
+
+
+# fe [FUZZY PATTERN] - Open the selected file with the default editor
+#   - Bypass fuzzy finder if there's only one match (--select-1)
+#   - Exit if there's no match (--exit-0)
+fe() {
+  IFS=$'\n' files=($(fzf-tmux --query="$1" --multi --select-1 --exit-0))
+  [[ -n "$files" ]] && ${EDITOR:-vim} "${files[@]}"
+}
+
+
+f() {
+    # Store the program
+    program="$1"
+
+    # Remove first argument off the list
+    shift
+
+    # Store option flags with separating spaces, or just set as single space
+    options="$@"
+    if [ -z "${options}" ]; then
+        options=" "
+    else
+        options=" $options "
+    fi
+
+    # Store the arguments from fzf
+    arguments=($(fzf --multi))
+
+    # If no arguments passed (e.g. if Esc pressed), return to terminal
+    if [ -z "${arguments}" ]; then
+        return 1
+    fi
+
+    # We want the command to show up in our bash history, so write the shell's
+    # active history to ~/.bash_history. Then we'll also add the command from
+    # fzf, then we'll load it all back into the shell's active history
+    history -w
+
+    # ADD A REPEATABLE COMMAND TO THE BASH HISTORY ############################
+    # Store the arguments in a temporary file for sanitising before being
+    # entered into bash history
+    : > /tmp/fzf_tmp
+    for file in "${arguments[@]}"; do
+        echo "$file" >> /tmp/fzf_tmp
+    done
+
+    # Put all input arguments on one line and sanitise the command by putting
+    # single quotes around each argument, also first put an extra single quote
+    # next to any pre-existing single quotes in the raw argument
+    sed -i "s/'/''/g; s/.*/'&'/g; s/\n//g" /tmp/fzf_tmp
+
+    # If the program is on the GUI list, add a '&' to the command history
+    if [[ "$program" =~ ^(nautilus|zathura|evince|vlc|eog|kolourpaint)$ ]]; then
+        sed -i '${s/$/ \&/}' /tmp/fzf_tmp
+    fi
+
+    # Grab the sanitised arguments
+    arguments="$(cat /tmp/fzf_tmp)"
+
+    # Add the command with the sanitised arguments to our .bash_history
+    echo $program$options$arguments >> ~/.bash_history
+
+    # Reload the ~/.bash_history into the shell's active history
+    history -r
+
+    # EXECUTE THE LAST COMMAND IN ~/.bash_history #############################
+    fc -s -1
+
+    # Clean up temporary variables
+    rm /tmp/fzf_tmp
+}

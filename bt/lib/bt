@@ -1,0 +1,8 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+. "${BT}/lib/loader.sh" 
+
+loader_addpath "${BT}/lib" 
+load main.sh  2>/dev/null              
+loader_finish             
+

@@ -1,0 +1,54 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+source ${BT}/lib/bt_env
+
+#BT_DEBUG=yes
+
+source ${BT}/sources/generate.d/inst_map.src
+
+# regenerate inst_map array, if not present.
+# 
+[[ "${#inst_map[@]}" -lt 2 ]] && { 
+  # Queries aws for a list of all instances. 
+  # Caches them as an associative array in a 
+  # local file in the generate.d dir. 
+  # 
+  cache_inst
+  # creates: fully populated inst_map array.
+  get_inst
+
+} 
+
+[[ "${#inst_map[@]}" -lt 2 ]] && {
+  echo "FATAL: Could not generate inst_map array." \
+  && exit 1
+}  
+
+### ----------------------------------------------------
+### Print a bash completion file, for sourcing. 
+### ----------------------------------------------------
+SSM_CMPL=${BT}/sources/generate.d/ssm.cmpl
+cat ${BT}/inst/txt/bt_bash_header                  > $SSM_CMPL
+echo -ne '\n\ncomplete -W "\n'                    >> $SSM_CMPL
+for i in `printf '%s\n' ${!inst_map[@]} | sort`; do
+  printf '  %s \\\n' $i                           >> $SSM_CMPL
+done
+echo -ne "\" ssm ssh_over_ssm\n"                  >> $SSM_CMPL
+echo done.
+
+debug inst_map 
+debug declare -p inst_map
+
+### ----------------------------------------------------
+### Queue Spider-Man Theme Song...
+### ----------------------------------------------------
+SSM_SRC=${BT}/sources/generate.d/ssm.src
+cat ${BT}/inst/txt/bt_header                       > $SSM_SRC
+while IFS= read l; do
+  region=${AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION}
+  host=$(echo $l | gawk -F, '{print $1}')
+  instance=$(echo $l | gawk -F, '{print $2}')
+  echo alias $host=\"aws ssm start-session \
+    --target "${instance}" \
+    --region ${region}\" >> "${SSM_SRC}"
+done< <(printf "%s\n" ${inst_map[@]} | ggrep '%' | sort) 

@@ -1,0 +1,38 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+rg() { 
+  grep --exclude-dir src --exclude-dir bak -r "${@}"
+}
+
+# For quick navigation. 
+alias  bt="   cd ${BT}"
+alias  ss="   cd ${BT}/sources"
+alias  lib="  cd ${BT}/lib"
+alias  cmd="  cd ${BT}/cmd"
+alias  sec="  cd ${BT}/sec"
+alias  log="  cd ${BT}/log"
+alias  utils="cd ${BT}/utils"
+alias  gen="  cd ${BT}/utils/gen"
+
+#export G_UTILS=${BT}/utils/gen
+export S_PATH=${BT}/sources
+export BT_LOG=${BT}/log
+
+pk() { 
+  BT_DEBUG=no
+  source <(cache_peek 2>/dev/null) && \
+  echo "${#peek[@]} items loaded."
+  i=
+  IFS="|$IFS"
+  for k in "${!peek[@]}"; do 
+
+  #  [[ "$k" =~ [0-9]+ ]] && {  
+      echo -ne "${CYAN}"  
+      printf '%-20s --> %40s\n' "${k}" "${peek[$k]}"
+      echo -ne "${NC}"
+  done | \
+    sort -rn -k 1 | \
+    column -c 2 -t  -s '-->' | \
+    perl -pe 's/ /./g' \
+
+} 

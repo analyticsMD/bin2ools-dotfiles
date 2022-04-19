@@ -1,0 +1,23 @@
+{
+  {
+     "clusters": [
+         { 
+             "port"      :   3352, 
+             "name"      :   "dignity-amd", 
+             "trunk"     :   "dignity", 
+             "jump_host" :   [ "dignity-app-container", "i-0143686b89677b444" ],
+             "alt_host"  :   [ "dignity-ingestion",     "i-0143686b89677b444" ],
+             "acccount"  :   [ "prod", 0 ],
+             "endpoint"  :   "dignity-amd.cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com"
+         },
+         {
+             "port"      :   3352, 
+             "name"      :   "dignity-amd", 
+             "trunk"     :   "dignity", 
+             "jump_host" :   [ "dignity-app-container", "i-0143686b89677b444" ],
+             "alt_host"  :   [ "dignity-ingestion",     "i-0143686b89677b444" ],
+             "acccount"  :   [ "prod", 0 ],
+             "endpoint"  :   "dignity-amd.cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com"
+         } 
+    ]
+}

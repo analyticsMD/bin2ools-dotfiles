@@ -1,0 +1,38 @@
+# https://github.com/pmazurek/aws-fuzzy-finder
+
+#aws-fuzzy --private --ssh-user ec2-user --key-path ~/.ssh/ec2-user.pem
+
+#export AWS_FUZZ_USER="ssm-user"
+export AWS_FUZZ_USER="${USER}"
+#export AWS_FUZZ_KEY_PATH="~/.ssh/ec2-user.pem"
+export AWS_FUZZ_PRIVATE_IP='true'
+
+#AWS_FUZZ_SSH_COMMAND_TEMPLATE="ssh {key} {user}{host}"
+export AWS_FUZZ_SSH_COMMAND_TEMPLATE="ssm {host}"
+#AWS_FUZZ_REGIONS="us-west-2,us-west-1,us-east-1"
+export AWS_FUZZ_REGIONS="us-west-2"
+export AWS_PROFILE=qventus
+export AWS_DEFAULT_PROFILE=qventus
+export AWS_FUZZ_USE_CACHE=yes
+export AWS_FUZZ_CACHE_EXPIRY=0   # or 0
+
+# bind  '"\C-a": "AWS_DEFAULT_PROFILE=production aws-fuzzy --private\e\C-e\er\C-m"'
+
+# interactively pick IP's to use with other commands.
+#echo "foo $(aws-fuzzy --ip-only) bar"
+
+# ansible --become --ask-become-pass -v -i "$(aws-fuzzy --ip-only)," all -m shell -a "setenforce 0"
+# ansible --become --ask-become-pass -v -i "$(aws-fuzzy --ip-only)," all -m shell -a "setenforce 0"
+
+# write a generator to refresh with:  --no-cache
+# stored as a file:  ~/.aws_fuzzy_finder_cache/
+
+# RE: Tunneling.
+# --------------
+# --tunneling # fuzzy find runs twice: 
+# 1.) picks the gateway to tunnel through, 
+# 2.) chooses an instance.
+# set the user and key path separately with 
+# --tunnel-user and --tunnel-key-path 
+# key is looked up ON gateway instance.
+

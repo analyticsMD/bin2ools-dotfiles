@@ -1,0 +1,16 @@
+
+alias t_fmt='for f in `ls -1F *.tf *.tfvars`; do terraform fmt $f; done'
+alias t_plan='terraform plan'
+alias t_init='terraform init'
+alias t_destroy='terraform destroy'
+
+# terraform 
+export TF_VER=0.13.5
+function t_lint {
+  find . -name "*.tf" | xargs -I '{}' terraform_${TF_VER} fmt {}
+}
+
+function t_val {
+  find . -name "*.tf" | xargs -I '{}' terraform_${TF_VER} validate {}
+}
+

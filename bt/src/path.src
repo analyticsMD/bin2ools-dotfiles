@@ -1,0 +1,4 @@
+alias path_dupes="echo $PATH | sed 's/:/\n/g' | sort | uniq -c"
+
+export PYTHONPATH=$(brew --prefix)/lib/python3.9/site-packages
+

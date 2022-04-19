@@ -1,0 +1,11 @@
+# bind -f ./_inputrc.src
+
+# bash completions stored by default on macos. 
+[ -f /usr/local/etc/bash_completion ] && . /usr/local/etc/bash_completion
+
+
+# This is the proper bash-completion@2 package from brew. 
+[[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && \
+. "/usr/local/etc/profile.d/bash_completion.sh"
+
+

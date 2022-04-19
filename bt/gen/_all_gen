@@ -1,0 +1,67 @@
+# functions.
+
+# directories that must be present and have perms.
+declare -a dirs
+dirs+=( utils utils/gen sources/generate.d config.d )
+
+# generate files in parallel, as a job queue. 
+# Sign in first. 
+# RES: how to do multipe account environments at once. 
+#      -- assume per script?  yes.  
+# strategy: generate files in a tmp dir. 
+# test each file (integrity tests) 
+# move them into place (check age; force overwrite config).  
+
+## config switch on 'moving into place.'
+## -- if all tests pass for all files. 
+## -- all files that pass all tests. 
+## -- always copy - regardless of tests. 
+## -- never copy - just notify when complete.
+ 
+
+generate () { 
+  [ ! -d ${BT}/utils/gen ] && echo "No ${BT}/utils/gen." && exit 1
+
+  TO_DIR=$(find ${BT}/cmd/generate.d -name "*.output" -type f | wc -l)
+  echo files found in generate.d: ${TO_GEN}. 
+  [[ "${TO_DIR}" -eq "0" ]] && echo New instsall. Running generate scripts. 
+
+  # sourcing 
+  find "${BT}/cmd/generate.d" -type f -print          | \
+    xargs -I '{}' echo {}  
+
+  [ $? -eq 0 ] && echo "success." || echo "failed."
+}
+
+if [[ -d ${BT}/cmd/generate.d && \
+      -d ${BT}/utils/gen        && \
+      -n "$GENERATE"               ]]; then 
+  echo "running generators in ${BT}/cmd..."
+  generate
+fi
+
+if [ -d "${BT}/cmd" ]; then 
+    PATH=~/bin:${BT}/cmd:${PATH}
+fi
+
+if [ -d "${BT}/utils" ]; then 
+    echo "loading ${BT}/utils ..."
+    PATH=${HOME}/bin:${BT}/utils:${PATH}
+fi
+
+if [[ -d ~/local/bin && -n "$BIN_TEST" ]]; then
+  echo "loading ~/local/bin ..."
+  PATH=~/local/bin:${PATH}
+fi
+
+function a_role () { 
+  export AWS_REGION=us-west-2
+
+  acct=${1:-"490475191208"}    # identity account
+  role=${2:-"identity-admin"}  # global master admin profile
+  mfa=${3:-""}                 # usually not needed.
+
+  export AWS_PROFILE=${role}
+
+  eval $(assume-role ${acct} ${role} ${mfa})
+} 

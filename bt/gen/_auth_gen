@@ -1,0 +1,52 @@
+## ----------------------------------------------------------------
+## GENERATORS
+## ----------------------------------------------------------------
+## Scripts that generate configs for logging into resources, etc.
+
+declare -a generators 
+generators=(  \
+  
+)
+
+
+## Periodically regenerate config files such as 
+## ssm aliases, and rds endpoints. This is important
+## as we include new customers, and our infrastructure
+## evolves over time.ds
+##GENERATE="yes"
+#
+##export BT_AUTOGENERATE=yes
+##export BT_AG_FREQUENCY=weekly
+#FILES_TO_REGEN=$(find ${SRC_DIR}/generate.d -name "*.rendered" -ctime +7 -type f)
+
+generate () { 
+  [ ! -d ${GEN_DIR} ] && warn "No generators found under: ${GEN_DIR}." && break
+
+  TO_GEN=$(find ${SRC_DIR}/generate.d -name "*.output" -type f | wc -l)
+  echo files found in generate.d: ${TO_GEN}. 
+  [[ "${TO_GEN}" -eq "0" ]] && echo New instsall. Running generate scripts. 
+  # sourcing 
+  find "${SRC_DIR}/generate.d" -type f -print | \
+    perl -pe 's/(.*)(\.output$)/$1\.gen/;'    | \
+    sed -e "s|$SRC_DIR|$UTILS_DIR|"           | \
+    sed -e 's/erate.d//'                      | \
+    xargs -I '{}' echo {}                    && \
+    [ $? -eq 0 ] && echo "success." || echo "failed."
+}
+
+if [[ -d ${SRC_DIR}/generate.d && \
+      -d ${UTILS_DIR}/gen      && \
+      -n "$GENERATE"               ]]; then 
+  echo -ne "\nrunning generators in ${SRC_DIR}... success"
+  generate
+fi
+
+if [ -d "${SRC_DIR}" ]; then 
+    PATH=~/bin:${SRC_DIR}:${PATH}
+fi
+
+if [ -d "${UTILS_DIR}" ]; then 
+    echo -ne "\nloading ${UTILS_DIR} ... success"
+    PATH=~/bin:${UTILS_DIR}:${PATH}
+fi
+

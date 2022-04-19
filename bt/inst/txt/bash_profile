@@ -1,0 +1,17 @@
+# ---------------------------------------------------------
+# BINTOOLS MODE indicates where bintools will be installed.
+# ---------------------------------------------------------
+#     Uncomment ONE of these two entries...
+      export BT_MODE=user   BT_INIT=bintools
+#     export BT_MODE=custom BT_INIT=custom
+# ------------------------------------------------------
+#     OR... to install in DEV MODE, run this command:
+# git clone git@github.com:/analyticsmd/bintools ${HOME}/local/bin
+#     ... And uncomment this line instead.
+#     export BT_MODE=dev BT_INIT=local/bin
+# ------------------------------------------------------
+# NOTE: 'custom' mode installs under a path of your choice.
+#       Just change the BT_INIT value to a new dir. 
+# -------------------------------------------------------
+export BT=${HOME}/${BT_INIT} BT_SETTINGS=quiet
+source ${BT}/settings && autologin

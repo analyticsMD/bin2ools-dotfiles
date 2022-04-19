@@ -1,0 +1,14 @@
+{ 
+    "teams": { 
+          "arch": "primary",
+        "devops": "primary",
+           "sec": "primary",
+         "admin": "primary",
+            "qa": "delegated",
+           "int": "delegated",
+           "app": "delegated",
+            "dp": "delegated",
+            "ds": "delegated",
+         "toast": "delegated"
+    }
+}

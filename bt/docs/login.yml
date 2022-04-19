@@ -1,0 +1,173 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: bash -l
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: /Users/marc/local/bin/doc
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 108
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 29
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 100
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: floating
+    title: Terminalizer
+    style:
+      border: 0px black solid
+      # boxShadow: none
+      # margin: 0px
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 12
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 890
+    content: "\e[H\e[2J\e[?2004h(ins)MacBook-Pro:doc marc$ "
+  - delay: 1897
+    content: t
+  - delay: 225
+    content: r
+  - delay: 171
+    content: 'y'
+  - delay: 371
+    content: '_login '
+  - delay: 1065
+    content: "\r\n\e[?2004l\r"
+  - delay: 57
+    content: "Account:..............................................................490475191208\r\n"
+  - delay: 11
+    content: "qv-identity.......................................................................\r\n"
+  - delay: 41
+    content: "Region:..................................................................us-west-2\r\n"
+  - delay: 48
+    content: "AssumedRole:.........................................................aws_team_arch\r\n"
+  - delay: 50
+    content: "RoleSessionName:.......................................botocore-session-1635721506\r\n"
+  - delay: 10
+    content: "UserId:..........................AROAXEMUZPOUHAN47VDAS:botocore-session-1635721506\r\n"
+  - delay: 41
+    content: "Arn:.............arn:aws:sts::490475191208:assumed-role/aws_team_arch/botocore-session-1635721506\r\n"
+  - delay: 2008
+    content: "botocore-session-1635721506\r\nchaining to \"arch\" ...\r\n"
+  - delay: 3163
+    content: "\r\n\r\nPROOF:\r\n------\r\n"
+  - delay: 1183
+    content: "2021-06-09 15:50:59 identity-account-test-s3-bucket\r\n2021-10-11 13:53:51 qv-gbl-qaplatform-tfstate\r\n2021-09-10 19:24:00 qventus-devops-repo\r\n\e[?2004h(ins)MacBook-Pro:doc marc$ "
+  - delay: 898
+    content: I
+  - delay: 377
+    content: ' '
+  - delay: 25
+    content: a
+  - delay: 100
+    content: m
+  - delay: 267
+    content: ' '
+  - delay: 58
+    content: i
+  - delay: 80
+    content: 'n'
+  - delay: 705
+    content: '!'
+  - delay: 456
+    content: ' '
+  - delay: 201
+    content: ' '
+  - delay: 206
+    content: 'y'
+  - delay: 144
+    content: a
+  - delay: 174
+    content: 'y'
+  - delay: 2942
+    content: '!'

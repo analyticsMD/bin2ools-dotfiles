@@ -1,0 +1,30 @@
+# ssh, ssh_agent routines
+export SSH_USER=${USER}
+
+
+# setup ssh-agent (see http://mah.everybody.org/docs/ssh)
+SSH_ENV="$HOME/.ssh/environment"
+
+# for running ssh via pdsh
+#export PDSH_SSH_ARGS_APPEND="-tt"
+
+# function that recovers ssh_agent from another shell.
+# 
+ssh_agent () {
+    echo "Initialising new SSH agent..."
+    /usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
+    echo succeeded
+    chmod 600 "${SSH_ENV}"
+    . "${SSH_ENV}" > /dev/null
+    /usr/bin/ssh-add;
+}
+
+if [ -f "${SSH_ENV}" ]; then
+    . "${SSH_ENV}" > /dev/null
+    ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ > /dev/null || {
+        ssh_agent;
+    }
+else
+    ssh_agent;
+fi
+

@@ -1,0 +1,157 @@
+#!/usr/local/bin/bash
+# shellcheck disable=SC2148,SC2034
+# ----------------------------------------------
+export BT="${HOME}/.bt"
+
+.              ${BT}/lib/loader.sh
+loader_addpath ${BT}/lib
+load           ${BT}/lib/main.sh && { 
+  echo -ne "${GREEN}BT libs sourced.${NC}\n" || \
+  echo -ne "${RED}lib load failed.${NC}\n"
+} #2>/dev/null 
+loader_finish
+
+# shellcheck disable=SC1090,SC1094 
+
+VER="$(echo ${BASH_VERSION} | cut -d'.' -f 1)"
+
+[[ "${VER}" -ne 5 ]] && { 
+  echo "WARNING: unsupported shell spawned: ${BASH_VERSION}"
+  exit 1
+}
+
+# Behavioral settings for components in bintools. 
+BT_DEBUG=stgs
+
+# -----------------------------------------------------------------
+# PATH SETTINGS
+# -----------------------------------------------------------------
+
+"${BT}"/utils/path -s 2>/dev/null | \
+    tee ${BT}/cache/path_info
+
+source <( echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+
+[ -z "${BT_ACCOUNT}" ] && export BT_ACCOUNT="NONE"
+[ -z "${BT_TEAM}"    ] && {
+  BT_TEAM="$(perl -lne 'print if s/\[.*aws_team_(\w+)\]/$1/' \
+  ${HOME}/.aws/bt_config)"
+  export BT_TEAM="${BT_TEAM}"
+}     
+[ -z "${BT_ROLE}" ] && export BT_ROLE="NONE" 
+export BT="${HOME}/.bt"
+
+autologin
+
+# -----------------------------------------------------------------
+# Bootstrap functions.
+# -----------------------------------------------------------------
+q_pushd()  { pushd ${1} >/dev/null 2>&1 || return ;}
+q_popd()   { popd ${1} >/dev/null 2>&1 || return ;}
+to_debug() { [[ "${BT_DEBUG}" =~ $1 ]] && >&2 "${@:2}" ;}
+
+#JSON="{\"account\":{\"prod\":${ACCT_ID}} | jq -r -c '.account | to_entries[] | select(.key|tostring) | "\(.key)"'"
+#echo "prod" |  jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
+
+
+# ------------------------------------------------------------------
+# SETTINGS
+# ------------------------------------------------------------------
+# config settings for BT. 
+
+# ------------------------------------------------------------------
+# load bintools libraries.
+# ------------------------------------------------------------------
+
+q() {  
+  
+  # ----------------------------------------------------------------
+  # GENERATORS 
+  # ----------------------------------------------------------------
+  # Scripts that generate bintools automated configs.
+  # See: ${BT}/utils/gen
+  
+  # ----------------------------------------------------------------
+  # SOURCING
+  # ----------------------------------------------------------------
+  # Bintools does a lot of sourcing to create a productive environment. 
+  # To be effective, sourced files cannot be used from within a subshell, 
+  # command block, or function. 
+  #
+  # Globbing
+  # --------
+  # Advanced globbing is an easy way to sort through files. 
+  # But we need to Keep tabs on whether a particular glob was 
+  # originally set.  We should only toggle the setting if 
+  # originally not set.
+  # 
+  shopt -q extglob;     extglob_set=$?
+  shopt -q nullglob;    nullglob_set=$?
+  shopt -q dotglob;     dotglob_set=$?
+  shopt -q nocasematch; nocasematch_set=$?
+ 
+  ((extglob_set))     && shopt -s extglob
+  ((nullglob_set))    && shopt -s nullglob
+  ((dotglob_set))     && shopt -s dotglob
+  ((nocasematch_set)) && shopt -s nocasematchglob
+
+  # SOURCE FILES, e.g. bash_completions, settings, functions, 
+  # aliases, etc.  We source these in the current context, 
+  # no functions or subshells.
+  
+  # Array of dirs where source files live.
+  # As a rule, these are sourced ONLY from here, and ONLY once.
+  declare -a dirs
+  dirs=(           \
+    src            \
+    src/generate.d \
+  )                
+
+  for d in $(printf "%s\n" "${dirs[@]}"); do
+    # sources dirs only. 
+    [[ "${d}" = src* ]] || continue  
+    DIR="${BT}/${d}" && q_pushd "${DIR}"
+    echo -ne "\n\n${BLUE}Sourcing in ${DIR}...${NC}\n\n"
+    # shellcheck disable=SC2125
+    glob=[!_]?*
+    files=( "$( printf "%s\n" "${glob}")" )
+ 
+    # longest file. 
+    lg=0
+    for f in $(printf '%s' "${files[@]}"); do 
+      this=${#f}
+      [[ "$lg" -le "$this" ]] && lg=$this 
+    done
+ 
+    for f in $(printf '%s' "${files[@]}"); do
+      [[ ${f} = *.@(new|cmpl|src|gen|arr$) ]] || continue
+      src_str="\t./${f}"
+      # shellcheck disable=SC1090,SC1094 
+      source ./"${f}" >/dev/null 2>&1 &&    \
+      status="success!" COLOR="${GREEN}" || \
+      status="failed." COLOR="${RED}"
+      printf "%b%*.b%b${COLOR}%s${NC}%b\n"  \
+          "$src_str" $(( lg - "${#f}" + 10 )) "."30 "" "${status}"
+    done
+    # shellcheck disable=SC2119
+    q_popd 
+  done
+
+  echo _____ 
+
+  # Toggle extglob & nullglob if they were not originally set.
+  # NOTE: The 0 (true) from shopt -q above is (false) in a an 
+  # arithmetic context (as below). 
+  ((extglob_set))     && shopt -u extglob
+  ((nullglob_set))    && shopt -u nullglob
+  ((dotglob_set))     && shopt -u dotglob
+  ((nocasematch_set)) && shopt -u nocasematch
+  echo -ne "\n\n\n"
+  
+  # For fun, show a pretty tree-based display.  
+  tree -a -C "${BT}"/src --noreport --dirsfirst -F
+}
+
+# shellcheck disable=SC2015
+[[ "${BT_SETTINGS}" =~ quiet ]] && q > /dev/null 2>&1 || q
+

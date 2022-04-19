@@ -1,0 +1,275 @@
+#!/usr/local/bin/bash
+
+. bt
+
+
+to_debug() { [[ "${BT_DEBUG}" =~ $1 ]] && >&2 ${@:2} ;}
+
+get_account() {
+  this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
+}
+
+
+
+diff_peek() { 
+
+  # Render leaf nodes in both peeks as k/v pairs. 
+  # Diff the old and new peeks.  Report changes as 
+  # a series of bitmasks to simplify fast assertions.
+  #
+  shopt -s extglob
+  #user = get_usr('BT')
+
+  diff --side-by-side -B                                                   \
+    <(this_peek | jq -Sc 'paths(scalars) as $p|[$p, getpath($p)]')         \
+    <(next_peek | jq -Sc 'paths(scalars) as $p|[$p, getpath($p)]')       | \
+    perl -pe 's/[\<\>\[\]\|\"]//gx; 
+      s/(assert),([10]{4})\s*
+        \1      ,\2       \s*\n/|ASRT\2/gx; 
+      s/(assert),([10]{4})\s*
+        \1      ,([10]{4})\s*\n/|ASRT\2>\3|/gx;
+      s/(account),(\w+),(\d+)\s*
+        \1       ,\2   ,\3\s*\n/|\2|/gx; 
+      s/(account),(\w+),(\d+)\s*
+        \1       ,(\w+)   ,(\d+)\s*\n/|\2>\4|/gx; 
+      s/(aws_ids),([0]),(\w+)(\w{3})\s+
+        \1       ,\2   ,\3   \4     \s*\n/AWS|\4/gx; 
+      s/(aws_ids),([1-3]),(\w+)(\w{3})\s+
+        \1       ,\2     ,\3   \4     \s*\n/|\4/gx; 
+      s/(aws_ids),([0]),(\w+)(\w{3})\s+
+        \1       ,\2   ,(\w+)(\w{3})\s*\n/AWS|\4>\6/gx;
+      s/(aws_ids),([1-3]),(\w+)(\w{3})\s+
+        \1       ,\2     ,(\w+)(\w{3})\s*\n/|\4>\6/gx; 
+      s/(tokens),([0]),([\w\/\=\+]+)([\w\/\=\+]{3})\s+
+        \1,      \2,   \3           \4\s*           \n/|TOK|\4/gx;
+      s/(tokens),([1-3]),([\w\/\=\+]+)([\w\/\=\+]{3})\s+
+        \1      ,\2     ,\3           \4\s*            \n/|\4/gx;
+      s/(tokens),([0]),([\w\/\=\+]+)([\w\/\=\+]{3})\s*
+        \1      ,\2   ,([\w\/\=\+]+)([\w\/\=\+]{3})\s*\n/|TOK|\4>\6/gx; 
+      s/(tokens),([1-3]),([\w\/\=\+]+)([\w\/\=\+]{3})\s+
+        \1      ,\2     ,([\w\/\=\+]+)([\w\/\=\+]{3})\s*\n/|\4>\6/gx;
+      s/(position),(default),([0-3])\s+
+        \1        ,\2       ,\3     \n//gx; 
+      s/chains.*\n//gx;
+      s/(profiles),([01]),([\w_-]+)\s*
+        \1        ,\2    ,\3       \n//gx; 
+      s/(profiles),([23]),((NOT|UN)SEEN)\s*
+        \1        ,\2    ,\3            \n//gx;
+      s/(profiles),([23]),([\w_-]+)\s*
+        \1        ,\2    ,\3       \n/PRF\2|\3/gx;
+      s/(profiles),([23]),([\w_-]+)\s*
+        \1        ,([23]),([\w_-]+)\n/PRF\2|\3/gx; 
+      s/(expires),([0-3]),0\s*\1,\2,0\s*\n//gx; 
+      s/(expires),([0-3]),(\d+)\s*
+        \1       ,\2     ,\3\s*\n/\nEXP\2|\3\n/gx; 
+      s/(expires),([0-3]),(\d+).*\1,\2,(\d+)/\nEXP\2|\3|\4\n/gx;
+      s/|(EEN)//gx;
+      s/^\s*\n$//gx;'                                                    | \
+      while IFS= read -r e; do                                             \
+        echo "${e}" 2>/dev/null &&                                         \
+        [[ "${e}" = EXP* ]] && echo "${e}"                               | \
+          perl -pe 's/^EXP\d\|//g'                                       | \
+            ddiff -i '%s' -Eqf %S now                                      \
+      ;done                                                              | \
+      perl -pe 's/^EXP.*//g; s/\n+/ /g; s/^\s*$//g' && echo -ne "\n"
+
+      shopt -u extglob
+}
+
+
+# Replace latest peek with the last.
+peek_merge() { 
+
+  [[ -z "${BT_PEEK}" || -z "${BT_SIG}" ]] || \
+  [[ -n "${BT_PEEK}" || -n "${BT_SIG}" ]] && \
+  [[    "${BT_PEEK}"         =~ ^\s*   ]] || \
+  [[    "${BT_SIG}"          =~ ^\s*   ]] && {
+    export BT_PEEK="${NEXT_PEEK}" BT_SIG="${NEXT_SIG}"
+    unset NEXT_PEEK NEXT_SIG 
+    source <(${BT}/lib/bt_export.py)
+    diff_peek
+  } 
+} 
+
+
+
+# Encapsulate the logic of handling changes in authentication.
+#
+assert_next() {
+    echo VVVV.
+  export BT_DEBUG=cche
+  [[ -z "${NEXT_PEEK}" || -z "${NEXT_SIG}" ]] && { 
+    to_debug cche echo -ne "fetching peek..."
+    ${BT}/lib/bt_export.py | eval
+    [[ -z "${NEXT_PEEK}" || -z "${NEXT_SIG}" ]] && { 
+      to_debug cche echo "No peek." 
+      return 1
+    }
+    [[ "${NEXT_SIG}" == "${BT_SIG}" ]] && { 
+      to_debug cche echo "sigs equal: no change."
+      unset NEXT_SIG NEXT_PEEK
+      return
+    } 
+  }
+
+  [[ -z "${BT_PEEK}" || -z "${BT_SIG}" ]] && { 
+    to_debug cche echo "no previous. Merging..."
+    peek_merge
+    return
+  } 
+
+  # assert changes.
+  [[ -z "${BT_PEEK}" || -z "${BT_SIG}" ]] || \
+  [[ -n "${BT_PEEK}" || -n "${BT_SIG}" ]] && \
+  [[    "${BT_PEEK}"         =~ ^\s*   ]] || \
+  [[    "${BT_SIG}"          =~ ^\s*   ]] && {
+    peek_merge
+    return
+  } 
+
+  diff_peek
+}
+
+
+# Update the user's ENV. 
+# Recover from many known scenarios. 
+#
+update_env() {
+
+  [[ "${BT_PROMPT}" == "debug" ]] && { 
+  OUT="$(diff_peek | \
+    perl -pe \
+      's/^|(ASRT[01]{4}).*PRF([0-3)|([\w_-]+)(\s+\-?[\d+]{1,4})/
+           \1             |\2       \3       \4/gx; 
+       s/\s/\|/g; s/^[\|]+//g; s/[\|]+$//g')"
+  } && echo "DBG> $OUT"
+
+  # TODO:
+  # - if flagged: focus -> determine new focus.
+  # - switch focus.
+  # - update AUTH tokens (all 3, use AWSUME)
+  ASRT="$(this_peek | jq -r '.assert' | perl -nle 'print tr/1//')"
+
+  [[ "${ASRT}" -gt 0 ]] && { 
+    # try multiple times to regain creds from lower chains.
+    source <(assume -o qventus -s && echo BT_TEST=assert 2>/dev/null)
+    [[ -z "${BT_TEST}" ]] && { 
+      # if we fail again, regenerate creds.
+      echo "assert failed."
+      source <(assume -o qventus -s) 
+    } 
+
+    [[ -z "${AWS_SESSION_TOKEN}" ]]  && { 
+    echo -ne "WARN: assume ENV failed. Regenerating creds stub...\n"
+    source <(assume -s 2>/dev/null)  
+      _try assume -o qventus -s -- "${BT}/lib/regen_creds"
+    } 
+
+    [[ -z "${AWS_SESSION_TOKEN}" ]]  && { 
+      echo -ne "WARN: assume ENV failed. Regenerating creds...\n"
+      source <(assume -s 2>/dev/null)  
+      _try assume -o qventus -s -- autosession
+    } 
+
+    [[ -z "${AWS_SESSION_TOKEN}" ]] && { 
+      echo -ne "WARN: Failed a third time. Full relogin.\n" 
+      return 1
+    } 
+  }
+
+  # set the focus of the chain (aka MASK).
+  # If not explicit, assume the most  recent role 
+  # (as determined by the cache).
+  team="$(get_team)" 
+  account="$(get_account)"
+  MASK=2  # default.
+  [[ "${MASK}" -eq 4 ]] && export BT_GUILD="${account}-guild-${guild}" && return
+  [[ "${MASK}" -eq 3 ]] && export BT_ROLE="${account}-${team}" && return
+  [[ "${MASK}" -eq 2 ]] && export BT_TEAM="${team}" && return
+  [[ "${MASK}" -eq 1 ]] && export BT_SSO="${BT_USR}" && return 
+  [[ "${MASK}" -eq 0 ]] && export BT_SSO=NONE \
+                                  BT_TEAM=NONE \
+                                  BT_ROLE=NONE \
+                                  BT_GUILD=NONE && return
+}
+
+
+
+dg_login() { 
+
+  . bt
+  assert_next
+  update_env
+
+  BT_DEBUG=yes
+  # reject params with only whitespace.
+  [[ "${*:1}" = *[[:space:]]* ]]
+  echo V. 
+  env_state
+  account="$(get_account)"
+  echo V..
+  readarray -t f < <(this_peek |                   \
+                     jq -r '"\(.assert)            
+                             \(.account|to_entries[]|select(.key)|.key)  
+                             \(.position.default)"')
+  debug f: ${f[*]}
+  echo V... 
+  MASK=3
+  
+  vals="$(printf '%s ' "$(this_peek | \
+      jq -r '.assert,.chains.default[],.aws_ids[],.tokens[],.profiles[],.expires[]')")" 
+  declare -a symbols=( ${vals} ) c a t p e x 
+  assert=${symbols[0]}
+  c=( ${symbols[@]:1:4}  ) 
+  a=( ${symbols[@]:5:4}  ) 
+  t=( ${symbols[@]:9:4}  ) 
+  p=( ${symbols[@]:13:4} ) 
+  e=( ${symbols[@]:17}   ) 
+  for e in $(this_peek | jq -r '.expires[]'); do
+    #echo -ne $e:
+    exp=$(echo ${e} | ddiff -i '%s' -Eqf %S now)
+    x+=( ${e}: ${exp} ) 
+  done 
+
+  echo V....
+  [[ "${BT_DEBUG}" == yes ]] && { 
+    printf '%s:\t\t\t%s\n'                           \
+      mask ${assert} chains ${c[*]} aws_ids ${a[*]}  \
+      tokens ${t[*]} profiles ${p[*]} #expires ${e[*]}
+    echo "time: ${x[*]}"
+  } 
+  echo V.....
+
+  MASK="$(echo "${assert}" | perl -nle 'print tr/1//')"
+  to_debug prmt echo "MASK: ${MASK}"
+  [[ "${session}" == "${p[2]}" ]] && MASK=2 
+  [[ "${session}" == "${p[3]}" ]] && MASK=3 
+
+
+
+
+
+[[ -n "${RDS_CLUSTER}" ]] && {
+  export BT_CLUSTER="${RDS_CLUSTER}"
+} || { 
+  export BT_CLUSTER="${1}"
+}
+unset AWS_SESSION_TOKEN AWS_ACCESS_KEY_ID  AWS_SECRET_ACCESS_KEY 
+
+[[ -n "${BT_CLUSTER}" ]] && { 
+  export BT="${HOME}/.bt"
+
+  source ${BT}/settings
+  team="$(devops-sso-util roles | \
+                 grep aws_team_ | \
+                 grep -v master | \
+                 awk -F_ '{print $3}')"
+
+  aws-sso-util login --profile "${team}"
+  source ${BT}/settings 
+  dg_login
+  cp ${HOME}/.aws/bt_creds ${HOME}/.aws/credentials
+  echo credential copied.
+} 
+
+rds ${BT_CLUSTER}

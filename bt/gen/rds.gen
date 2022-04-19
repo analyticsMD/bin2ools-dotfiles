@@ -1,0 +1,138 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# NOTE: 
+# -----
+# Each RDS cluster needs an associated host to use
+# as a jumping off point. It does not have to be public. 
+# To create a consistent mapping of hosts-to-clusters, 
+# we use only the stack name to determine the 
+# corresponding host. 
+# 
+# THE RULE: 
+# ---------
+# Every RDS cluster has an associated 'tunnel host'. 
+# The designated tunnel host for most clusters is the 'app host'
+# in the corresponding customer stack, e.g. the tunnel host for 
+# all fairview's RDS clusters is the 'app host' for the fairview stack. 
+#
+# TODO#1: Create json lookup table by cluster name, with alternates. 
+# TODO: Ask about tunnel hosts for mama-mirth & airflow clusters
+# TODO: malformred bmc record. 
+# 
+#
+source "${BT}"/settings > /dev/null 2&>1
+#BT_DEBUG=yes
+umask 0077
+try_login
+
+GEN_DIR="${BT}"/sources/generate.d
+RDS_MAPFILE="${GEN_DIR}"/rds_map.src
+RDS_CMPL="${GEN_DIR}"/rds.cmpl
+
+# build cluster map
+declare -A cluster_map 
+declare -a clusters
+END=NONE
+
+while IFS= read -r l; do
+  # Cluster names are trunked to find a common root.
+  # The root is then matched with a tunnel host. 
+  [ "${END}" == "NONE" ] && END=`echo $l | perl -pe 's/(^[^\.]+)\.(.*)$/\2/'`
+  c=`echo $l | perl -nle 'print if s/(\..*)//;'`
+  t=`echo $l | perl -nle 'print if s/(\..*)// and (
+    s/-(a([\w]+)?md$|mirth.*)// or # mirth and amd  
+    s/(?<!qa)-app.*//           or # qa clusters (note negative lookbehind) 
+    s/(^\w+$)/\1/               or # fairview, e.g. 
+    s/(serverless|restore).*//  or # poc and maintenance clusters
+    s/.*(devops|common).*/\1/ )
+  '`
+  #echo "c: $c t: $t"
+  clusters+=($c)
+  k="${c}_${t}"
+  cluster_map[$k]="$t"
+done< <( "${BT}"/cmd/aws/rds/get_clusters )
+echo got clusters. 
+
+#declare -p cluster_map
+
+# build host map
+declare -A host_map
+declare -a map
+
+INSTANCES=$(aws ec2 describe-instances \
+    --filters Name=tag-key,Values=Name \
+    --query 'Reservations[*].
+               Instances[*].{
+                 Instance:InstanceId,Name:Tags[?Key==`Name`]|[0].Value
+               }
+            '            \
+    --region us-west-2 | \
+    jq -r -c '.[][] | (.Name)+"|"+(.Instance)+"%%"
+          ' \
+    | tr -d ' '
+)
+
+
+while IFS='%%' read -r l; do
+  while IFS='|' read -r n i; do
+    #echo n: $n i: $i
+    # Each instance is trunked to find 
+    # the proper tunnel host for each stack.
+    [[ $n =~ (vpn|cron|cnc|ingestion) ]]  && continue 
+    t=$(echo $n | perl -nle 'print if ( 
+          s/airflow-.*/common/        or 
+          s/mama-mirth/mama/          or  
+          s/(?<!qa)-app.*//           ) 
+      ')
+    k=`echo ${n}_${i} | sed -e s/%//g`
+    #echo k: $k t: $t
+    host_map[$k]=[$t]
+  done
+done < <(printf "${INSTANCES}" | sort) 
+
+echo got hosts.  
+#declare -p host_map
+
+# compare trunked hosts to trunked clusters.
+# return all matches.
+p=3306
+for cpair in ${!cluster_map[@]}; do
+  c=`echo $cpair | cut -d'_' -f 1` 
+  t=`echo $cpair | cut -d'_' -f 2` 
+  p=$(( $p + 1 ))  # for local ports.
+  for hpair in ${!host_map[@]}; do
+    h=`echo $hpair | cut -d'_' -f 1` 
+    i=`echo $hpair | cut -d'_' -f 2` 
+    [[ "${host_map[$hpair]}" =~ $t ]] && \
+      map+=($h\|$i\|$t\|$p\|$c) && \
+      unset cluster_map["$cpair"] && break
+  done
+  #declare -p cluster_map 
+done
+
+#  Print a sourceable hash of entries
+mkdir -p ${HOME}/tmp
+tmppath="$(gmktemp -p ${HOME}/tmp rds_map.XXXXXXXXXXXX)"
+cat ${BT}/inst/txt/bt_header                     > $tmppath
+echo -ne 'declare -A rds_map=('                 >> $tmppath
+while IFS= read -r l; do 
+  while IFS='|' read -r h i t p c; do
+    s="[$h]=$h%$i%$t%$p%$c.$END"
+    bash -c "echo -ne $(printf ' %q' "$s ")"    >> $tmppath
+  done 
+done < <( printf '%s\n' "${map[@]}" | sort)
+echo -ne ")\n"                                  >> $tmppath
+mv $tmppath "${BT}/sources/generate.d/rds_map.gen"
+rm -rf $tmppath
+
+# Print a bash completion file, for sourcing. 
+cat ${BT}/inst/txt/bt_bash_header                > $RDS_CMPL
+echo -ne '\n\ncomplete -W "\n'                  >> $RDS_CMPL
+for c in ${clusters[@]}; do
+  printf '  %s \\\n' $c                         >> $RDS_CMPL
+done
+echo -ne "\" rds\n"                             >> $RDS_CMPL
+
+umask 0022
+echo done.
+

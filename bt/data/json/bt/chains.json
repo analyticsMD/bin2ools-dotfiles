@@ -1,0 +1,14 @@
+// Chained credentials to cache in bt_creds files:
+// -----------------------------------------------
+
+// [sso]   - User's sso login creds. Good for up to 24 hrs.
+
+// [team]  - aws_team_${team} role.
+//           A role assumed in the identity account.
+
+// [role]  - chained account roles, such as prod-${team}.
+//           Used for doing much work.
+
+// [guild] - chained guild accounts, used for elevated privs.
+
+

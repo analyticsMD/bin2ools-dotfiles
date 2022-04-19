@@ -1,0 +1,7 @@
+set colored-stats on
+set colored-completion-prefix on
+
+set show-mode-in-prompt off
+set vi-ins-mode-string '\m$ ' 
+set vi-cmd-mode-string '\m$ '
+ 

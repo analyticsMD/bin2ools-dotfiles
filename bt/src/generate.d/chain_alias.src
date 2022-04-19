@@ -1,0 +1,171 @@
+############################################################################
+#                                                                          #
+# WARNING: This file is dynamically generated as part of BINTOOLS.         #
+#          Changes made here are likely to be overwritten without notice.  # 
+#          ----------------------------------------------------------------#
+#          To make changes to this document, find the corresponding        #
+#          generator script under ${BT}/utils/gen and edit the             # 
+#          appropriate sections.                                           #
+#                                                                          #
+# NOTE:    In a pinch, you can also rename this file by prepending one or  # 
+#          more underscores (_) and it will be preserved.                  #
+#                                                                          #
+############################################################################
+
+
+alias assumed=". assume"
+alias awsumed=". awsume"
+alias identity-arch="chain_to identity-arch"
+
+alias identity-guild-cicd="chain_to identity-guild-cicd"
+
+alias identity-guild-terraform="chain_to identity-guild-terraform"
+
+alias identity-guild-helm="chain_to identity-guild-helm"
+
+alias identity-guild-dba="chain_to identity-guild-dba"
+
+alias identity-guild-ml="chain_to identity-guild-ml"
+
+alias identity-guild-ssm="chain_to identity-guild-ssm"
+
+alias prod-arch="chain_to prod-arch"
+
+alias prod-guild-cicd="chain_to prod-guild-cicd"
+
+alias prod-guild-terraform="chain_to prod-guild-terraform"
+
+alias prod-guild-helm="chain_to prod-guild-helm"
+
+alias prod-guild-dba="chain_to prod-guild-dba"
+
+alias prod-guild-ml="chain_to prod-guild-ml"
+
+alias prod-guild-ssm="chain_to prod-guild-ssm"
+
+alias cnc-arch="chain_to cnc-arch"
+
+alias cnc-guild-cicd="chain_to cnc-guild-cicd"
+
+alias cnc-guild-terraform="chain_to cnc-guild-terraform"
+
+alias cnc-guild-helm="chain_to cnc-guild-helm"
+
+alias cnc-guild-dba="chain_to cnc-guild-dba"
+
+alias cnc-guild-ml="chain_to cnc-guild-ml"
+
+alias cnc-guild-ssm="chain_to cnc-guild-ssm"
+
+alias demo-arch="chain_to demo-arch"
+
+alias demo-guild-cicd="chain_to demo-guild-cicd"
+
+alias demo-guild-terraform="chain_to demo-guild-terraform"
+
+alias demo-guild-helm="chain_to demo-guild-helm"
+
+alias demo-guild-dba="chain_to demo-guild-dba"
+
+alias demo-guild-ml="chain_to demo-guild-ml"
+
+alias demo-guild-ssm="chain_to demo-guild-ssm"
+
+alias qa-arch="chain_to qa-arch"
+
+alias qa-guild-cicd="chain_to qa-guild-cicd"
+
+alias qa-guild-terraform="chain_to qa-guild-terraform"
+
+alias qa-guild-helm="chain_to qa-guild-helm"
+
+alias qa-guild-dba="chain_to qa-guild-dba"
+
+alias qa-guild-ml="chain_to qa-guild-ml"
+
+alias qa-guild-ssm="chain_to qa-guild-ssm"
+
+alias dev-arch="chain_to dev-arch"
+
+alias dev-guild-cicd="chain_to dev-guild-cicd"
+
+alias dev-guild-terraform="chain_to dev-guild-terraform"
+
+alias dev-guild-helm="chain_to dev-guild-helm"
+
+alias dev-guild-dba="chain_to dev-guild-dba"
+
+alias dev-guild-ml="chain_to dev-guild-ml"
+
+alias dev-guild-ssm="chain_to dev-guild-ssm"
+
+alias devdata-arch="chain_to devdata-arch"
+
+alias devdata-guild-cicd="chain_to devdata-guild-cicd"
+
+alias devdata-guild-terraform="chain_to devdata-guild-terraform"
+
+alias devdata-guild-helm="chain_to devdata-guild-helm"
+
+alias devdata-guild-dba="chain_to devdata-guild-dba"
+
+alias devdata-guild-ml="chain_to devdata-guild-ml"
+
+alias devdata-guild-ssm="chain_to devdata-guild-ssm"
+
+alias dns-arch="chain_to dns-arch"
+
+alias dns-guild-cicd="chain_to dns-guild-cicd"
+
+alias dns-guild-terraform="chain_to dns-guild-terraform"
+
+alias dns-guild-helm="chain_to dns-guild-helm"
+
+alias dns-guild-dba="chain_to dns-guild-dba"
+
+alias dns-guild-ml="chain_to dns-guild-ml"
+
+alias dns-guild-ssm="chain_to dns-guild-ssm"
+
+alias master-arch="chain_to master-arch"
+
+alias master-guild-cicd="chain_to master-guild-cicd"
+
+alias master-guild-terraform="chain_to master-guild-terraform"
+
+alias master-guild-helm="chain_to master-guild-helm"
+
+alias master-guild-dba="chain_to master-guild-dba"
+
+alias master-guild-ml="chain_to master-guild-ml"
+
+alias master-guild-ssm="chain_to master-guild-ssm"
+
+alias audit-arch="chain_to audit-arch"
+
+alias audit-guild-cicd="chain_to audit-guild-cicd"
+
+alias audit-guild-terraform="chain_to audit-guild-terraform"
+
+alias audit-guild-helm="chain_to audit-guild-helm"
+
+alias audit-guild-dba="chain_to audit-guild-dba"
+
+alias audit-guild-ml="chain_to audit-guild-ml"
+
+alias audit-guild-ssm="chain_to audit-guild-ssm"
+
+alias security-arch="chain_to security-arch"
+
+alias security-guild-cicd="chain_to security-guild-cicd"
+
+alias security-guild-terraform="chain_to security-guild-terraform"
+
+alias security-guild-helm="chain_to security-guild-helm"
+
+alias security-guild-dba="chain_to security-guild-dba"
+
+alias security-guild-ml="chain_to security-guild-ml"
+
+alias security-guild-ssm="chain_to security-guild-ssm"
+

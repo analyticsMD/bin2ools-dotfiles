@@ -1,0 +1,233 @@
+alias prod-arch="new_session prod-arch"
+
+alias get_path="source ${BT}/cache/path_info"
+
+alias pk='echo "${BT_PEEK}" | gbase64 -d | zcat | jq "."'
+alias pkn='echo ${NEXT_PEEK} | gbase64 -d | zcat | jq "."'
+
+# mini-diff, for diagnostics.
+function pkdd() { 
+  diff --side-by-side -B                                                              \
+    <(this_peek | jq -L${BT}/lib/bt.jq -c 'paths(scalars) as $p|[$p, getpath($p)]')   \
+    <(next_peek | jq -L${BT}/lib/bt.jq -c 'paths(scalars) as $p|[$p, getpath($p)]') | \
+    perl -pe 's/[\<\>\[\]\|\"]//g;'
+}
+
+alias _p="source ${BT}/cache/path_info"
+alias _P="$(get_path)"
+
+alias _d="diff_peek" + echo -ne "\n"
+
+alias _x='source <(${BT}/lib/bt_export.py) <(assume -o qventus -s)'
+
+alias _r="assert_next 2>/dev/null; assert_next"
+
+#update_env() {
+#    #session_name="${1:-"${BT_ACCT}"-"${BT_TEAM}"}";
+#    #echo session: ${1};
+#    assume "${session_name}" -s
+#}
+
+# build a function (or array) that can be run to 
+# update the local env for specific types of issue. 
+#env_update() { 
+#  cmd() { some_command &> output.log; } # define it
+#declare -p cmd                        # print it
+#cmd                                   # run it
+#}
+
+#cmd=( something 'with spaces' 'in args' ) # define it
+#printf '%q ' "${cmd[@]}"; echo            # print it
+#"${cmd[@]}"                               # run it
+
+# The BT api has a function to populate each BT_* parameter .
+# However, each BT_ parameter can be overidden on the command line.
+# We use cryptographic signing of each update before we apply it. 
+# 
+# TODO: make sure each form of update can use 
+# it' members, e.g.  
+
+# function that generates updates to be applied.
+# Takes an array of terms to be used as the keys 
+# a hash. Input: <type> <param1> <param2> <param3>
+
+generate() { 
+    printf "function bt_$(gdate +%s) {\n" 
+    for key in "${@:1}"; do
+      printf '    BT_%s="$(get_%s)"\n' $key $key
+    done
+    printf '}\n'
+}
+
+
+declare -A bt=(  
+  [BT_SSO]="$(get_usr)"
+  [BT_TEAM]="$(get_team)"
+  [BT_ROLE]="$(get_role)"
+  [BT_GUILD]="$(get_guild)"
+) 
+
+
+update() {
+   
+  for k in keys; do 
+  this="${key}:{val}"
+  # Functions can be overwritten.
+  cmd+=( BT_SSO="$(get_usr)"   BT_TEAM="$(get_team)"   )
+  cmd+=( BT_ROLE="$(get_role)" BT_GUILD="$(get_guild)" )
+  cmd+='with spaces' 'in args' ) # define it
+  printf '%q ' "${cmd[@]}"; echo            # print it
+  "${cmd[@]}"                               # run it    
+}
+
+array_update() { 
+   
+}
+ 
+session_update() { 
+  cmd=( export )
+  cmd+=( BT_ACCT="$(jq -r --arg acct "${f[1]}"              \
+                    '.acounts | to_entries                  \
+                    | select(.value|tonumber == $acct).key' \
+                    "${BT}/data/json/bt/accounts.json"      ) 
+} 
+
+settings_update() { 
+  cmd+=( BT_STASH="${BT}/stash" BT_CACHE="${BT/cache}" )
+  cmd+=( BT_SETTINGS="quiet" )
+} 
+
+this_update_arr() { 
+
+}
+
+#cmd() { some_command &> output.log; } # define it
+#declare -p cmd                        # print it
+#cmd                                   # run it
+
+# If you don't need redirections, 
+# then the right thing is an array:
+
+# cmd=( something 'with spaces' 'in args' ) # define it
+# printf '%q ' "${cmd[@]}"; echo            # print it
+# "${cmd[@]}"                               # run it
+
+update_env() {
+    session_name="${1:-"${BT_ACCT}"-"${BT_TEAM}"}";
+    echo session: ${1};
+    assume "${session_name}" -s
+}
+
+# build a function (or array) that can be run to 
+# update the local env for specific types of issue. 
+#env_update() { 
+#  cmd() { some_command &> output.log; } # define it
+#declare -p cmd                        # print it
+#cmd                                   # run it
+#If you don't need redirections, then the right thing is an array:
+
+
+
+#cmd() { some_command &> output.log; } # define it
+#declare -p cmd                        # print it
+#cmd                                   # run it
+#If you don't need redirections, then the right thing is an array:
+#
+#cmd=( something 'with spaces' 'in args' ) # define it
+#printf '%q ' "${cmd[@]}"; echo            # print it
+#"${cmd[@]}"                               # run it
+#
+# The BT api has a function to populate each BT_* parameter .
+# However, each BT_ parameter can be overidden on the command line.
+# We use cryptographic signing of each update before we apply it. 
+# 
+# TODO: make sure each form of update can use 
+# it' members, e.g.  
+
+# function that generates updates to be applied.
+# Takes an array of terms to be used as the keys 
+# a hash. 
+#generate_update() { 
+#    this="${@}:=''"
+#    for key in "${@}"; do
+#      printf \"BT_%s\"=\"$(get_$KEY)\"
+#    done
+#}
+ 
+#bt_update() {
+#  
+# for k in keys; do 
+# this="${key}:{val}"
+# # Functions can be overwritten.
+# cmd+=( BT_SSO="$(get_usr)"   BT_TEAM="$(get_team)"   )
+# cmd+=( BT_ROLE="$(get_role)" BT_GUILD="$(get_guild)" )
+# #cmd+='with spaces' 'in args' ) # define it
+# printf '%q ' "${cmd[@]}"; echo            # print it
+# "${cmd[@]}"                               # run it    
+
+
+#array_update() { 
+#  
+#}
+# 
+#session_update() { 
+#  cmd=( export )
+#  cmd+=( BT_ACCT="$(jq -r --arg acct "${f[1]}"              \
+#                    '.acounts | to_entries                  \
+#                    | select(.value|tonumber == $acct).key' \
+#                    "${BT}/data/json/bt/accounts.json"      ) 
+#} 
+#
+#settings_update() { 
+#  cmd+=( BT_STASH="${BT}/stash" BT_CACHE="${BT/cache}" )
+#  cmd+=( BT_SETTINGS="quiet" )
+#} 
+#
+#
+#bt_update() { 
+#
+#    
+#}
+#
+#
+#
+#this_update_arr() { 
+#
+#}
+#
+#cmd() { some_command &> output.log; } # define it
+#declare -p cmd                        # print it
+#cmd                                   # run it
+#If you don't need redirections, then the right thing is an array:
+#
+#cmd=( something 'with spaces' 'in args' ) # define it
+#printf '%q ' "${cmd[@]}"; echo            # print it
+#"${cmd[@]}"                               # run it
+#
+#
+#### experimental 
+#### ------------
+#### Use grep to create a colorized diff of two lines. 
+#### For Credential inspection and reversing.
+####
+#sdiff() { 
+#
+#s1=${1:-""}
+#s2=${2:-""} 
+#declare -a l 
+#declare -a r
+#
+#  i=
+#  for l in $(diff --suppress-common-lines   \
+#               <(fold -w1 <<< "${s1}")      \
+#               <(fold -w1 <<< "${s2}")    | \
+#               grep -E '^\s*[<>] '); do
+#    echo $l && continue
+#    ((i++))
+#    echo "${l}" | sed -e 's/^> //' && str1+=${l:3:$i} || str2+=' ' 
+#    echo "${l}" | sed -e 's/^< //' && str2+=${l:3:$i} || str1+=' '
+#  done
+#  echo l: ${str1} 
+#  echo r: ${str2}
+#}
+

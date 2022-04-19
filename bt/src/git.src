@@ -1,0 +1,8 @@
+
+# git 
+alias st='git status'
+alias g_st='git status'
+alias g_diff='git diff'
+alias g_add='git add -A * '
+alias g_ignore='vim .gitignore && git add .gitignore'
+

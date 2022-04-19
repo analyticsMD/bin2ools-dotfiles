@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+############################################################################
+#                                                                          #
+# WARNING: This file is dynamically generated as part of BINTOOLS.         #
+#          Changes made here are likely to be overwritten without notice.  # 
+#          ----------------------------------------------------------------#
+#          To make changes to this document, find the corresponding        #
+#          generator script under ${BT}/utils/gen and edit the             # 
+#          appropriate sections.                                           #
+#                                                                          #
+# NOTE:    In a pinch, you can also rename this file by prepending one or  # 
+#          more underscores (_) and it will be preserved.                  #
+#                                                                          #
+############################################################################
+
+
+
+
+complete -W "
+  identity-arch \n identity-guild- \n identity-guild-cicd \n identity-guild-terraform \n identity-guild-helm \n identity-guild-dba \n identity-guild-ml \n identity-guild-ssm \n  prod-arch \n prod-guild-ssm \n prod-guild-cicd \n prod-guild-terraform \n prod-guild-helm \n prod-guild-dba \n prod-guild-ml \n prod-guild-ssm \n  cnc-arch \n cnc-guild-ssm \n cnc-guild-cicd \n cnc-guild-terraform \n cnc-guild-helm \n cnc-guild-dba \n cnc-guild-ml \n cnc-guild-ssm \n  demo-arch \n demo-guild-ssm \n demo-guild-cicd \n demo-guild-terraform \n demo-guild-helm \n demo-guild-dba \n demo-guild-ml \n demo-guild-ssm \n  qa-arch \n qa-guild-ssm \n qa-guild-cicd \n qa-guild-terraform \n qa-guild-helm \n qa-guild-dba \n qa-guild-ml \n qa-guild-ssm \n  dev-arch \n dev-guild-ssm \n dev-guild-cicd \n dev-guild-terraform \n dev-guild-helm \n dev-guild-dba \n dev-guild-ml \n dev-guild-ssm \n  devdata-arch \n devdata-guild-ssm \n devdata-guild-cicd \n devdata-guild-terraform \n devdata-guild-helm \n devdata-guild-dba \n devdata-guild-ml \n devdata-guild-ssm \n  dns-arch \n dns-guild-ssm \n dns-guild-cicd \n dns-guild-terraform \n dns-guild-helm \n dns-guild-dba \n dns-guild-ml \n dns-guild-ssm \n  master-arch \n master-guild-ssm \n master-guild-cicd \n master-guild-terraform \n master-guild-helm \n master-guild-dba \n master-guild-ml \n master-guild-ssm \n  audit-arch \n audit-guild-ssm \n audit-guild-cicd \n audit-guild-terraform \n audit-guild-helm \n audit-guild-dba \n audit-guild-ml \n audit-guild-ssm \n  security-arch \n security-guild-ssm \n security-guild-cicd \n security-guild-terraform \n security-guild-helm \n security-guild-dba \n security-guild-ml \n security-guild-ssm \n" chain

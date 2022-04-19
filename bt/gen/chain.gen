@@ -1,0 +1,109 @@
+#!/usr/bin/env /usr/local/bin/bash
+# shellcheck shell=bash
+
+source "${BT}"/lib/bt_env > /dev/null 2>&1
+#BT_DEBUG=yes
+
+# Script: chain-generator
+# -----------------------
+# Generates login script aliases and bash completion
+# files that a user may employ to login and role chain 
+# to a given endpoint.
+# 
+
+# accounts
+user="$(get_usr)" # local account. Should NOT be root.
+team="$(get_team)" # sso call.
+t="${team}"
+
+# generated files 
+#TMP="$(gmktemp -p "${HOME}"/tmp chain_alias.XXXXXXXXXXXX)"
+SRC="${BT}"/sources/generate.d/chain_alias.src
+CMPL="${BT}"/sources/generate.d/chain.cmpl
+
+# file header
+cat "${BT}"/inst/txt/bt_header                          > "$SRC"
+cat "${BT}"/inst/txt/bt_bash_header                     > "$CMPL"
+
+shopt -s expand_aliases
+{ 
+  #echo -ne "export BT_ARGS=\" --profile qventus \"\n" 
+  #echo -ne 'alias aws=" aws ${BT_ARGS} "'"\n" 
+  echo -ne "alias assumed=\". assume\"\n"    
+  echo -ne "alias awsumed=\". awsume\"\n" 
+} >> "$SRC"
+
+echo -ne "\n\ncomplete -W \"\n" >> "$CMPL"
+
+# helper funcs
+make_alias() { 
+  this=${1:-guild}; a="${2}"; t="${3}"; g="${4}"
+  [[ $this == "team" ]] && { 
+    echo -ne "alias ${a}-${t}=\"chain_to ${a}-${t}\"" 
+    echo -ne "\n\n" 
+  } 
+ 
+  [[ $this == "guild" ]] && {  
+    echo -ne "alias ${a}-guild-${g}=\"chain_to ${a}-guild-${g}\"" 
+    echo -ne "\n\n" 
+  } 
+
+} >> "${SRC}"
+
+make_cmpl() { 
+  this=${1:-team}; a="${2}"; t="${3}"; g="${4}"
+  [[ $this == "team" ]] && \
+  echo -ne "  ""${a}"-"${t}"" "                     >> "$CMPL" && \
+  echo -ne "\\\n"                                   >> "$CMPL" 
+  echo -ne " ""${a}"-guild-"${g}"" "                >> "$CMPL" && \
+  echo -ne "\\\n"                                   >> "$CMPL" 
+}
+
+debug team: "${team}"
+is_primary="$(find_in primary | grep "${team}")"
+guild_list="$(find_in guild)"
+debug is_primary: "$is_primary"
+debug is_delegated: "$is_delegated"
+
+declare -a all_accounts=( ${unrestricted[*]:1} ${restricted[*]:1} )
+declare -a accounts=( ${unrestricted[*]:1} )
+declare -a all_guilds=( ${guild[*]:1} )
+echo g: ${all_guilds[*]}  
+echo a: ${all_accounts[*]}  
+
+debug echo is_primary: $is_primary
+[[ -n "$is_primary" ]] && { 
+  for a in ${all_accounts[@]}; do
+    echo a: $a-$t
+    #[[ "${a}" =~ identity ]] && continue 
+    make_alias team "${a}" "${t}" "${g}"
+    make_cmpl  team "${a}" "${t}" "${g}"
+    for g in ${all_guilds[@]}; do 
+      #[[ "${g}" =~ guild ]] && continue 
+      echo g: $a-$t-$g
+      make_alias guild "${a}" "${t}" "${g}"
+      make_cmpl  guild "${a}" "${t}" "${g}"
+    done
+  done
+
+} || { 
+
+  # is_delegated
+  for a in ${accounts[*]}; do
+      #[[ "${a}" =~ identity ]] && continue 
+      make_alias team "${a}" "${t}" "${g}"
+      make_cmpl  team "${a}" "${t}" "${g}"
+    for g in ${all_guilds[*]}; do 
+    #[[ "${g}" =~ guild ]] && continue 
+      make_alias guild "${a}" "${t}" "${g}"
+      make_cmpl  guild "${a}" "${t}" "${g}"
+    done
+  done
+}
+
+# file footers
+#echo "$TMP" | sort >> "$SRC"
+#rm -rf "$TMP"
+
+echo -ne "\" chain\n" >> "$CMPL"
+

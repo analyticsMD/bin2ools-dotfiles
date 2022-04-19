@@ -1,0 +1,46 @@
+
+source <( echo "$("${BT}"/cmd/_path -s 2>/dev/null)" )
+
+echo -ne "\n\n----------------------------------\n"
+echo -ne     "installing pipx deps...           \n"
+echo -ne     "----------------------------------\n\n"
+
+brew install python@3.10
+brew install pip
+brew install pipx
+brew install tmux
+
+pipx ensurepath
+
+echo -ne "\n\ninstalling pipx packages.\n"
+
+pipx install awsume
+pipx inject  awsume awsume-console-plugin
+pipx inject  awsume awsume-default-profile-plugin
+pipx install aws-sso-util
+pipx install aws-whoami 
+
+echo -ne "\n\n--------------------------\n" 
+echo -ne     "python packages installed:\n" 
+echo -ne     "--------------------------\n\n" 
+
+# NOTE: experimental.
+pipx install -f aws-fuzzy-finder
+pipx install virtualenv
+
+# local installs
+declare -a packages 
+packages=(base ssm rds)
+
+for pkg in packages; do 
+  PKG=bintools-$pkg
+  BRANCH=master
+  GITHUB_URL=git+https://github.com/analyticsmd/devops-sso-util@$BRANCH
+  pipx install "$PKG @ $GITHUB_URL@$BRANCH#subdirectory=$PKG"
+done
+
+virtualenv --help
+
+pipx list
+
+

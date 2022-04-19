@@ -1,0 +1,19 @@
+
+# for running ssh via pdsh
+export PDSH_SSH_ARGS_APPEND="-Rexec ssm-ssh --region ${AWS_REGION}"  
+export PDSH_RCMD_TYPE="-Rexec ssm-ssh --region ${AWS_REGION}"
+
+grp=ingestion-prod
+
+parallel-ssm() { 
+  pdsh -R exec                                     \
+    -g "${grp}"                                    \
+    -f 6                                           \
+    ssm-ssh --region "${AWS_REGION}"               \
+      -x -l %u %h                                  \
+      "${cmd_args[@]}"                           | \
+      dshbak -c
+}
+
+# grep -ril JndiLookup /opt/mirthconnect/*" | 
+

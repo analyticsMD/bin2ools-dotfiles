@@ -1,0 +1,6 @@
+alias awsume=". awsume"
+
+# awsume settings.
+#DEFAULT_FLAGS=" --show-commands"
+ASSUME_FLAGS="${flags} ${DEFAULT_FLAGS}"
+
