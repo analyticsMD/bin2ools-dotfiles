@@ -2,7 +2,6 @@
 
 to_debug() { [[ "${BT_DEBUG}" =~ rel ]] && >&2 "${@:2}" ;}
 
-
 # Set and unset AWS_PROFILE.
 # --------------------------
 # Uses the 'aws configure list-profiles' command for 
@@ -29,7 +28,7 @@ aws_profile() {
     export -n AWS_PROFILE AWS_DEFAULT_PROFILE
   else
     # needed because of https://github.com/aws/aws-cli/issues/5546
-    if ! aws configure list-profiles | grep --color=never -Fxq -- "$1"; then
+    if ! aws configure list-profiles | grep -fq -- "$1"; then
       echo "$1 is not a valid profile"
       return 2
     else
@@ -65,7 +64,7 @@ regen_qv_stub() {
               manager = awsume\n
               region = us-west-2/\n\n/g' >> "${CREDS}"
     }
-    stash_creds
+    #stash_creds
 } 
 
 
@@ -99,7 +98,7 @@ wipe () {
 check_login_status() { 
 
   [[ "${BT_ACCOUNT}" == "NONE" || "${BT_TEAM}" == "NONE" ]] && {
-    status="failed" && echo "${status}" && return
+    status="failed none" && echo "${status}" && return
   } 
 
   [[ ${BT_ACCOUNT} == "prod" ]] && { 
@@ -107,34 +106,47 @@ check_login_status() {
                perl -nle 'print if s/.*expiration: ([\w\-\: ]+)/$1/')"
     seconds="$(echo $timestamp | ddiff -E -qf %S now)" 
     [[ "${seconds}" -gt 1 ]] && { 
-      #echo  TZ=America/Los_Angeles date -v+1542S
       echo "${timestamp}" && return  
     } || { 
-      echo "failed" && return
+      echo "failed prod" && return
     }
   }
 
-  [[ ${seconds} -gt 1 && ${BT_ACCOUNT} != "prod" ]] && { 
-    timestamp="$(devops-sso-util check                              \
+  [[ "${seconds}" -gt 1 && "${BT_ACCOUNT}" != "prod" ]] && { 
+    timestamp="$(devops-sso-util check                            \
                --role-name "${BT_ACCOUNT}-${BT_TEAM}" 2>&1      | \
                perl -nle 'print if s/.*expiration: ([\w:\-]+)/$1/')"
     seconds="$(echo $timestamp | ddiff -E -qf %S now)" 
+    echo "${seconds}"
     [[ "${seconds}" -gt 1 ]] && { 
       echo ${timestamp} && return  
     } || { 
-      echo "failed" && return
+      echo "failed number" && return
     }
   }
-
-  echo "unknown" && return
++ 
+  echo "failed unknown" && return
 }
 
 # unattended login
 autologin() { 
   echo -ne "LOGIN: "
+  BT_ACCOUNT="${1:-"prod"}"
+
+  [[ "${BT_TEAM}" == "NONE" || \
+      -z "${BT_TEAM}"       ]] && { 
+     echo "Failed to find a Team. Please rerun ~/.bt/gen/profiles"
+     exit 1
+  } 
+
+  [[ "${BT_ACCOUNT}" == "NONE" || \
+      -z "${BT_ACCOUNT}"       ]] && { 
+     export BT_ACCOUNT="prod"  # default for now. 
+     export BT_ROLE="${BT_ACCOUNT}-${BT_TEAM}"
+  }
   status="$(check_login_status)"  
   [[ "${status}" == "failed" ]] && {  
-    aws-sso-util login --profile prod-arch 2>/dev/null
+    devops-sso-util login --profile prod-arch 2>/dev/null
     aws_profile qventus
     echo -e "${GREEN}$(perms)${NC}"
   }

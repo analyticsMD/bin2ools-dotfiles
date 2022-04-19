@@ -111,8 +111,8 @@ declare -a order=( "PIPX_SPACE"      \
   declare -a pipx_space=()
   pipx_space+=( "${HOME}/.local/bin"             )
   pipx_space+=( "${HOME}/.local/pipx"            )
-  pipx_space+=( "${HOME}/.brew/bin"              )
-  pipx_space+=( "${HOME}/.brew/sbin"             )
+  pipx_space+=( "/usr/local/bin"              )
+  pipx_space+=( "/usr/local/sbin"             )
 
   spaces["PIPX_SPACE"]="$(printf %s "$(printf :%s "${pipx_space[@]}" | sort | uniq)")"
 

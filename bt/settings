@@ -1,47 +1,51 @@
 #!/usr/local/bin/bash
 # shellcheck disable=SC2148,SC2034
 # ----------------------------------------------
-export BT="${HOME}/.bt"
+# Behavioral settings for components in bintools. 
+export BT_SETTINGS=quiet                   \
+       BT="${HOME}/.bin2ools-dotfiles/bt"  \
+       BT_DEBUG=stgs
 
-.              ${BT}/lib/loader.sh
-loader_addpath ${BT}/lib
-load           ${BT}/lib/main.sh && { 
-  echo -ne "${GREEN}BT libs sourced.${NC}\n" || \
-  echo -ne "${RED}lib load failed.${NC}\n"
-} #2>/dev/null 
-loader_finish
+# loader config
+. ${BT}/lib/bt
 
 # shellcheck disable=SC1090,SC1094 
-
-VER="$(echo ${BASH_VERSION} | cut -d'.' -f 1)"
-
-[[ "${VER}" -ne 5 ]] && { 
-  echo "WARNING: unsupported shell spawned: ${BASH_VERSION}"
-  exit 1
+[[ "${BASH_VERSION:0:1}" -ne 5 ]] && { 
+  echo "WARNING: unsupported shell spawned: ${BASH_VERSION}" && exit 1
 }
-
-# Behavioral settings for components in bintools. 
-BT_DEBUG=stgs
 
 # -----------------------------------------------------------------
 # PATH SETTINGS
 # -----------------------------------------------------------------
 
-"${BT}"/utils/path -s 2>/dev/null | \
-    tee ${BT}/cache/path_info
+[[ ! -f "${BT}"/cache/path_info ]] && {
+  "${BT}"/utils/path -s 2>/dev/null | tee ${BT}/cache/path_info 
+}
 
 source <( echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+export PATH="$HOME/.poetry/bin:$PATH"
 
-[ -z "${BT_ACCOUNT}" ] && export BT_ACCOUNT="NONE"
+# -----------------------------------------------------------------
+# ENV SETTINGS
+# -----------------------------------------------------------------
+
+[[ -e "${HOME}/.iterm2_shell_integration.bash" ]] && { 
+  source "${HOME}/.iterm2_shell_integration.bash"
+}
+
 [ -z "${BT_TEAM}"    ] && {
   BT_TEAM="$(perl -lne 'print if s/\[.*aws_team_(\w+)\]/$1/' \
   ${HOME}/.aws/bt_config)"
   export BT_TEAM="${BT_TEAM}"
 }     
+[ -z "${BT_ACCOUNT}" ] && export BT_ACCOUNT="NONE"
 [ -z "${BT_ROLE}" ] && export BT_ROLE="NONE" 
-export BT="${HOME}/.bt"
 
-autologin
+# -----------------------------------------------------------------
+# AWS LOGIN
+# -----------------------------------------------------------------
+
+# autologin 
 
 # -----------------------------------------------------------------
 # Bootstrap functions.

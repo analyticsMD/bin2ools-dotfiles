@@ -1,8 +1,14 @@
 #!/usr/bin/env /usr/local/bin/bash
 
-. "${BT}/lib/loader.sh" 
+# Loader config.  This file contains 
+# our loader's configuration for bintools.
+# main.sh is where loaded libraries are defined.
 
-loader_addpath "${BT}/lib" 
-load main.sh  2>/dev/null              
-loader_finish             
+.              ${BT}/lib/loader.sh
+loader_addpath ${BT}/lib
+load           ${BT}/lib/main.sh 2>/dev/null && {
+  echo -ne "${GREEN}BT libs sourced.${NC}\n" || \
+  echo -ne "${RED}lib load failed.${NC}\n"
+}
+loader_finish
 

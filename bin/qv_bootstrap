@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 #/ Usage: qv_bootstrap [--debug]
 #/ Install development dependencies on macOS.
 set -e
@@ -440,10 +440,9 @@ if [ -n "$CUSTOM_BREW_COMMAND" ]; then
 fi
 
 # Run post-install dotfiles scripts
-ln -s ~/.bin2ools-dotfiles/bt ~/.bt
-log "sourcing 'bt settings':"
-source ~/.bt/settings
-  log "Executing 'brew $CUSTOM_BREW_COMMAND':"
+ln -fs ~/.bin2ools-dotfiles/bt ~/.bt
+log "Executing 'source ${HOME}/.bt/settings':"
+source ${HOME}/.bt/settings
 
 
 # run pipx installer
