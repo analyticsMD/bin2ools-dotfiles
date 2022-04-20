@@ -51,7 +51,7 @@ get_forwarder() {
   p="$(echo "${stats}" | cut -d'%' -f 4)"
   e="$(echo "${stats}" | cut -d'%' -f 5)"
 
-  debug echo -ne "h: ${h}\ni: ${i}\nt: ${t}\np: ${p}\ne: ${e}\n"
+  to_debug echo -ne "h: ${h}\ni: ${i}\nt: ${t}\np: ${p}\ne: ${e}\n"
   [[ -z "${e}" ]] && { 
     echo "FATAL: Could not get variables for cluster ${this}."
     return 1
@@ -75,8 +75,8 @@ split_rds_args() {
   declare -a args=( "${@}" )  # all passed-in args
   declare -a rds_args=()    # rds args (before the -- )
   declare -a mysql_args=()  # mysql args (after the -- ) 
-  debug echo declare -p "${rds_args[@]}"
-  debug echo declare -p "${mysql_args[@]}"
+  to_debug echo declare -p "${rds_args[@]}"
+  to_debug echo declare -p "${mysql_args[@]}"
 
   cluster="${args[0]}"  # first arg (always the cluster name)
   div="$(arg_split "--" "${args[@]:1}")" # position of divider arg ( -- )

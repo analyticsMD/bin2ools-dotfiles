@@ -1,10 +1,10 @@
 #!/usr/bin/env /usr/local/bin/bash
 
-source ${BT}/lib/bt_env
+export BT="${HOME}/.bt"
+. ${BT}/lib/bt
+. ${BT}/src/inst_map.src
 
 #BT_DEBUG=yes
-
-source ${BT}/sources/generate.d/inst_map.src
 
 # regenerate inst_map array, if not present.
 # 
@@ -27,7 +27,7 @@ source ${BT}/sources/generate.d/inst_map.src
 ### ----------------------------------------------------
 ### Print a bash completion file, for sourcing. 
 ### ----------------------------------------------------
-SSM_CMPL=${BT}/sources/generate.d/ssm.cmpl
+SSM_CMPL=${BT}/src/ssm.cmpl
 cat ${BT}/inst/txt/bt_bash_header                  > $SSM_CMPL
 echo -ne '\n\ncomplete -W "\n'                    >> $SSM_CMPL
 for i in `printf '%s\n' ${!inst_map[@]} | sort`; do
@@ -42,7 +42,7 @@ debug declare -p inst_map
 ### ----------------------------------------------------
 ### Queue Spider-Man Theme Song...
 ### ----------------------------------------------------
-SSM_SRC=${BT}/sources/generate.d/ssm.src
+SSM_SRC=${BT}/src/ssm.src
 cat ${BT}/inst/txt/bt_header                       > $SSM_SRC
 while IFS= read l; do
   region=${AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION}

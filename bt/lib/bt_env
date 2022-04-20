@@ -4,7 +4,6 @@
 # DEBUGGING -- Can be set per component, or globally, here.
 #BT_DEBUG=yes
 
-
 # uses ${HOME} to figure out the user name,
 # then queries AWS SSO to look up user's group.
 get_os() { uname -a | gawk '{print $1}' ;}
@@ -16,8 +15,8 @@ get_os() { uname -a | gawk '{print $1}' ;}
 # # that run in ENV.  
 # ----------------------------------------------------------------
 
-export BT="${HOME}/.bt" \
-       BT_CACHE="${BT}/cache"
+export BT="${HOME}/.bt"
+export BT_CACHE="${BT}/cache"
 
 env_fuzz() { 
   export AWS_FUZZ_USE_CACHE=yes                     \
@@ -74,7 +73,7 @@ get_team() {
    # Otherwise look for it in the cache. 
    # INIT mode sets it here.  
    TEAM="$(head -n 1 "${BT}"/cache/team_info | \
-         gawk '{print $1}')"
+         awk '{print $1}')"
    [[ -n "${TEAM}"        && \
       "${TEAM}" != "NONE" ]] && { 
 
@@ -83,6 +82,8 @@ get_team() {
      return
    }
 
+   cat ${HOME}/.aws/bt_config | \
+       perl -lne 'print if s/^.*aws_team_([\w_-]+)' 
    # Otherwise fail loudly. 
    echo -e "${YELLOW}WARNING:${NC} Team not yet cached."
    return 
