@@ -1,1 +1,1 @@
-ansible qa-app-04-app-cron --inventory-file ansible_ssm.ini -m ping
+ansible qa-app-04-app-cron --inventory-file ../cfg/ansible_ssm.ini -m ping
