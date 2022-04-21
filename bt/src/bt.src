@@ -17,22 +17,3 @@ alias  gen="  cd ${BT}/utils/gen"
 #export G_UTILS=${BT}/utils/gen
 export S_PATH=${BT}/sources
 export BT_LOG=${BT}/log
-
-pk() { 
-  BT_DEBUG=no
-  source <(cache_peek 2>/dev/null) && \
-  echo "${#peek[@]} items loaded."
-  i=
-  IFS="|$IFS"
-  for k in "${!peek[@]}"; do 
-
-  #  [[ "$k" =~ [0-9]+ ]] && {  
-      echo -ne "${CYAN}"  
-      printf '%-20s --> %40s\n' "${k}" "${peek[$k]}"
-      echo -ne "${NC}"
-  done | \
-    sort -rn -k 1 | \
-    column -c 2 -t  -s '-->' | \
-    perl -pe 's/ /./g' \
-
-} 

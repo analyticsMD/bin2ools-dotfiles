@@ -78,7 +78,7 @@ regen_qv_stub() {
 #
 wipe () { 
   #stash_creds  # broken. copies wrong file. 
-  cat "${BT}/config.d/bt_creds.ini" > ~/.aws/bt_creds
+  #cat "${BT}/cfg/bt_creds.ini" > ~/.aws/bt_creds
   devops-sso-util logout  > /dev/null 2>&1
   # remove expired creds from cli, awsume caches
   rm -rf "${HOME}"/.aws/sso/cache/*
@@ -98,28 +98,31 @@ wipe () {
 check_login_status() { 
 
   [[ "${BT_ACCOUNT}" == "NONE" || "${BT_TEAM}" == "NONE" ]] && {
-    status="failed none" && echo "${status}" && return
+    echo "failed 0" && return
+  } 
+  [[ "${BT_ACCOUNT}" == "" || "${BT_TEAM}" == "" ]] && {
+    echo "failed 1" && return
   } 
 
   [[ ${BT_ACCOUNT} == "prod" ]] && { 
-    timestamp="$(devops-sso-util check -a 351480950201 2>/dev/null | \
+    timestamp="$(devops-sso-util check -a 351480950201 2>&1 | \
                perl -nle 'print if s/.*expiration: ([\w\-\: ]+)/$1/')"
     seconds="$(echo $timestamp | ddiff -E -qf %S now)" 
     [[ "${seconds}" -gt 1 ]] && { 
       echo "${timestamp}" && return  
     } || { 
-      echo "failed prod" && return
+      echo "failed" && return
     }
   }
 
   [[ "${seconds}" -gt 1 && "${BT_ACCOUNT}" != "prod" ]] && { 
-    timestamp="$(devops-sso-util check                            \
+    timestamp="$(aws-sso-util check                            \
                --role-name "${BT_ACCOUNT}-${BT_TEAM}" 2>&1      | \
                perl -nle 'print if s/.*expiration: ([\w:\-]+)/$1/')"
+    echo $timestamp | ddiff -E -qf %s now
     seconds="$(echo $timestamp | ddiff -E -qf %S now)" 
-    echo "${seconds}"
     [[ "${seconds}" -gt 1 ]] && { 
-      echo ${timestamp} && return  
+      echo ${timestamp} 
     } || { 
       echo "failed number" && return
     }
@@ -132,13 +135,13 @@ check_login_status() {
 autologin() { 
   echo -ne "LOGIN: "
   BT_ACCOUNT="${1:-"prod"}"
-
+  export BT_TEAM=arch
   [[ "${BT_TEAM}" == "NONE" || \
       -z "${BT_TEAM}"       ]] && { 
      echo "Failed to find a Team. Please rerun ~/.bt/gen/profiles"
      exit 1
   } 
-
+  
   [[ "${BT_ACCOUNT}" == "NONE" || \
       -z "${BT_ACCOUNT}"       ]] && { 
      export BT_ACCOUNT="prod"  # default for now. 
@@ -146,18 +149,19 @@ autologin() {
   }
   status="$(check_login_status)"  
   [[ "${status}" == "failed" ]] && {  
-    devops-sso-util login --profile prod-arch 2>/dev/null
+    devops-sso-util login --profile ${BT_ROLE} #2>/dev/null
     aws_profile qventus
     echo -e "${GREEN}$(perms)${NC}"
   }
-
+  
   [[ "${status}" == "unknown" ]] && {  
     echo -e "${RED}Failed.${NC}"
   }
-
+ 
   seconds="$(echo "${status}" | ddiff -E -qf %S now)"
   [[ "${seconds}" -gt 1 ]] && { 
     echo -ne "${GREEN}${BT_ACCOUNT} - expires: ${status}${NC}\n"
   }
+
 }    
 

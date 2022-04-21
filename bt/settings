@@ -33,8 +33,8 @@ source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 alias bt_init="export BT_ACCOUNT=prod BT=${HOME}/.bt && \
                cd ${BT}                              && \
                source ${BT}/settings                 && \
-               autologin ${BT_ACCOUNT}"
-
+               autologin ${BT_ACCOUNT}" 
+               
 alias bt_rebel_alliance=bt_init
 
 
