@@ -2,7 +2,7 @@
 
 ## Installation
 
-[Logo](docs/bintools.png)! 
+[Logo](/docs/bintools.png) 
 
 ### Using Git and the bootstrap script
 
