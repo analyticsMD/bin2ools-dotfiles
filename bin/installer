@@ -354,7 +354,10 @@ if [ -n "$QV_GITHUB_USER" ]; then
 fi
 
 # link into repo.
-ln -s ${HOME}/.bt ${HOME}/.bin2ools-dotfiles/bt
+[[ ! -L "${HOME}/.bt" ]] && { 
+  ln -s "${HOME}/.bin2ools-dotfiles/bt" "${HOME}/.bt"
+}
+
 
 # Setup Brewfile
 if [ -n "$QV_GITHUB_USER" ] && { 
@@ -418,6 +421,8 @@ ${BT}/gen/profiles
 log "Executing 'source ${HOME}/.bt/settings':"
 ${BT}/settings && autologin "prod"
 
+# cleanup, aisle 9.
+rm ${HOME}/.bin2ools-dotfiles/bt/.bt 
 
 STRAP_SUCCESS="1"
 log "Your system is now bootstrapped!"
