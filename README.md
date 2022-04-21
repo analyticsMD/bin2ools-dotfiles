@@ -2,7 +2,6 @@
 
 ## Installation
 
-[Logo](/docs/bintools.png) 
 <img src="/img/bintools.png" class="img-static" alt=""> </div>
 
 
