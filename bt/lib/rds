@@ -569,9 +569,9 @@ wipe_ssm_ports() {
   signal=${2:-"QUIT"}
   echo kill -s ${signal}             \
       $(ps -A                 | \
-        ggrep "[p]ortNumber=" | \
+        grep "[p]ortNumber=" | \
         grep "${port}"        | \
-        gawk '{print $1}'     | \
+        awk '{print $1}'     | \
         perl -pe 's/\n/ /')
 }
    
@@ -580,9 +580,9 @@ wipe_mysql_listeners() {
   signal=${2:-"QUIT"}
   kill -s ${signal}        \
       $(lsof -i -P -n         | \
-        ggrep -i "[l]isten"   | \
+        grep -i "[l]isten"   | \
         grep "${port}"        | \
-        gawk '{print $2}'     | \
+        awk '{print $2}'     | \
         perl -pe 's/\n/ /'    )
 }
 

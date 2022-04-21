@@ -6,7 +6,7 @@
 
 # uses ${HOME} to figure out the user name,
 # then queries AWS SSO to look up user's group.
-get_os() { uname -a | gawk '{print $1}' ;}
+get_os() { uname -a | awk '{print $1}' ;}
 
 # ----------------------------------------------------------------
 # AWS_ENV  

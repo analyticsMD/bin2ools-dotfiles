@@ -46,9 +46,9 @@ SSM_SRC=${BT}/src/ssm.src
 cat ${BT}/inst/txt/bt_header                       > $SSM_SRC
 while IFS= read l; do
   region=${AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION}
-  host=$(echo $l | gawk -F, '{print $1}')
-  instance=$(echo $l | gawk -F, '{print $2}')
+  host=$(echo $l | awk -F, '{print $1}')
+  instance=$(echo $l | awk -F, '{print $2}')
   echo alias $host=\"aws ssm start-session \
     --target "${instance}" \
     --region ${region}\" >> "${SSM_SRC}"
-done< <(printf "%s\n" ${inst_map[@]} | ggrep '%' | sort) 
+done< <(printf "%s\n" ${inst_map[@]} | grep '%' | sort) 

@@ -11,13 +11,13 @@
 #                  - if stale, or expired, creates new.  (Looks for running ecs credential agent)
 #                  - loads 'AWS_' (separate routine) - gets these from 'settings' file.
 #                  - loads  
-source ${BT}/lib/bt_env  
+
+export BT=${HOME}/.bt
+. ${BT}/lib/bt
+. ${BT}/src/inst_map.src
 #BT_DEBUG=yes
 
-[[ -z "${BT_TEAM}" ]] && echo "FATAL: No TEAM var." && exit 1
-requires_login prod_${BT_TEAM}
-
-source ${BT}/sources/generate.d/inst_map.src
+autologin prod
 
 # regenerate inst_map array, if not present.
 #
@@ -29,10 +29,9 @@ source ${BT}/sources/generate.d/inst_map.src
   cache_inst
   # creates: fully populated inst_map array.
   get_inst
-
 }
 
-debug env: $(env | grep AWS_)
+#to_debug env: $(env | grep AWS_)
 
 INSTANCES="$(aws ec2 describe-instances \
     --filters Name=tag-key,Values=Name \
@@ -52,26 +51,27 @@ INSTANCES="$(aws ec2 describe-instances \
               (.PubAddr)' \
            )"
 
-SRC="${BT}/config.d/ssh_over_ssm.conf"
+SRC="${BT}/cfg/ssh_over_ssm.conf"
 
-[ ! -d "${BT}/sources/generate.d" ] && \
-bt_log "FATAL: ${BT}/sources/generate.d does not exist." && die
+[ ! -d "${BT}/src" ] && \
+echo "FATAL: ${BT}/src does not exist." && die
 
 cat ${BT}/inst/txt/bt_header               > $SRC
 echo -ne "\n\n###  records found: " | tee -a $SRC
 echo -ne "${INSTANCES}" | wc -l     | tee -a $SRC
 echo -ne "\n\n"                     | tee -a $SRC
 
-[ ! -d "${BT}/utils/gen" ] && \
-bt_log "FATAL: ${BT}/utils/gen dir not found." && die
+[ ! -d "${BT}/gen" ] && \
+echo "FATAL: ${BT}/gen dir not found." && die
 
 # print file.
+region=us-west-2
 while IFS="|" read -r name id private_ip key_name; do
   tee -a $SRC <<-EOF
   Host ${name}
     Hostname ${private_ip}
     ForwardAgent "yes"
-    User "${USER}"
+    User "ec2-user"
     IdentityFile ~/.ssh/${key_name}
     StrictHostKeyChecking no
     ProxyCommand sh -c "aws ssm start-session \

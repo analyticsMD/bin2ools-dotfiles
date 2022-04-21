@@ -14,6 +14,7 @@ export BT_SETTINGS=quiet                   \
   echo "WARNING: unsupported shell spawned: ${BASH_VERSION}" && exit 1
 }
 
+
 # -----------------------------------------------------------------
 # PATH SETTINGS
 # -----------------------------------------------------------------
@@ -23,6 +24,19 @@ export BT_SETTINGS=quiet                   \
 }
 
 source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+
+
+# -----------------------------------------------------------------
+# ALIASES
+# -----------------------------------------------------------------
+
+alias bt_init="export BT_ACCOUNT=prod BT=${HOME}/.bt && \
+               cd ${BT}                              && \
+               source ${BT}/settings                 && \
+               autologin ${BT_ACCOUNT}"
+
+alias bt_rebel_alliance=bt_init
+
 
 # -----------------------------------------------------------------
 # ENV SETTINGS

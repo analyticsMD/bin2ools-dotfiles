@@ -1,5 +1,5 @@
 ssm_over_ssh() { 
 
-  ssh -F ${BT}/config.d/ssh_over_ssm.conf ${1} 
+  ssh -F ${BT}/cfg/ssh_over_ssm.conf ${1} 
 
 } 

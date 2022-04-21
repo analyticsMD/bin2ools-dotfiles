@@ -43,8 +43,8 @@ done
 }
 
 # important vars
-identity=$(find_in_accounts identity | gawk '{print $2}')
-prod=$(    find_in_accounts prod     | gawk '{print $2}')
+identity=$(find_in_accounts identity | awk '{print $2}')
+prod=$(    find_in_accounts prod     | awk '{print $2}')
 
 
 # other vars

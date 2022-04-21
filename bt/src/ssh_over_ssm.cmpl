@@ -1,7 +1,7 @@
 _complete_ssh_hosts () {
         COMPREPLY=()
         cur="${COMP_WORDS[COMP_CWORD]}"
-        comp_ssh_hosts=`cat ${BT}/config.d/ssh_over_ssm.conf | ggrep "^\s*Host " | gawk '{print $2}'`
+        comp_ssh_hosts=`cat ${BT}/config.d/ssh_over_ssm.conf | grep "^\s*Host " | awk '{print $2}'`
         COMPREPLY=( $(compgen -W "${comp_ssh_hosts}" -- $cur))
         return 0
 } 

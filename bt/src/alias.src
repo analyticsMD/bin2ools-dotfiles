@@ -1,7 +1,5 @@
 alias sso="aws-sso-util login && aws_profile qventus"
 
-
-
 params["region"]="${AWS_DEFAULT_SSO_REGION}"
 # test the imported profile (the fast way).
 if [[ -n "${profile[*]}" ]]; then
@@ -17,7 +15,6 @@ fi
 alias clr_diff='diff --color=auto'
 alias clr_gdiff='gdiff --color=auto'
 alias clr_grep='grep --color=auto'
-alias clr_ggrep='ggrep --color=auto'
 alias ip='ip -color=auto'
 export LESS='-R'
 #export LESS='-R --use-color -Dd+r$Du+b'
@@ -26,10 +23,10 @@ export LESS='-R'
 alias tree_source="tree -a -C ${BT}/sources --noreport --dirsfirst -F"
 
 alias who="aws-whoami             | \
-           ggrep Arn              | \
-           gawk '{print $2}'      | \
+           grep Arn              | \
+           awk '{print $2}'      | \
            perl -pe 's/.*\///'    | \
-           gawk -F'@' '{print $1}'"
+           awk -F'@' '{print $1}'"
 
 alias gcal="echo Google calendar.  Post to chat. "
 
