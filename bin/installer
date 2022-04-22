@@ -184,6 +184,8 @@ run_dotfile_scripts() {
   fi
 }
 
+sudo_init
+
 [ "$USER" = "root" ] && abort "Run Strap as yourself, not root."
 groups | grep $Q -E "\b(admin)\b" || abort "Add $USER to the admin group."
 
@@ -334,8 +336,7 @@ brew_inst pstree
 brew_inst git
 
 brew tap microsoft/git
-brew reinstall --cask git-credential-manager-core
-
+brew_inst git-credential-manager-core
 
 # uncomment if needed.
 echo "Installing ssm_plugin and awscliv2"
@@ -347,9 +348,9 @@ brew_inst aws-session-manager-plugin
 url="git+https://github.com/analyticsmd"
 path="devops-sso-util"
 get="@master#subdirectory"
-pipx install --force "devops-sso-util @ $url/$path$get=cli"
-pipx install --force "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
-pipx install --force "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
+pipx install --force --include-deps "devops-sso-util @ $url/$path$get=cli"
+pipx install --force --include-deps "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
+pipx install --force --include-deps "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
 
 echo "ALMOST DONE!  Generating AWS Profiles..."
 export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}

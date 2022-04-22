@@ -30,6 +30,7 @@ pipx install virtualenv
 
 # local installs
 declare -a packages 
+declare -a apps
 
 # install vars for pipx python packages.
 PKG=bintools-$pkg
