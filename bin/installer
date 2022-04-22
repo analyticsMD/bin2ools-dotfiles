@@ -1,7 +1,10 @@
-#!/usr/local/bin/bash
-#/ Usage: qv_bootstrap [--debug]
+#!/bin/bash
+
+echo BASH VERSION: $BASH_VERSION
+
+#/ Usage: installer [--debug]
 #/ Install development dependencies on macOS.
-set -e
+#set -e
 
 [[ "$1" = "--debug" || -o xtrace ]] && STRAP_DEBUG="1"
 STRAP_SUCCESS=""
@@ -61,7 +64,7 @@ STDIN_FILE_DESCRIPTOR="0"
 [ -t "$STDIN_FILE_DESCRIPTOR" ] && STRAP_INTERACTIVE="1"
 
 # Set by web/app.rb
-STRAP_NAME="$(git config --list              | \
+STRAP_NAME="$(git config --list                  | \
                   grep user.name                 | \
                   perl -pe 's/.*\=([\w\ ]+)/$1/' | \
                   head -n 1)"
@@ -251,7 +254,15 @@ then
 fi
 logk
 
+# HOMEBREW DIAGNOSTICS and INSTALLS.
 
+brew_inst() { 
+  if brew ls --versions "$1"; then 
+      brew upgrade "$1"; 
+  else 
+      brew install "$1"; 
+  fi
+}
 
 # Setup Homebrew directory and permissions.
 logn "Installing Homebrew:"
@@ -286,6 +297,7 @@ then
   ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
 fi
 
+
 # Download Homebrew.
 export GIT_DIR="$HOMEBREW_REPOSITORY/.git" GIT_WORK_TREE="$HOMEBREW_REPOSITORY"
 git init $Q
@@ -311,9 +323,19 @@ RUBY
 logk
 
 echo "Installing minimal deps for github repo checkouts"
-brew install bash coreutils jq perl zlib xz tree pstree git
+brew_in bash 
+brew_in coreutils 
+brew_in jq 
+brew_in perl 
+brew_in zlib 
+brew_in xz 
+brew_in tree 
+brew_in pstree 
+brew_in git
+
 brew tap microsoft/git
 brew reinstall --cask git-credential-manager-core
+
 
 # uncomment if needed.
 echo "Installing ssm_plugin and awscliv2"
@@ -325,8 +347,8 @@ url="git+https://github.com/analyticsmd"
 path="devops-sso-util"
 get="@master#subdirectory"
 pipx install "devops-sso-util @ $url/$path$get=cli"
-pipx install "bin2ools-ssm @ $url/$path$get=bin2ools-ssm"
-pipx install "bin2ools-rds @ $url/$path$get=bin2ools-rds"
+pipx install "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
+pipx install "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
 
 echo "ALMOST DONE!  Generating AWS Profiles..."
 export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}
@@ -345,7 +367,7 @@ if [ -n "$QV_GITHUB_USER" ]; then
     else
       (
         cd ~/.bin2ools-dotfiles
-        git pull $Q --rebase --autostash
+        git pull $Q --rebase --autostash .
       )
     fi
     #run_dotfile_scripts script/setup script/bootstrap
@@ -375,7 +397,7 @@ if [ -n "$QV_GITHUB_USER" ] && {
     else
       (
         cd ~/.bin2ools-dotfiles
-        git pull $Q
+        git pull $Q .
       )
     fi
     ln -sf ~/.bin2ools-dotfiles/Brewfile ~/.Brewfile
@@ -426,4 +448,7 @@ rm ${HOME}/.bin2ools-dotfiles/bt/.bt
 
 STRAP_SUCCESS="1"
 log "Your system is now bootstrapped!"
+
+# check for github access (early on).
+# ssh git@github.com
 
