@@ -30,17 +30,24 @@ pipx install virtualenv
 
 # local installs
 declare -a packages 
-packages=(base ssm rds)
 
-for pkg in packages; do 
-  PKG=bintools-$pkg
-  BRANCH=master
-  GITHUB_URL=git+https://github.com/analyticsmd/devops-sso-util@$BRANCH
-  pipx install "$PKG @ $GITHUB_URL@$BRANCH#subdirectory=$PKG"
+# install vars for pipx python packages.
+PKG=bintools-$pkg
+BRANCH=master
+GITHUB_URL=git+https://github.com/analyticsmd/devops-sso-util@$BRANCH
+
+pipx install devops-sso-util 
+
+packages=( "base" "ssm" "rds" )
+apps=(     "bt"   "ssm" "rds" )
+for i in 0..${#packages[@]}; do 
+  pkg="${packages[$i]}"  app="${apps[$i]}"
+  echo pipx inject devops-sso-util "bin2ools-$pkg @ $GITHUB_URL@$BRANCH#subdirectory=bin2ools-$pkg&$app"
+  #pipx inject devops-sso-util "bin2ools-$pkg @ $GITHUB_URL@$BRANCH#subdirectory=bin2ools-$pkg&$app"
 done
 
 virtualenv --help
 
 pipx list
-
+pipx completion
 

@@ -1,6 +1,6 @@
 loader_addpath ${BT}/lib
 
-#include bt_env 2>/dev/null
+include bt_env 2>/dev/null
 include api    2>/dev/null
 include data   2>/dev/null
 include arr    2>/dev/null

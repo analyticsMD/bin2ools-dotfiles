@@ -28,7 +28,7 @@ aws_profile() {
     export -n AWS_PROFILE AWS_DEFAULT_PROFILE
   else
     # needed because of https://github.com/aws/aws-cli/issues/5546
-    if ! aws configure list-profiles | grep -fq -- "$1"; then
+    if ! aws configure list-profiles | grep -q $1; then
       echo "$1 is not a valid profile"
       return 2
     else
