@@ -323,15 +323,15 @@ RUBY
 logk
 
 echo "Installing minimal deps for github repo checkouts"
-brew_in bash 
-brew_in coreutils 
-brew_in jq 
-brew_in perl 
-brew_in zlib 
-brew_in xz 
-brew_in tree 
-brew_in pstree 
-brew_in git
+brew_inst bash 
+brew_inst coreutils 
+brew_inst jq 
+brew_inst perl 
+brew_inst zlib 
+brew_inst xz 
+brew_inst tree 
+brew_inst pstree 
+brew_inst git
 
 brew tap microsoft/git
 brew reinstall --cask git-credential-manager-core
@@ -340,15 +340,16 @@ brew reinstall --cask git-credential-manager-core
 # uncomment if needed.
 echo "Installing ssm_plugin and awscliv2"
 brew tap "syncdk/aws-session-manager-plugin"
-brew install awscli@2 aws-session-manager-plugin
+brew_inst awscli@2 
+brew_inst aws-session-manager-plugin
 
 # install devops and bin2ools packages.
 url="git+https://github.com/analyticsmd"
 path="devops-sso-util"
 get="@master#subdirectory"
-pipx install "devops-sso-util @ $url/$path$get=cli"
-pipx install "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
-pipx install "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
+pipx install --force "devops-sso-util @ $url/$path$get=cli"
+pipx install --force "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
+pipx install --force "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
 
 echo "ALMOST DONE!  Generating AWS Profiles..."
 export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}
