@@ -5,11 +5,6 @@ echo -ne "\n\n----------------------------------\n"
 echo -ne     "installing pipx deps...           \n"
 echo -ne     "----------------------------------\n\n"
 
-brew install python@3.10
-brew install pip
-brew install pipx
-brew install tmux
-
 pipx ensurepath
 
 echo -ne "\n\ninstalling pipx packages.\n"
@@ -37,15 +32,25 @@ PKG=bintools-$pkg
 BRANCH=master
 GITHUB_URL=git+https://github.com/analyticsmd/devops-sso-util@$BRANCH
 
+pipx uninstall bin2ools-ssm
+pipx uninstall bin2ools-rds
 pipx install devops-sso-util 
 
-packages=( "base" "ssm" "rds" )
-apps=(     "bt"   "ssm" "rds" )
-for i in 0..${#packages[@]}; do 
-  pkg="${packages[$i]}"  app="${apps[$i]}"
-  echo pipx inject devops-sso-util "bin2ools-$pkg @ $GITHUB_URL@$BRANCH#subdirectory=bin2ools-$pkg&$app"
-  #pipx inject devops-sso-util "bin2ools-$pkg @ $GITHUB_URL@$BRANCH#subdirectory=bin2ools-$pkg&$app"
-done
+#packages=( "base" "ssm" "rds" )
+#apps=(     "bt"   "ssm" "rds" )
+#for i in 0..${#packages[@]}; do 
+# pkg="${packages[$i]}"  app="${apps[$i]}"
+# echo pipx inject devops-sso-util "bin2ools-$pkg @ $GITHUB_URL@$BRANCH#subdirectory=bin2ools-$pkg&$app"
+#pipx inject devops-sso-util "bin2ools-$pkg @ $GITHUB_URL@$BRANCH#subdirectory=bin2ools-$pkg&$app"
+#done
+
+# install devops and bin2ools packages.
+url="git+https://github.com/analyticsmd"
+path="devops-sso-util"
+get="@master#subdirectory"
+pipx install --force --include-deps "devops-sso-util @ $url/$path$get=cli"
+pipx inject  --force --include-deps devops-sso-util "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
+pipx inject  --force --include-deps devops-sso-util "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
 
 virtualenv --help
 

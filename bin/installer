@@ -86,6 +86,7 @@ STRAP_ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
 # We want to always prompt for sudo password at least once rather than doing
 # root stuff unexpectedly.
 sudo --reset-timestamp
+sudo_init
 
 # functions for turning off debug for use when handling the user password
 clear_debug() {
@@ -258,13 +259,18 @@ logk
 
 # HOMEBREW DIAGNOSTICS and INSTALLS.
 
+# Look for outdated packages. 
+# Skip if our dependencies to not need updating.
+brew outdated > ${HOME}/.outdated
 brew_inst() { 
-  if brew ls --versions "$1"; then 
+  if grep -qE "^$1" ${HOME}/.outdated; then 
       brew upgrade "$1"; 
   else 
       brew install "$1"; 
   fi
 }
+rm ${HOME}/.outdated
+
 
 # Setup Homebrew directory and permissions.
 logn "Installing Homebrew:"
@@ -334,6 +340,10 @@ brew_inst xz
 brew_inst tree 
 brew_inst pstree 
 brew_inst git
+brew_inst tmux
+brew_inst python@3.10
+brew_inst pip
+brew_inst pipx
 
 brew tap microsoft/git
 brew_inst git-credential-manager-core
@@ -343,14 +353,6 @@ echo "Installing ssm_plugin and awscliv2"
 brew tap "syncdk/aws-session-manager-plugin"
 brew_inst awscli@2 
 brew_inst aws-session-manager-plugin
-
-# install devops and bin2ools packages.
-url="git+https://github.com/analyticsmd"
-path="devops-sso-util"
-get="@master#subdirectory"
-pipx install --force --include-deps "devops-sso-util @ $url/$path$get=cli"
-pipx install --force --include-deps "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
-pipx install --force --include-deps "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
 
 echo "ALMOST DONE!  Generating AWS Profiles..."
 export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}
@@ -369,7 +371,7 @@ if [ -n "$QV_GITHUB_USER" ]; then
     else
       (
         cd ~/.bin2ools-dotfiles
-        git pull $Q --rebase --autostash .
+        git pull $Q --rebase --autostash
       )
     fi
     #run_dotfile_scripts script/setup script/bootstrap
@@ -379,7 +381,7 @@ fi
 
 # link into repo.
 [[ ! -L "${HOME}/.bt" ]] && { 
-  ln -s "${HOME}/.bin2ools-dotfiles/bt" "${HOME}/.bt"
+  ln -sf "${HOME}/.bin2ools-dotfiles/bt" "${HOME}/.bt"
 }
 
 
@@ -399,7 +401,7 @@ if [ -n "$QV_GITHUB_USER" ] && {
     else
       (
         cd ~/.bin2ools-dotfiles
-        git pull $Q .
+        git pull $Q 
       )
     fi
     ln -sf ~/.bin2ools-dotfiles/Brewfile ~/.Brewfile
@@ -450,6 +452,9 @@ rm ${HOME}/.bin2ools-dotfiles/bt/.bt
 
 STRAP_SUCCESS="1"
 log "Your system is now bootstrapped!"
+
+echo -ne '#!/usr/bin/env bash\n\ncd ${HOME}/.bt && . settings && autologin\n' > /usr/local/bin/bt
+chmod ug+x /usr/local/bin/bt
 
 # check for github access (early on).
 # ssh git@github.com
