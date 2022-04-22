@@ -449,7 +449,7 @@ ${BT}/gen/profiles
 
 # Run post-install dotfiles scripts
 log "Executing 'source ${HOME}/.bt/settings':"
-${BT}/settings && autologin "prod"
+. ${BT}/settings && autologin "prod"
 
 # cleanup, aisle 9.
 rm ${HOME}/.bin2ools-dotfiles/bt/.bt 
