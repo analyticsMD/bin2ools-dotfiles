@@ -4,11 +4,11 @@
 
 ## Installation
 
-[]()  **Warning:** If you want to give these dotfiles a try, you should first fork this repository, review the code, and remove things you don’t want or need. Don’t blindly use my settings unless you know what that entails. Use at your own risk!
+[]()  **Warning:** If you want to give bintools-dotfiles a try, you should first review the code, and remove things you don’t want or need. These scripts and settings are included to make your life easier, but don't use them blindly, especially if you have strong opinions.  Use at your own risk!
 
 ### Using Git and the bootstrap script
 
-You can clone the repository wherever you want. (I like to keep it in `~/Projects/dotfiles`, with `~/dotfiles` as a symlink.) The bootstrapper script will pull in the latest version and copy the files to your home folder.
+The script below clones the repository under ~/.bintools-dotfiles in your home directory. It's important to keep this location, as other scripts may look to find it there.  The bootstrapper script will pull in the latest version and copy the files to this folder.
 
 ```bash
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" && brew install bash && curl -fsSL https://raw.githubusercontent.com/analyticsMD/bin2ools-dotfiles/main/bin/installer | /usr/local/bin/bash```
