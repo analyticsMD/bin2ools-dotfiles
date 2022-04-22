@@ -1,5 +1,53 @@
 #!/bin/bash
 
+# Initialize (or reinitialize) sudo to save unhelpful prompts later.
+sudo_init() {
+
+  mkdir -p "${HOME}/tmp"
+
+  if [ -z "$STRAP_INTERACTIVE" ]; then
+    return
+  fi
+
+  # If TouchID for sudo is setup: use that instead.
+  if grep -q pam_tid /etc/pam.d/sudo; then
+    return
+  fi
+
+  local SUDO_PASSWORD SUDO_PASSWORD_SCRIPT
+
+  if ! sudo --validate --non-interactive &>/dev/null; then
+    while true; do
+      MSG="$(_msg)"
+      read -rsp "$MSG" SUDO_PASSWORD
+      #read -rsp "--> Enter your password (for sudo access):" SUDO_PASSWORD
+      echo
+      if sudo --validate --stdin 2>/dev/null <<<"$SUDO_PASSWORD"; then
+        break
+      fi
+
+      unset SUDO_PASSWORD
+      echo "\n!!! Wrong password!\n\n" >&2
+    done
+
+    clear_debug
+    SUDO_PASSWORD_SCRIPT="$(cat <<BASH
+#!/bin/bash
+echo "$SUDO_PASSWORD"
+BASH
+)"
+    unset SUDO_PASSWORD
+    SUDO_ASKPASS_DIR="$(mktemp -d)"
+    SUDO_ASKPASS="$(mktemp "$SUDO_ASKPASS_DIR"/strap-askpass-XXXXXXXX)"
+    chmod 700 "$SUDO_ASKPASS_DIR" "$SUDO_ASKPASS"
+    bash -c "cat > '$SUDO_ASKPASS'" <<<"$SUDO_PASSWORD_SCRIPT"
+    unset SUDO_PASSWORD_SCRIPT
+    reset_debug
+
+    export SUDO_ASKPASS
+  fi
+}
+
 sudo_init
 
 echo BASH VERSION: $BASH_VERSION
@@ -97,54 +145,6 @@ clear_debug() {
 reset_debug() {
   if [ -n "$STRAP_DEBUG" ]; then
     set -x
-  fi
-}
-
-# Initialize (or reinitialize) sudo to save unhelpful prompts later.
-sudo_init() {
-
-  mkdir -p "${HOME}/tmp"
-
-  if [ -z "$STRAP_INTERACTIVE" ]; then
-    return
-  fi
-
-  # If TouchID for sudo is setup: use that instead.
-  if grep -q pam_tid /etc/pam.d/sudo; then
-    return
-  fi
-
-  local SUDO_PASSWORD SUDO_PASSWORD_SCRIPT
-
-  if ! sudo --validate --non-interactive &>/dev/null; then
-    while true; do
-      MSG="$(_msg)"
-      read -rsp "$MSG" SUDO_PASSWORD
-      #read -rsp "--> Enter your password (for sudo access):" SUDO_PASSWORD
-      echo
-      if sudo --validate --stdin 2>/dev/null <<<"$SUDO_PASSWORD"; then
-        break
-      fi
-
-      unset SUDO_PASSWORD
-      echo "\n!!! Wrong password!\n\n" >&2
-    done
-
-    clear_debug
-    SUDO_PASSWORD_SCRIPT="$(cat <<BASH
-#!/bin/bash
-echo "$SUDO_PASSWORD"
-BASH
-)"
-    unset SUDO_PASSWORD
-    SUDO_ASKPASS_DIR="$(mktemp -d)"
-    SUDO_ASKPASS="$(mktemp "$SUDO_ASKPASS_DIR"/strap-askpass-XXXXXXXX)"
-    chmod 700 "$SUDO_ASKPASS_DIR" "$SUDO_ASKPASS"
-    bash -c "cat > '$SUDO_ASKPASS'" <<<"$SUDO_PASSWORD_SCRIPT"
-    unset SUDO_PASSWORD_SCRIPT
-    reset_debug
-
-    export SUDO_ASKPASS
   fi
 }
 
@@ -262,15 +262,16 @@ logk
 
 # Look for outdated packages. 
 # Skip if our dependencies to not need updating.
-brew outdated > ${HOME}/.outdated
+brew outdated | tee > ${HOME}/.outdated 2>&1
 brew_inst() { 
-  if grep -qE "^$1" ${HOME}/.outdated; then 
+  if ! grep -qE "^$1" ${HOME}/.outdated; then 
+      echo "$1 is installed and up-to-date."
+  elif grep -qE "^$1" ${HOME}/.outdated; then 
       brew upgrade "$1"; 
   else 
       brew install "$1"; 
   fi
 }
-rm ${HOME}/.outdated
 
 
 # Setup Homebrew directory and permissions.
@@ -354,6 +355,8 @@ echo "Installing ssm_plugin and awscliv2"
 brew tap "syncdk/aws-session-manager-plugin"
 brew_inst awscli@2 
 brew_inst aws-session-manager-plugin
+# clean up outdated file.
+rm ${HOME}/.outdated
 
 echo "ALMOST DONE!  Generating AWS Profiles..."
 export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}

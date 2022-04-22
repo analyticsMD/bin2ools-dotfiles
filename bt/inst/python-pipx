@@ -24,8 +24,8 @@ pipx install -f aws-fuzzy-finder
 pipx install virtualenv
 
 # local installs
-declare -a packages 
-declare -a apps
+#declare -a packages 
+#declare -a apps
 
 # install vars for pipx python packages.
 PKG=bintools-$pkg
@@ -34,7 +34,7 @@ GITHUB_URL=git+https://github.com/analyticsmd/devops-sso-util@$BRANCH
 
 pipx uninstall bin2ools-ssm
 pipx uninstall bin2ools-rds
-pipx install devops-sso-util 
+pipx install   devops-sso-util 
 
 #packages=( "base" "ssm" "rds" )
 #apps=(     "bt"   "ssm" "rds" )
@@ -48,12 +48,27 @@ pipx install devops-sso-util
 url="git+https://github.com/analyticsmd"
 path="devops-sso-util"
 get="@master#subdirectory"
-pipx install --force --include-deps "devops-sso-util @ $url/$path$get=cli"
-pipx inject  --force --include-deps devops-sso-util "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
-pipx inject  --force --include-deps devops-sso-util "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
+pipx install \
+  --force \
+  --include-deps \
+  "devops-sso-util @ $url/$path$get=cli"
 
-virtualenv --help
+pipx inject       \
+  --force         \
+  --include-apps  \
+  --include-deps  \
+  devops-sso-util \
+  "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
+
+pipx inject       \
+  --force         \
+  --include-apps  \
+  --include-deps  \
+  devops-sso-util \
+  "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
+
+#virtualenv --help
 
 pipx list
-pipx completion
-
+echo "LAST pipx command!"
+pipx completions
