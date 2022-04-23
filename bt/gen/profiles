@@ -6,6 +6,12 @@
 ## Qventus has a lot of infrastructure in AWS. This library
 ## contains streamlined functions to make that environment
 ## is easy to work with. 
+export BT="${HOME}/.bt"
+. ${BT}/lib/bt
+
+echo -ne '\n\n'
+env | sort | grep AWS 
+echo -ne '\n\n'
 
 source <( echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 
@@ -75,7 +81,7 @@ if [ ! -f "${HOME}/.aws" ]; then
 fi
 [[ ! -f "${BT_CREDS}" ]] && {
   umask 0077
-  cp "${BT}/config.d/bt_creds" \
+  cp "${BT}/cfg/bt_creds" \
      "${BT_CREDS}"
   umask 0022
 }

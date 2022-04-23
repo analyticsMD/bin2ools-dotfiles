@@ -390,6 +390,10 @@ fi
   ln -sf "${HOME}/.bin2ools-dotfiles/bt" "${HOME}/.bt"
 }
 
+# source bt env
+export BT=${HOME}/.bt
+. ${BT}/lib/bt
+
 
 # Setup Brewfile
 if [ -n "$QV_GITHUB_USER" ] && { 
@@ -448,10 +452,12 @@ ${BT}/inst/python-pipx
 log "Executing 'profile' installer. Installs user AWS config."
 ${BT}/gen/profiles
 
-
 # Run post-install dotfiles scripts
 log "Executing 'source ${HOME}/.bt/settings':"
-. ${BT}/settings && autologin "prod"
+/usr/local/bin/bash -c '. ${BT}/settings && autologin "prod"'
+
+# for bash & zsh - autocomplete for pipx modules.
+eval "$(register-python-argcomplete pipx)"
 
 # cleanup, aisle 9.
 rm ${HOME}/.bin2ools-dotfiles/bt/.bt 
