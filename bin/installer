@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Initialize (or reinitialize) sudo to save unhelpful prompts later.
 _msg () { 
 
@@ -64,7 +65,17 @@ BASH
   #fi
 }
 
-sudo_init
+sudo_refresh() {
+  clear_debug
+  if [ -n "$SUDO_ASKPASS" ]; then
+    sudo --askpass --validate
+  else
+    sudo_init
+  fi
+  reset_debug
+}
+
+sudo_refresh
 
 echo BASH VERSION: $BASH_VERSION
 
@@ -146,16 +157,6 @@ reset_debug() {
   if [ -n "$STRAP_DEBUG" ]; then
     set -x
   fi
-}
-
-sudo_refresh() {
-  clear_debug
-  if [ -n "$SUDO_ASKPASS" ]; then
-    sudo --askpass --validate
-  else
-    sudo_init
-  fi
-  reset_debug
 }
 
 abort() { STRAP_STEP="";   echo "!!! $*" >&2; exit 1; }
