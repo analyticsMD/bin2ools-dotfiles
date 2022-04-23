@@ -5,9 +5,9 @@ sudo_init() {
 
   mkdir -p "${HOME}/tmp"
 
-  if [ -z "$STRAP_INTERACTIVE" ]; then
-    return
-  fi
+  #if [ -z "$STRAP_INTERACTIVE" ]; then
+  #  return
+  #fi
 
   # If TouchID for sudo is setup: use that instead.
   if grep -q pam_tid /etc/pam.d/sudo; then
