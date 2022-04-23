@@ -1,0 +1,15 @@
+#!/bin/bash
+
+FILE="$1"
+PORT=${PORT:-9998}
+
+MIME_TYPE=$(mimetype "$FILE")
+SIZE_BYTES=$(du -b "$FILE" | cut -f1)
+FILE_NAME=$(basename "$FILE")
+HEADER="\
+HTTP/1.1 200 OK
+Content-Type: $MIME_TYPE
+Content-Disposition: attachment; filename=$FILE_NAME
+Content-Length: $SIZE_BYTES
+"
+socat -d -d - tcp-l:"$PORT",reuseaddr,fork < <(printf "$HEADER"; cat "$FILE")
