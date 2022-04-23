@@ -10,9 +10,9 @@ sudo_init() {
   #fi
 
   # If TouchID for sudo is setup: use that instead.
-  if grep -q pam_tid /etc/pam.d/sudo; then
-    return
-  fi
+  #if grep -q pam_tid /etc/pam.d/sudo; then
+  #  return
+  #fi
 
   local SUDO_PASSWORD SUDO_PASSWORD_SCRIPT
 
