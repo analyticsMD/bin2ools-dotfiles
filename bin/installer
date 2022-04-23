@@ -65,6 +65,11 @@ BASH
   #fi
 }
 
+# functions for turning off debug for use when handling the user password
+clear_debug() {
+  set +x
+}
+
 sudo_refresh() {
   clear_debug
   if [ -n "$SUDO_ASKPASS" ]; then
@@ -148,10 +153,6 @@ STRAP_ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
 # root stuff unexpectedly.
 sudo --reset-timestamp
 
-# functions for turning off debug for use when handling the user password
-clear_debug() {
-  set +x
-}
 
 reset_debug() {
   if [ -n "$STRAP_DEBUG" ]; then
