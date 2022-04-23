@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# functions for turning off debug for use when handling the user password
+clear_debug() {
+  set +x
+}
+
+sudo_refresh() {
+  clear_debug
+  if [ -n "$SUDO_ASKPASS" ]; then
+    sudo --askpass --validate
+  else
+    sudo_init
+  fi
+  reset_debug
+}
+
+sudo_refresh
+
 
 # Initialize (or reinitialize) sudo to save unhelpful prompts later.
 _msg () { 
@@ -64,23 +81,6 @@ BASH
     export SUDO_ASKPASS
   #fi
 }
-
-# functions for turning off debug for use when handling the user password
-clear_debug() {
-  set +x
-}
-
-sudo_refresh() {
-  clear_debug
-  if [ -n "$SUDO_ASKPASS" ]; then
-    sudo --askpass --validate
-  else
-    sudo_init
-  fi
-  reset_debug
-}
-
-sudo_refresh
 
 echo BASH VERSION: $BASH_VERSION
 
