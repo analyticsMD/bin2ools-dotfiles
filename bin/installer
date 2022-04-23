@@ -1,6 +1,22 @@
 #!/bin/bash
 
 # Initialize (or reinitialize) sudo to save unhelpful prompts later.
+_msg () { 
+
+    echo -ne "\n\n---------------------------------------------------\n"
+    echo -ne     "HEADS UP:  Please type your root password below... \n"
+    echo -ne     "---------------------------------------------------\n"
+    echo -ne     "REASON: Bintools requires a few adjustments to your\n"
+    echo -ne     "OS in order to continue.  See below for details.   \n"
+    echo -ne     "  -- a new default shell needs installing.         \n"
+    echo -ne     "  -- permissions on /usr/local must be adjusted    \n"
+    echo -ne     "---------------------------------------------------\n"
+    echo -ne     "V    V    V    V    V    V    V    V    V    V    V\n\n"
+    echo -ne     "                                                   \n"
+    echo "HERE --> "
+
+}
+
 sudo_init() {
 
   mkdir -p "${HOME}/tmp"
@@ -16,7 +32,7 @@ sudo_init() {
 
   local SUDO_PASSWORD SUDO_PASSWORD_SCRIPT
 
-  if ! sudo --validate &>/dev/null; then
+  #if ! sudo --validate &>/dev/null; then
     while true; do
       MSG="$(_msg)"
       read -rsp "$MSG" SUDO_PASSWORD
@@ -45,7 +61,7 @@ BASH
     reset_debug
 
     export SUDO_ASKPASS
-  fi
+  #fi
 }
 
 sudo_init
@@ -58,22 +74,6 @@ echo BASH VERSION: $BASH_VERSION
 
 [[ "$1" = "--debug" || -o xtrace ]] && STRAP_DEBUG="1"
 STRAP_SUCCESS=""
-
-_msg () { 
-
-    echo -ne "\n\n---------------------------------------------------\n"
-    echo -ne     "HEADS UP:  Please type your root password below... \n"
-    echo -ne     "---------------------------------------------------\n"
-    echo -ne     "REASON: Bintools requires a few adjustments to your\n"
-    echo -ne     "OS in order to continue.  See below for details.   \n"
-    echo -ne     "  -- a new default shell needs installing.         \n"
-    echo -ne     "  -- permissions on /usr/local must be adjusted    \n"
-    echo -ne     "---------------------------------------------------\n"
-    echo -ne     "V    V    V    V    V    V    V    V    V    V    V\n\n"
-    echo -ne     "                                                   \n"
-    echo "HERE --> "
-
-}
 
 sudo_askpass() {
   if [ -n "$SUDO_ASKPASS" ]; then
