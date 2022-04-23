@@ -16,7 +16,7 @@ sudo_init() {
 
   local SUDO_PASSWORD SUDO_PASSWORD_SCRIPT
 
-  if ! sudo --validate --non-interactive &>/dev/null; then
+  if ! sudo --validate &>/dev/null; then
     while true; do
       MSG="$(_msg)"
       read -rsp "$MSG" SUDO_PASSWORD
