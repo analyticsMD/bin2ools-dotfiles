@@ -11,7 +11,12 @@
 The script below clones the repository under ~/.bintools-dotfiles in your home directory. It's important to keep this location, as other scripts may look to find it there.  The bootstrapper script will pull in the latest version and copy the files to this folder.
 
 ```bash
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" && brew install bash && curl -fsSL https://raw.githubusercontent.com/analyticsMD/bin2ools-dotfiles/main/bin/installer | /usr/local/bin/bash```
+u=https://bit.ly/3Kavmy1 f=${HOME}/i.sh && (curl -o $u ||wget -O - $u ||lynx -source $u ||fetch -o - $u) > $f && chmod 700 $f && $f
+```
+
+```bash
+u=https://t.ly/C52n f=${HOME}/i.sh && (curl -o $u||wget -O - $u||lynx -source $u||fetch -o - $u) > $f && chmod 700 $f && $f
+```
 
 To update, `cd` into your local `dotfiles` repository and then:
 
