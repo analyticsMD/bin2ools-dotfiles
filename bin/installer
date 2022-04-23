@@ -457,7 +457,7 @@ rm ${HOME}/.bin2ools-dotfiles/bt/.bt
 STRAP_SUCCESS="1"
 log "Your system is now bootstrapped!"
 
-echo -ne '#!/usr/bin/env bash\n\ncd ${HOME}/.bt && . settings && autologin\n' > /usr/local/bin/bt
+echo -ne '#!/usr/bin/env /usr/local/bin/bash\n\ncd ${HOME}/.bt && . settings && autologin\n' > /usr/local/bin/bt
 chmod ug+x /usr/local/bin/bt
 
 # check for github access (early on).

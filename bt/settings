@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/usr/bin/env /usr/local/bin/bash
 # shellcheck disable=SC2148,SC2034
 # ----------------------------------------------
 # Behavioral settings for components in bintools. 
