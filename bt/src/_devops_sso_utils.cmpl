@@ -1,0 +1,53 @@
+
+_AWS_SSO_UTIL_COMPLETE_SCRIPT_DIR=~/.local/share/devops-sso-util
+_AWS_SSO_UTIL_COMPLETE_SCRIPT=$_AWS_SSO_UTIL_COMPLETE_SCRIPT_DIR/complete.sh
+if which devops-sso-util > /dev/null; then
+  mkdir -p $_AWS_SSO_UTIL_COMPLETE_SCRIPT_DIR
+  #({ _AWS_SSO_UTIL_COMPLETE=bash_source devops-sso-util > $_AWS_SSO_UTIL_COMPLETE_SCRIPT.tmp ;
+  #  mv $_AWS_SSO_UTIL_COMPLETE_SCRIPT.tmp $_AWS_SSO_UTIL_COMPLETE_SCRIPT; } &)
+  if [ -f $_AWS_SSO_UTIL_COMPLETE_SCRIPT ]; then
+    #source $_AWS_SSO_UTIL_COMPLETE_SCRIPT
+    echo foo
+  fi
+fi
+
+aws-profile () {
+  if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    echo "USAGE:"
+    echo "aws-profile              <- print out current value"
+    echo "aws-profile PROFILE_NAME <- set PROFILE_NAME active"
+    echo "aws-profile --unset      <- unset the env vars"
+  elif [ -z "$1" ]; then
+    if [ -z "$AWS_PROFILE$AWS_DEFAULT_PROFILE" ]; then
+      echo "No profile is set"
+      return 1
+    else
+      echo "$AWS_PROFILE$AWS_DEFAULT_PROFILE"
+    fi
+  elif [ "$1" = "--unset" ]; then
+    AWS_PROFILE=
+    AWS_DEFAULT_PROFILE=
+    # removing the vars is needed because of https://github.com/aws/aws-cli/issues/5016
+    export -n AWS_PROFILE AWS_DEFAULT_PROFILE
+  else
+    # this check needed because of https://github.com/aws/aws-cli/issues/5546
+    # requires AWS CLI v2
+    if ! aws configure list-profiles | grep --color=never -Fxq -- "$1"; then
+      echo "$1 is not a valid profile"
+      return 2
+    else
+      AWS_DEFAULT_PROFILE=
+      export AWS_PROFILE=$1
+      export -n AWS_DEFAULT_PROFILE
+    fi;
+  fi;
+}
+echo f..
+# completion is kinda slow, operating on the files directly would be faster but more work
+# aws configure list-profiles is only available with the AWS CLI v2.
+_aws-profile-completer () {
+  COMPREPLY=(`aws configure list-profiles | grep --color=never ^${COMP_WORDS[COMP_CWORD]}`)
+}
+echo f...
+complete -F _aws-profile-completer aws-profile
+echo f....

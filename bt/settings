@@ -7,13 +7,13 @@ export BT_SETTINGS=quiet                   \
        BT_DEBUG=stgs
 
 # loader config
+export BT="${HOME}/.bt"
 . ${BT}/lib/bt
 
 # shellcheck disable=SC1090,SC1094 
 [[ "${BASH_VERSION:0:1}" -ne 5 ]] && { 
   echo "WARNING: unsupported shell spawned: ${BASH_VERSION}" && exit 1
 }
-
 
 # -----------------------------------------------------------------
 # PATH SETTINGS
@@ -45,6 +45,7 @@ alias bt_rebel_alliance=bt_init
 [[ -e "${HOME}/.bt/.iterm2_shell_integration.bash" ]] && { 
   source "${HOME}/.iterm2_shell_integration.bash"
 }
+
 
 [ -z "${BT_TEAM}"    ] && {
   BT_TEAM="$(perl -lne 'print if s/\[.*aws_team_(\w+)\]/$1/' \
