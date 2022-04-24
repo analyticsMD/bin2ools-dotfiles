@@ -116,7 +116,7 @@ check_login_status() {
   }
 
   [[ "${seconds}" -gt 1 && "${BT_ACCOUNT}" != "prod" ]] && { 
-    timestamp="$(aws-sso-util check                            \
+    timestamp="$(devops-sso-util check                            \
                --role-name "${BT_ACCOUNT}-${BT_TEAM}" 2>&1      | \
                perl -nle 'print if s/.*expiration: ([\w:\-]+)/$1/')"
     echo $timestamp | ddiff -E -qf %s now

@@ -348,6 +348,7 @@ brew_inst tmux
 brew_inst python@3.10
 brew_inst pip
 brew_inst pipx
+brew_inst poetry
 
 brew tap microsoft/git
 brew_inst git-credential-manager-core
@@ -460,7 +461,9 @@ log "Executing 'source ${HOME}/.bt/settings':"
 eval "$(register-python-argcomplete pipx)"
 
 # cleanup, aisle 9.
-rm ${HOME}/.bin2ools-dotfiles/bt/.bt 
+[ -e "${HOME}/.bin2ools-dotfiles/bt/.bt" ] && {
+  rm ${HOME}/.bin2ools-dotfiles/bt/.bt 
+}
 
 STRAP_SUCCESS="1"
 log "Your system is now bootstrapped!"

@@ -32,40 +32,23 @@ PKG=bintools-$pkg
 BRANCH=master
 GITHUB_URL=git+https://github.com/analyticsmd/devops-sso-util@$BRANCH
 
-pipx uninstall bin2ools-ssm
-pipx uninstall bin2ools-rds
-pipx install   devops-sso-util 
-
-#packages=( "base" "ssm" "rds" )
-#apps=(     "bt"   "ssm" "rds" )
-#for i in 0..${#packages[@]}; do 
-# pkg="${packages[$i]}"  app="${apps[$i]}"
-# echo pipx inject devops-sso-util "bin2ools-$pkg @ $GITHUB_URL@$BRANCH#subdirectory=bin2ools-$pkg&$app"
-#pipx inject devops-sso-util "bin2ools-$pkg @ $GITHUB_URL@$BRANCH#subdirectory=bin2ools-$pkg&$app"
-#done
+pipx uninstall bin2ools-ssm || true
+pipx uninstall bin2ools-rds || true
 
 # install devops and bin2ools packages.
-url="git+https://github.com/analyticsmd"
-path="devops-sso-util"
-get="@master#subdirectory"
-pipx install \
-  --force \
-  --include-deps \
-  "devops-sso-util @ $url/$path$get=cli"
+u="git+https://github.com/analyticsmd"
+p="devops-sso-util"
+g="@master#subdirectory"
+pipx install -f --include-deps "devops-sso-util @ $u/$p$g=cli"
 
-pipx inject       \
-  --force         \
-  --include-apps  \
-  --include-deps  \
-  devops-sso-util \
-  "bin2ools-ssm @ $url/$path$get=bin2ools-ssm&ssm"
+#pipx inject -f --include-apps --include-deps devops-sso-util "btssm @ $u/$p$g=b2ssm&ssm"
+pipx inject -f --include-apps devops-sso-util "btssm @ $u/$p$g=b2ssm&ssm"
 
-pipx inject       \
-  --force         \
-  --include-apps  \
-  --include-deps  \
-  devops-sso-util \
-  "bin2ools-rds @ $url/$path$get=bin2ools-rds&rds"
+#pipx inject -f    \
+#  --include-apps  \
+#  --include-deps  \
+#  devops-sso-util \
+#  "b2rds @ $url/$path$get=b2rds&rds"
 
 #virtualenv --help
 

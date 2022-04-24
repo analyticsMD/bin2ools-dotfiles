@@ -1,4 +1,4 @@
-alias sso="aws-sso-util login && aws_profile qventus"
+alias sso="devops-sso-util login && aws_profile qventus"
 
 params["region"]="${AWS_DEFAULT_SSO_REGION}"
 # test the imported profile (the fast way).

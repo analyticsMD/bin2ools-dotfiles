@@ -265,7 +265,7 @@ unset AWS_SESSION_TOKEN AWS_ACCESS_KEY_ID  AWS_SECRET_ACCESS_KEY
                  grep -v master | \
                  awk -F_ '{print $3}')"
 
-  aws-sso-util login --profile "${team}"
+  devops-sso-util login --profile "${team}"
   source ${BT}/settings 
   dg_login
   cp ${HOME}/.aws/bt_creds ${HOME}/.aws/credentials

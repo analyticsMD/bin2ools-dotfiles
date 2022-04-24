@@ -1,0 +1,16 @@
+Adjust PATH util -- should NOT include ~/.bt/lib
+  -- if you need that, use the loader: ~/.bt/lib/bt
+  -- can we leverage the loader for packaged consoles? 
+  -- give each its own self-contained loader? 
+  -- would help. 
+ssm.bash needs renamed to ssm.  
+need to run 'pipx ensurepath', and then alias the binaries in those dirs.
+  -- write stubs for site-packages dirs that contain our software.
+  -- write one for bt as well (bin2ools-base)
+need to source 'ensurepath' dir for ssm.cmpl and rds.cmpl. 
+need a routine in ssm and rds that look for .cml and .src first under ~/.bt, 
+and if not present, then look under ensurepath dirs.
+need to simplify package structure for rds and ssm.  
+  -- easier to find libs if they are all in one dir. 
+  
+
