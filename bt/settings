@@ -6,6 +6,7 @@ export BT_SETTINGS=quiet                   \
        BT="${HOME}/.bin2ools-dotfiles/bt"  \
        BT_DEBUG=stgs
 
+
 # loader config
 export BT="${HOME}/.bt"
 . ${BT}/lib/bt
@@ -32,7 +33,6 @@ source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 
 alias bt_init="export BT_ACCOUNT=prod BT=${HOME}/.bt && \
                cd ${BT}                              && \
-               source ${BT}/settings                 && \
                autologin ${BT_ACCOUNT}" 
                
 alias bt_rebel_alliance=bt_init
@@ -48,9 +48,10 @@ alias bt_rebel_alliance=bt_init
 
 
 [ -z "${BT_TEAM}"    ] && {
-  BT_TEAM="$(perl -lne 'print if s/\[.*aws_team_(\w+)\]/$1/' \
-  ${HOME}/.aws/bt_config)"
+  BT_TEAM="$(perl -lne 'print if s/\[.*aws_team_([\w_-]+)\]/$1/' \
+  "${HOME}/.aws/bt_config")"
   export BT_TEAM="${BT_TEAM}"
+
 }     
 [ -z "${BT_ACCOUNT}" ] && export BT_ACCOUNT="NONE"
 [ -z "${BT_ROLE}" ] && export BT_ROLE="NONE" 

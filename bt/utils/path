@@ -123,10 +123,10 @@ declare -a order=( "PIPX_SPACE"      \
   user+=( "${BT}/bin"   )
   user+=( "${BT}/cmd"   )
   user+=( "${BT}/inst"  )
-  user+=( "${BT}/lib"   )
   user+=( "${BT}/gen"   )
   user+=( "${BT}/utils" )
   user+=( "${BT}/src"   )
+  user+=( "${BT}/lib"   )
 
   declare -a mode_space=( "${user[@]}" )
   spaces["MODE_SPACE"]="$(printf %s "$(printf :%s "${mode_space[@]}" | sort | uniq)")"

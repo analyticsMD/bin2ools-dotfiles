@@ -135,7 +135,6 @@ check_login_status() {
 autologin() { 
   echo -ne "LOGIN: "
   BT_ACCOUNT="${1:-"prod"}"
-  export BT_TEAM=arch
   [[ "${BT_TEAM}" == "NONE" || \
       -z "${BT_TEAM}"       ]] && { 
      echo "Failed to find a Team. Please rerun ~/.bt/gen/profiles"

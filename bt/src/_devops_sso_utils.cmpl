@@ -42,12 +42,12 @@ aws-profile () {
     fi;
   fi;
 }
-echo f..
+
 # completion is kinda slow, operating on the files directly would be faster but more work
 # aws configure list-profiles is only available with the AWS CLI v2.
 _aws-profile-completer () {
   COMPREPLY=(`aws configure list-profiles | grep --color=never ^${COMP_WORDS[COMP_CWORD]}`)
 }
-echo f...
+
 complete -F _aws-profile-completer aws-profile
-echo f....
+
