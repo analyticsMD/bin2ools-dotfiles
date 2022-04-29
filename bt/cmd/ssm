@@ -1,8 +1,8 @@
 #!/usr/bin/env /usr/local/bin/bash
 
 # shellcheck shell=bash disable=SC1083 format=SC1083
-BT=${HOME}/.bt
-. ${HOME}/.bt/lib/bt
+export BT=${HOME}/.bt
+. ${HOME}/.bt/lib/bt_load
 . ${HOME}/src/inst_maps.src
 
 # Test ssm connectivity to a single host.
@@ -25,7 +25,7 @@ declare -A inst_map
 source <(cat "${BT}/src/inst_map.src")
 #shopt -s extglob
 
-#BT_DEBUG=yes
+export BT_DEBUG=ssm
 [[ -z "${hn}" || "${hn}" == "NONE" ]] && { 
   #export=$(hn="${1}")
   ip=$(aws-fuzzy --ip-only)
@@ -34,7 +34,7 @@ source <(cat "${BT}/src/inst_map.src")
       export hn="$(echo "${rec}" | cut -d',' -f 1)" 
       export inst="$(echo "${rec}" | cut -d',' -f 2)"
       export ip="$(echo "${rec}" | cut -d',' -f 3)"
-      echo "ip: $ip, inst: $inst, hn: $hn"
+      to_debug ssm echo "ip: $ip, inst: $inst, hn: $hn"
     }
   done
 }
@@ -47,9 +47,9 @@ source <(cat "${BT}/src/inst_map.src")
 
 inst="$(echo ${inst_map[$hn]} | cut -d',' -f2)" 
 ipt="$(echo ${inst_map[$hn]} | cut -d',' -f3)" 
-echo "ip: $ip, inst: $inst, hn: $hn"
+to_debug ssm echo "ip: $ip, inst: $inst, hn: $hn"
 [[ -z "${inst}" || -z "${ip}" ]] && \
-echo -e "starting ssm connection to: \"${CYAN}${hn}${NC}\""
+echo -e "ssm connecting to: \"${CYAN}${hn}${NC}\""
 cmd="aws ssm start-session --target ${inst}"
 
 ${cmd}

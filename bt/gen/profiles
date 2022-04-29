@@ -7,7 +7,7 @@
 ## contains streamlined functions to make that environment
 ## is easy to work with. 
 export BT="${HOME}/.bt"
-. ${BT}/lib/bt
+. ${BT}/lib/bt_load
 
 echo -ne '\n\n'
 env | sort | grep AWS 
@@ -43,7 +43,7 @@ aws_profile () {
     export -n AWS_PROFILE AWS_DEFAULT_PROFILE
   else
     # needed because of https://github.com/aws/aws-cli/issues/5546
-    if ! aws configure list-profiles | grep -q $1; then
+    if ! aws configure list-profiles | grep -qs "$1"; then
       echo "$1 is not a valid profile"
       return 2
     else
@@ -217,12 +217,12 @@ aws-whoami && echo -ne "\n\n" \
 # NOTE: These are all assumable roles in the 'role' step of the 
 #       qventus standard role chain, e.g. sso->team->role->guild
 # 
-#declare -a rpf=()  # role profiles
-#for p in ${rpf[@]}; do 
-#  devops-sso-util configure profile --existing-config-action overwrite \
-#               -c role_arn="$(printf "$tpl" "${rpf[1]}" "${rpf[2]}")" \
-#                       -a "${v[1]}" -r "${rpf[2]}" "qv-gbl-${rpf[2]}" 
-#done
+declare -a rpf=(qa cnc)  # role profiles
+for p in ${rpf[@]}; do 
+  devops-sso-util configure profile --existing-config-action overwrite \
+               -c role_arn="$(printf "$tpl" "${rpf[1]}" "${rpf[2]}")" \
+                       -a "${v[1]}" -r "${rpf[2]}" "qv-gbl-${rpf[2]}" 
+done
 
 # Generate guild profiles.
 # ------------------------

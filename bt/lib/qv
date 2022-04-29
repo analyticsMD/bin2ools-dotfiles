@@ -1,14 +1,11 @@
 #!/usr/local/bin/bash
 
-. bt
-
-
-to_debug() { [[ "${BT_DEBUG}" =~ $1 ]] && >&2 ${@:2} ;}
+export BT="${HOME}/.bt"
+. bt_load
 
 get_account() {
   this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
 }
-
 
 
 diff_peek() { 
@@ -201,7 +198,7 @@ dg_login() {
   assert_next
   update_env
 
-  BT_DEBUG=yes
+
   # reject params with only whitespace.
   [[ "${*:1}" = *[[:space:]]* ]]
   echo V. 
@@ -213,7 +210,7 @@ dg_login() {
                              \(.account|to_entries[]|select(.key)|.key)  
                              \(.position.default)"')
   debug f: ${f[*]}
-  echo V... 
+  to_debug qv echo V... 
   MASK=3
   
   vals="$(printf '%s ' "$(this_peek | \
@@ -238,7 +235,7 @@ dg_login() {
       tokens ${t[*]} profiles ${p[*]} #expires ${e[*]}
     echo "time: ${x[*]}"
   } 
-  echo V.....
+  debug_to cche || echo V.....
 
   MASK="$(echo "${assert}" | perl -nle 'print tr/1//')"
   to_debug prmt echo "MASK: ${MASK}"

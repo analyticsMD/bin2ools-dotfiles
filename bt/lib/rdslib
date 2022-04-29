@@ -25,14 +25,14 @@ mysql_help() {
   echo "mysql client help here."
 } 
 
+var_init   # get vars.
 
 # expects a login.
 get_forwarder() { 
 
   #autosession
 
-  team="$(get_team)"
-  [[ -z "${team}" ]] && { 
+  [[ -z "${BT_TEAM}" ]] && { 
     echo "FATAL: Problem determining your TEAM." 
     echo "       Please contact DevOps."
     exit 1
@@ -304,7 +304,7 @@ iam_user() {
   }
 
   iam_user=restricted    # default
-  is_primary="$(find_in primary | grep "$(get_team)")"
+  is_primary="$(find_in primary | grep "${BT_TEAM}")"
   is_primary="$(echo dba_guild )"
   
   [[ -n "${is_primary}" ]] && { 
@@ -315,7 +315,7 @@ iam_user() {
 
   [[ -z "${is_primary}" ]] && { 
 
-    BT_iam_user=team-"$(get_team)"
+    BT_iam_user=team-"${BT_TEAM}"
     export BT_iam_user
     echo "${BT_iam_user}" && return
   } 
@@ -327,7 +327,7 @@ iam_user() {
 
 set_tunnel_user() { 
 
-  [[ "$(get_team)" == "arch" && \
+  [[ "${BT_TEAM}" == "arch" && \
      "${BT_method}" = ssh-*  ]] && { 
 
     export BT_tunnel_user=ec2-user

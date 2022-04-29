@@ -1,8 +1,11 @@
 #!/usr/bin/env /usr/local/bin/bash
 # shellcheck shell=bash 
 
+BT="${HOME}/.bt"
+export BT="${BT}"
+
 # DEBUGGING -- Can be set per component, or globally, here.
-#BT_DEBUG=yes
+#BT_DEBUG=env,flow
 
 # uses ${HOME} to figure out the user name,
 # then queries AWS SSO to look up user's group.
@@ -29,6 +32,8 @@ env_fuzz() {
 
 env_fuzz
 
+to_debug flow && sleep 1 && echo env:fuzz 
+
 umask 0077
 [[ ! -d "${BT_CACHE}" ]] && mkdir -p "${BT_CACHE}"
 export BT_CACHE="${BT}/cache"
@@ -37,67 +42,24 @@ umask 0022
 # ---------------------------------------------------------
 # dirs, vars, & libs.
 # ---------------------------------------------------------
-debug() { [ -n "${BT_DEBUG}" ] && >&2 bt_log "${@}";}
 
 # Make sure there's a debug function.
-[[ "$(type -t debug)" == "function" ]] || {
-  echo >&2 "WARNING: Core function: 'debug' not sourced."
+[[ "$(type -t to_debug)" == "function" ]] || {
+  echo >&2 "WARNING: Core function: 'to_debug' not sourced."
 }
+
+
 
 get_sso() { 
   echo "${USER}"
 }
 
+
+
 get_usr() { 
   echo "${USER}"
 }
 
-
-# get_team
-# ---------
-# Returns the user's team. For reasons of workflow, 
-# it is important that this function FAIL LOUDLY if 
-# after trying various methods a team cannot be found.
-#
-get_team() { 
-
-   # The team var isn't designed to change. 
-   # If it is set, always use it.
-   [[ -n "${BT_TEAM}"        && \
-      "${BT_TEAM}" != "NONE" ]] && { 
-  
-     echo "${BT_TEAM}"
-     return
-   } 
-
-   # Otherwise look for it in the cache. 
-   # INIT mode sets it here.  
-   TEAM="$(head -n 1 "${BT}"/cache/team_info | \
-         awk '{print $1}')"
-   [[ -n "${TEAM}"        && \
-      "${TEAM}" != "NONE" ]] && { 
-
-     export BT_TEAM="${TEAM}"
-     echo "${BT_TEAM}"
-     return
-   }
-
-   cat ${HOME}/.aws/bt_config | \
-       perl -lne 'print if s/^.*aws_team_([\w_-]+)' 
-   # Otherwise fail loudly. 
-   echo -e "${YELLOW}WARNING:${NC} Team not yet cached."
-   return 
-
-} 
-
-
-get_role() { 
-
-  account="$(get_account)"
-  team="$(get_team)"
-  echo "${account}"-"${team}"
-
-}
 
 
 
@@ -105,23 +67,14 @@ get_role() {
 # libs
 # ---------------------------------------------------------
 
-# top-level libs. These are the second level.
-
-# Make sure there's a 'get_team' function.
-[[ "$(type -t get_team)" == "function" ]] || {
-  echo >&2 "WARNING: Core function: 'get_team' not sourced."
-}
-
-
 # Establish vars that show the env state.
 #
 env_state()  { 
 
+  include api
   export BT_USR="$(get_usr)"
-  export BT_TEAM="$(get_team)"
+  env_init  # sets BT_ROLE, BT_ACCOUNT, BT_TEAM
   # note: used for assertions, derived from 'bt_peek'.
-  #export BT_ACCOUNT="$(get_account)"
-  export BT_ROLE="${BT_ACCOUNT}"-"${BT_ROLE}"
   export BT_GUILD="NONE"
 
   # set the account file.
@@ -131,6 +84,7 @@ env_state()  {
   # set default aws configs.
   [[ -z "${BT_ACCOUNT}"            || \
      "${BT_ACCOUNT}" == ""         || \
+     "${BT_ACCOUNT}" == "qa"         || \
      "${BT_ACCOUNT}" == "prod"     || \
      "${BT_ACCOUNT}" == "identity" ]] && { 
      
@@ -157,6 +111,8 @@ env_state()  {
 }
 
 env_state
+to_debug flow && sleep 1 && echo env:state
+
 
 env_cache() { 
 
@@ -174,6 +130,9 @@ env_cache() {
 }
 
 env_cache
+to_debug flow && sleep 1 && echo env:cache
+
+
 
 # SANITY FUNCTIONS
 # -----------------
@@ -205,6 +164,9 @@ env_sanity() {
 } 
 
 env_sanity
+
+to_debug flow && sleep 1 && echo env:sanity
+
 
 # ---------------------------------------------------------------
 # MINI-API
@@ -304,11 +266,11 @@ function _get() {
     esac
 
   OBJ="${BT}/data/json/bt/${obj}.json"    
-  JQ_STR='| to_entries[] | select( $name )'
-  CMD="$(printf '.%s %s' ${obj} ${JQ_STR})"
+  JQ_STR='| to_entries[] | select( "$name" )'
+  CMD="$(printf '.%s %s' "${obj}" "${JQ_STR}")"
 
 
-  echo cat "${OBJ}" | jq --arg name ${2} ${CMD}
+  echo cat "${OBJ}" | jq --arg name "${2}" "${CMD}"
 
   #all_accounts = (unrestricted + restricted)
   #accounts = unrestricted

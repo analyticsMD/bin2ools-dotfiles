@@ -2,19 +2,23 @@
 # shellcheck disable=SC2148,SC2034
 # ----------------------------------------------
 # Behavioral settings for components in bintools. 
-export BT_SETTINGS=quiet                   \
-       BT="${HOME}/.bin2ools-dotfiles/bt"  \
-       BT_DEBUG=stgs
+
+export BT_DEBUG=stgs
+to_debug() { [[ "${BT_DEBUG}" =~ $1 ]] && >&2 "${@:2}" ;}
+export BT_SETTINGS=quiet 
+to_debug stgs && sleep 1 && echo stgs o
 
 
 # loader config
 export BT="${HOME}/.bt"
-. ${BT}/lib/bt
+. ${BT}/lib/bt_load
+to_debug stgs && sleep 1 && echo stgs..
 
 # shellcheck disable=SC1090,SC1094 
 [[ "${BASH_VERSION:0:1}" -ne 5 ]] && { 
   echo "WARNING: unsupported shell spawned: ${BASH_VERSION}" && exit 1
 }
+to_debug stgs && sleep 1 && echo stgs...
 
 # -----------------------------------------------------------------
 # PATH SETTINGS
@@ -26,6 +30,7 @@ export BT="${HOME}/.bt"
 
 source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 
+to_debug stgs && sleep 1 && echo stgs....
 
 # -----------------------------------------------------------------
 # ALIASES
@@ -37,6 +42,7 @@ alias bt_init="export BT_ACCOUNT=prod BT=${HOME}/.bt && \
                
 alias bt_rebel_alliance=bt_init
 
+to_debug stgs && sleep 1 && echo stgs.....
 
 # -----------------------------------------------------------------
 # ENV SETTINGS
@@ -56,6 +62,8 @@ alias bt_rebel_alliance=bt_init
 [ -z "${BT_ACCOUNT}" ] && export BT_ACCOUNT="NONE"
 [ -z "${BT_ROLE}" ] && export BT_ROLE="NONE" 
 
+to_debug stgs && sleep 1 && echo stgs V
+
 # -----------------------------------------------------------------
 # AWS LOGIN
 # -----------------------------------------------------------------
@@ -65,13 +73,11 @@ alias bt_rebel_alliance=bt_init
 # -----------------------------------------------------------------
 # Bootstrap functions.
 # -----------------------------------------------------------------
-q_pushd()  { pushd ${1} >/dev/null 2>&1 || return ;}
-q_popd()   { popd ${1} >/dev/null 2>&1 || return ;}
-to_debug() { [[ "${BT_DEBUG}" =~ $1 ]] && >&2 "${@:2}" ;}
 
 #JSON="{\"account\":{\"prod\":${ACCT_ID}} | jq -r -c '.account | to_entries[] | select(.key|tostring) | "\(.key)"'"
 #echo "prod" |  jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
 
+to_debug stgs && sleep 1 && echo stgs VV
 
 # ------------------------------------------------------------------
 # SETTINGS

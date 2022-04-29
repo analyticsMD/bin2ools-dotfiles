@@ -124,7 +124,7 @@ is_in() {
 #shellcheck disable=SC2068
 find_in_accounts() {
   this=${1} 
-  source "${BT}"/sources/generate.d/accounts.gen
+  source "${BT}"/src/accounts.gen
   for l in $(printf '%s\n' ${ACCOUNTS[@]}); do 
     echo "$l" | perl -nle "print \"$l\" if /${this}/" | perl -pe "s/%/ /g"
   done
@@ -133,7 +133,7 @@ find_in_accounts() {
 # shellcheck disable=SC2068,SC2154
 find_in_rds() {
   this=${1} 
-  source "${BT}"/sources/generate.d/rds_map.src
+  source "${BT}"/src/rds_map.src
   for l in $(printf '%s\n' ${rds_map[@]}); do 
     echo "$l" | perl -nle "print \"$l\" if /${this}/"; 
   done
@@ -262,8 +262,8 @@ cache_inst() {
       done 
     done < <(printf '%s\n' "${tmp[@]}" | sort)
     echo -ne ")\n" >> "$tmppath"
-    # move new array to generate.d dir.
-    mv "$tmppath" "${BT}/sources/generate.d/inst_map.src"
+    # move new array to src dir.
+    mv "$tmppath" "${BT}/src/inst_map.src"
 }
 
 
@@ -277,8 +277,8 @@ cache_inst() {
 get_inst() {  
 
   declare -A inst_map
-  inst_file="${BT}/sources/generate.d/inst_map.src"
-  inst_size=$(cat "${BT}"/sources/generate.d/inst_map.src | wc -c)
+  inst_file="${BT}/src/inst_map.src"
+  inst_size=$(cat "${BT}"/src/inst_map.src | wc -c)
 
   # inst_file is considered stale if older 
   # than 1 week, or smaller than 200 bytes.  
