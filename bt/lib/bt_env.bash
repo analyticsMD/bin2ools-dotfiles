@@ -4,6 +4,13 @@
 BT="${HOME}/.bt"
 export BT="${BT}"
 
+to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+
+# Make sure there's a debug function.
+[[ "$(type -t to_debug)" == "function" ]] || {
+  echo >&2 "WARNING: Core function: 'to_debug' not sourced."
+}
+
 # DEBUGGING -- Can be set per component, or globally, here.
 #BT_DEBUG=env,flow
 
@@ -19,34 +26,189 @@ get_os() { uname -a | awk '{print $1}' ;}
 # ----------------------------------------------------------------
 
 export BT="${HOME}/.bt"
-export BT_CACHE="${BT}/cache"
+[[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
+
+
+# Establish vars that comprise the env state.
+#
+env_state()  { 
+
+  #include api
+  export BT_USR="$(get_usr)"
+  # note: used for assertions, derived from 'bt_peek'.
+  export BT_GUILD="NONE"
+
+  # set the account file.
+  AWS_CREDS_DEFAULT="${HOME}/.aws/bt_creds"
+  AWS_CFG_DEFAULT="${HOME}/.aws/bt_config"
+
+  # set default aws configs.
+  [[ -z "${BT_ACCOUNT}"            || \
+     "${BT_ACCOUNT}" == "NONE"     || \
+     "${BT_ACCOUNT}" == "qa"       || \
+     "${BT_ACCOUNT}" == "prod"     || \
+     "${BT_ACCOUNT}" == "identity" ]] && { 
+    
+    AWS_CREDS="${AWS_CREDS_DEFAULT}" 
+    AWS_CFG="${AWS_CFG_DEFAULT}" 
+  }
+
+  #  Testing, for now.
+  AWS_CREDS="${AWS_CREDS_DEFAULT}.${BT_ACCOUNT}" 
+  AWS_CFG="${AWS_CFG_DEFAULT}.${BT_ACCOUNT}" 
+  to_debug env echo AWS_CFG: "${AWS_CFG}"
+  to_debug env echo AWS_CREDS: "${AWS_CREDS}"
+
+  # sso 
+  export QV_REGION=us-west-2
+         QV_URL=https://qventus.awsapps.com/start
+
+  # settings
+  export BT_SETTINGS="quiet,autologin"
+  export AWS_CONFIG_FILE="${HOME}/.aws/bt_config"
+  export AWS_SHARED_CREDENTIALS_FILE="${HOME}/.aws/bt_creds"
+
+}
+
+env_state
+to_debug flow && sleep 1 && echo env:state
+
+
+env_cache() { 
+
+  [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
+  declare -a files=( ${@:1} )
+  
+  umask 0077
+
+  [[ ! -d "${BT_CACHE}" ]] && { 
+  export BT_CACHE="${BT}/cache"
+  mkdir -p ${BT_CACHE} && export BT_CACHE=${BT_CACHE}
+  to_debug cche echo "cache dir: ${BT}/cache"
+
+  # copy paths passed in.
+  for FILE in ${files[@]}; do 
+    to_debug cche echo copying "${FILE##*/} to ${BT_CACHE}"
+    [[ -f "${FILE}" ]] && { 
+        caching ${FILE} 
+        cp "${FILE}" "${BT_CACHE}/${FILE##*/}"
+    } || { 
+      echo "${FILE##*/} is not a file, or could not be copied."
+    }
+  done
+
+  umask 0022
+
+  }
+}  
+
+env_cache 
+to_debug flow && sleep 1 && echo env:cache
+
+env_init() { 
+
+  # Initialize our most important ENV vars:
+
+  # BT:
+  [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
+  to_deploy env echo "env:init:BT ${BT}"
+
+  [[ -z "${AWS_CONFIG_FILE}" ]] && { echo "No aws config. Exiting..." ;}
+
+  # ROLE, TEAM, ACCOUNT.
+  # if not set, check cache and profiles.
+  ARGV="${1:-qventus}"
+  # check ~/.aws/bt_config 
+  # This file is an authority, and can be recreated.
+  role="$(cat "${AWS_CONFIG_FILE}"                           | \
+          perl -nle "print if s/(${ARGV}\]|role_arn.*)/\1/;" | \
+          grep -EA 1 "${ARGV}\]" | tail -n 1                 | \
+          perl -nle 'print if s/.*qv\-gbl\-([\w_\-]+)/\1/'  )"
+
+  # if request is not valid, report an error. 
+  [[ -z "${role}" || "${role}" = *NONE* ]] && { 
+    echo -e "${RED}FATAL${NC}: \"${ARGV}\" is not a configured destination."
+    echo -e "Try rebuilding your aws config by running \"${BLUE}profiles${NC}\"".
+    return 0
+  }
+
+  [[ "${role}" == "qventus" ]] && {  
+
+    # need to validate BT_TEAM var a bit further.
+    [[ -n "${BT_TEAM}" || ! "${BT_TEAM}" = *NONE* ]] && { 
+      export BT_TEAM="${BT_TEAM}"
+    } || { 
+      # team var not proper.  check team cache.
+      [ -f "${BT_CACHE}/team_info" ] && { 
+        team="$(cat "${BT_CACHE}/${BT_TEAM}")"
+        [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
+          # cache worked.
+          BT_TEAM="${team}" 
+          export BT_TEAM="${BT_TEAM}"
+        } || { 
+          # cache did not work. Warn the user to fix the problem.
+          rm -rf "${BT_CACHE}/team_info"
+          echo "----------------------------" 
+          echo "FATAL: team not set." 
+          echo "Please run 'profiles' again."
+          echo "From the command line."
+          echo "----------------------------" 
+        }
+      } || { 
+        # cache not present. Populate.    
+        echo "${BT_TEAM}" > "${BT_CACHE}/team_info"
+      }
+    }
+  }
+    
+  # BT_ACCOUNT:   
+  # use defaults if nothing explicitly passed in. 
+  [[ "${role}" == "qventus" ]] && { export BT_ACCOUNT=prod && return ;} 
+  # account needs more vetting. 
+  declare -a ROLE
+  ROLE=( $(echo "${role}" | tr '-' ' ') )  
+  to_debug env echo ROLE1: "${ROLE[0]}" ROLE2: "${ROLE[1]}"
+  [[ "${#ROLE[@]}" -ne 2 ]] && {
+    echo -e "${RED}FATAL${NC}: ROLE: \"${role}\" does not seem to have a valid format."  
+    echo -e "It must be of the form ${BLUE}<account>-<team>${NC}, e.g. \"prod-dp\"."
+  }
+}
+    #[[ -z "${BT_ACCOUNT}" || -z "${BT_TEAM}" ]] && { 
+    #[[ "${BT_ROLE}" = *NONE* ]] || \
+    #[[ "${BT_ACCOUNT}"  = *NONE*    ]] || \
+    #[[ "${BT_ROLE}"     = *NONE*    ]] && { "${@:1}" == "" } && {
+    # use qventus as our default.
+  #  [[ "${BT_ACCOUNT}" = *NONE* || -z "${BT_ACCOUNT}" ]]   && \
+  #    DEFAULT=qventus 
+  #    BT_ROLE="$(cat "${AWS_CONFIG_FILE}"                     | \
+  #      perl -nle "print if s/(${DEFAULT}\]|role_arn.*)/\1/;" | \
+  #      grep -EA 1 "${DEFAULT}\]" | tail -n 1                 | \
+  #      perl -nle 'print if s/.*qv\-gbl\-([\w_\-]+)/\1/'")"
+  #}
+
+
+env_init
+to_debug flow && sleep 1 && echo env:init
+
+
 
 env_fuzz() { 
+
   export AWS_FUZZ_USE_CACHE=yes                     \
          AWS_FUZZ_PRIVATE_IP=true                   \
          AWS_FUZZ_USER="${USER}"                    \
          AWS_FUZZ_CACHE_EXPIRY=0                    \
          AWS_FUZZ_SSH_COMMAND_TEMPLATE="ssm {host}" \
          AWS_FUZZ_REGIONS="${AWS_REGION}" 
-}
+
+} 
 
 env_fuzz
-
 to_debug flow && sleep 1 && echo env:fuzz 
-
-umask 0077
-[[ ! -d "${BT_CACHE}" ]] && mkdir -p "${BT_CACHE}"
-export BT_CACHE="${BT}/cache"
-umask 0022
 
 # ---------------------------------------------------------
 # dirs, vars, & libs.
 # ---------------------------------------------------------
-
-# Make sure there's a debug function.
-[[ "$(type -t to_debug)" == "function" ]] || {
-  echo >&2 "WARNING: Core function: 'to_debug' not sourced."
-}
 
 
 
@@ -62,76 +224,9 @@ get_usr() {
 
 
 
-
 # ---------------------------------------------------------
 # libs
 # ---------------------------------------------------------
-
-# Establish vars that show the env state.
-#
-env_state()  { 
-
-  include api
-  export BT_USR="$(get_usr)"
-  env_init  # sets BT_ROLE, BT_ACCOUNT, BT_TEAM
-  # note: used for assertions, derived from 'bt_peek'.
-  export BT_GUILD="NONE"
-
-  # set the account file.
-  AWS_CREDS_DEFAULT="${HOME}/.aws/bt_creds"
-  AWS_CFG_DEFAULT="${HOME}/.aws/bt_config"
-
-  # set default aws configs.
-  [[ -z "${BT_ACCOUNT}"            || \
-     "${BT_ACCOUNT}" == ""         || \
-     "${BT_ACCOUNT}" == "qa"         || \
-     "${BT_ACCOUNT}" == "prod"     || \
-     "${BT_ACCOUNT}" == "identity" ]] && { 
-     
-    AWS_CREDS="${AWS_CREDS_DEFAULT}" 
-    AWS_CFG="${AWS_CFG_DEFAULT}" 
-  }
-
-  #  Testing, for now.
-  #  AWS_CREDS="${AWS_CREDS_DEFAULT}.${BT_ACCOUNT}" 
-  #  AWS_CFG="${AWS_CFG_DEFAULT}.${BT_ACCOUNT}" 
-  
-  export BT_CREDS="${AWS_CREDS}" BT_CONFIG="${AWS_CFG}"
-
-  # sso 
-  export QV_REGION=us-west-2
-         QV_URL=https://qventus.awsapps.com/start
-
-  # settings
-  export BT_SETTINGS="quiet,autologin"
-  export BT_DEBUG=""
-  export AWS_CONFIG_FILE="${HOME}/.aws/bt_config"
-  export AWS_SHARED_CREDENTIALS_FILE="${HOME}/.aws/bt_creds"
-
-}
-
-env_state
-to_debug flow && sleep 1 && echo env:state
-
-
-env_cache() { 
-
-  [[ -e "${BT}/cache" && ! -d "${BT}/cache" ]] && { 
- 
-    echo "FATAL: BT_CACHE is not a dir." && read -n1 && exit 1
-  } 
-  [[ ! -d "${BT}/cache" ]] && {
-      umask 0077
-  
-      mkdir -p "${BT}/cache"
-      umask 0022 
-  } 
-
-}
-
-env_cache
-to_debug flow && sleep 1 && echo env:cache
-
 
 
 # SANITY FUNCTIONS
@@ -147,17 +242,15 @@ env_sanity() {
     echo -ne     "This script cannot be run as root.\n"
     echo -ne     "Please run as your regular user.  \n"
     echo -ne     "----------------------------------\n\n"
-    read -n1
-    exit 1
+    read -r -n1
+    return 1
   }
 
   # sso and team state.
-  [[ -n "${BT_USR}" && -n "${BT_TEAM}" ]] || { 
-    echo -ne "FATAL: Could not find critical variables: \n"
-    echo -ne "TEAM: ${BT_TEAM}\nUSR: ${USR}\n" 
-    read -n1
-    exit 1
-  }
+  [[ -z "${BT_USR}" && "${BT_OS}" == "Linux" ]] && { 
+    echo -ne "WARN: Could not find critical variables: "
+    echo -ne "${RED}USR${NC}\n" 
+  } 
 
   #debug BINTOOLS: ${BT}\nTEAM:     ${BT_TEAM}\nAWS_ENV:    \n"$(env | grep AWS_)"
 
@@ -381,8 +474,6 @@ new_session() {
 ## Qventus has a lot of infrastructure in AWS. This library
 ## contains streamlined functions to make that environment
 ## is easy to work with. 
-
-#to_debug() { [[ "${BT_DEBUG}" =~ ${1} ]] && >&2 $@:2 ;}
 
 # Set and unset AWS_PROFILE.
 # --------------------------

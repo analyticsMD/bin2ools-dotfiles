@@ -25,7 +25,7 @@ mysql_help() {
   echo "mysql client help here."
 } 
 
-var_init   # get vars.
+env_init   # get vars.
 
 # expects a login.
 get_forwarder() { 
@@ -41,17 +41,17 @@ get_forwarder() {
   this="${1:-NONE}"
   source "${BT}"/lib/arr
   # look up cluster info.
-  #debug find_in_rds "${this}"
+  #to_debug rds find_in_rds "${this}"
   stats="$(find_in_rds "${this}")" 
 
-  #debug stats: $stats  
+  to_debug rds echo stats: $stats  
   h="$(echo "${stats}" | cut -d'%' -f 1)"
   i="$(echo "${stats}" | cut -d'%' -f 2)"
   t="$(echo "${stats}" | cut -d'%' -f 3)"
   p="$(echo "${stats}" | cut -d'%' -f 4)"
   e="$(echo "${stats}" | cut -d'%' -f 5)"
 
-  to_debug echo -ne "h: ${h}\ni: ${i}\nt: ${t}\np: ${p}\ne: ${e}\n"
+  to_debug rds echo -ne "h: ${h}\ni: ${i}\nt: ${t}\np: ${p}\ne: ${e}\n"
   [[ -z "${e}" ]] && { 
     echo "FATAL: Could not get variables for cluster ${this}."
     return 1
@@ -71,12 +71,11 @@ get_forwarder() {
 
 split_rds_args() { 
 
-  #BT_DEBUG=yes
   declare -a args=( "${@}" )  # all passed-in args
   declare -a rds_args=()    # rds args (before the -- )
   declare -a mysql_args=()  # mysql args (after the -- ) 
-  to_debug echo declare -p "${rds_args[@]}"
-  to_debug echo declare -p "${mysql_args[@]}"
+  to_debug rds echo declare -p "${rds_args[@]}"
+  to_debug rds echo declare -p "${mysql_args[@]}"
 
   cluster="${args[0]}"  # first arg (always the cluster name)
   div="$(arg_split "--" "${args[@]:1}")" # position of divider arg ( -- )
@@ -155,7 +154,7 @@ get_mysql_args() {
   shopt -u nocasematch
 
   while (( "${#@}" )); do
-    debug echo "now: ${1}"  
+    to_debug rds echo "now: ${1}"  
     case "${1}" in
   
       # show usage menu
@@ -421,7 +420,7 @@ get_iam_token() {
 
   [[ -z "${TOKEN}" ]] && warn "WARNING: NO TOKEN."
   
-  debug echo TOKEN:
+  to_debug rds echo TOKEN:
   echo "${TOKEN}"
 }
  
@@ -437,9 +436,8 @@ reprocess_mysql_args() {
   declare -a mysql_args
   mysql_args=( "${@}" )
 
-  #BT_DEBUG=yes
   # NOTE: This includes decoding in-line SQL.
-  debug printf "mysql flag: |%s|\n" "${mysql_args[@]}"
+  to_debug rds printf "mysql flag: |%s|\n" "${mysql_args[@]}"
   
   # reparse mysql flags
   declare -a cfg_args
@@ -474,7 +472,7 @@ reprocess_mysql_args() {
       (( i++ ))
   done
   
-  debug echo cfg_args: "${cfg_args[@]@A}" 
+  to_debug rds echo cfg_args: "${cfg_args[@]@A}" 
   echo "${cfg_args[@]@A}" 
 }  
 
@@ -487,7 +485,7 @@ repoll() {
   p=${1}
   
   TICKS=
-  debug p: "${p}" 
+  to_debug rds p: "${p}" 
   while ! nc -z 127.0.0.1 "${p}" >/dev/null 2>&1; do
     ((TICKS++)) 
     sleep 0.1

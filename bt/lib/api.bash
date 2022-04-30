@@ -109,10 +109,11 @@ wipe () {
 to_debug flow && sleep 1 && echo api:wipe
 
 check_login_status() { 
+
+  to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+
   to_debug flow && sleep 1 && echo api:autologin.check.loader
-  . ${BT}/lib/bt_load
-  . ${BT}/lib/main.sh
-  to_debug flow && sleep 1 && echo api:autologin.check.main
+  #to_debug flow && sleep 1 && echo api:autologin.check.main
 
   [[ "${BT_ACCOUNT}" == "NONE" || \
      "${BT_TEAM}"    == "NONE" ]] && {
@@ -159,8 +160,6 @@ to_debug flow && sleep 1 && echo api:check_login_status
 # unattended login
 autologin() { 
   echo -ne "LOGIN: "
-  . ./${BT}/loader.sh
-  . ${BT}/lib/main.sh
 
   to_debug flow && sleep 1 && echo api:autologin
   env_init

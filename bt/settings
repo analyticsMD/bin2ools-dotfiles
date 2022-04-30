@@ -3,46 +3,57 @@
 # ----------------------------------------------
 # Behavioral settings for components in bintools. 
 
-export BT_DEBUG=stgs
-to_debug() { [[ "${BT_DEBUG}" =~ $1 ]] && >&2 "${@:2}" ;}
+# loader.sh - NOTE: We set LOADER_ACTIVE to avoid 
+# being fodder for the meat grinder....  
+
+export BT="${HOME}/.bt"
+
+if [[ -z "${LOADER_ACTIVE}" || "${LOADER_ACTIVE}" == false ]]; then
+
+  # loader config
+  . ${BT}/lib/loader.sh  
+  loader_addpath "${BT}/lib*"
+
+  # main script(s):
+  includex bt_load main_load
+fi
+
+to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
 export BT_SETTINGS=quiet 
 to_debug stgs && sleep 1 && echo stgs o
-
-
-# loader config
-export BT="${HOME}/.bt"
-. ${BT}/lib/bt_load
-to_debug stgs && sleep 1 && echo stgs..
 
 # shellcheck disable=SC1090,SC1094 
 [[ "${BASH_VERSION:0:1}" -ne 5 ]] && { 
   echo "WARNING: unsupported shell spawned: ${BASH_VERSION}" && exit 1
 }
-to_debug stgs && sleep 1 && echo stgs...
 
 # -----------------------------------------------------------------
 # PATH SETTINGS
 # -----------------------------------------------------------------
 
 [[ ! -f "${BT}"/cache/path_info ]] && {
+  to_debug stgs && sleep 1 && echo stgs:path_info
   "${BT}"/utils/path -s 2>/dev/null | tee ${BT}/cache/path_info 
 }
 
+
+to_debug stgs && sleep 1 && echo stgs:source path
 source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 
-to_debug stgs && sleep 1 && echo stgs....
 
 # -----------------------------------------------------------------
 # ALIASES
 # -----------------------------------------------------------------
 
-alias bt_init="export BT_ACCOUNT=prod BT=${HOME}/.bt && \
-               cd ${BT}                              && \
-               autologin ${BT_ACCOUNT}" 
-               
-alias bt_rebel_alliance=bt_init
+poetry="$(which poetry)"
+alias ssm_cmpl="src/ssm_cmpl"
+alias ssm="poetry run poe ssm_cmpl && poetry run poe ssm ${@}"
 
-to_debug stgs && sleep 1 && echo stgs.....
+alias rds="poetry run poe rds_cmpl && poetry run poe rds ${@}"
+alias rds_term="poetry run poe rds_cmpl && poetry run poe rds ${@}"
+alias dg="poetry run poe rds_cmpl && poetry run poe dg ${@}"
+
+to_debug stgs && sleep 1 && echo stgs:aliases
 
 # -----------------------------------------------------------------
 # ENV SETTINGS
@@ -52,17 +63,9 @@ to_debug stgs && sleep 1 && echo stgs.....
   source "${HOME}/.iterm2_shell_integration.bash"
 }
 
+env_init
 
-[ -z "${BT_TEAM}"    ] && {
-  BT_TEAM="$(perl -lne 'print if s/\[.*aws_team_([\w_-]+)\]/$1/' \
-  "${HOME}/.aws/bt_config")"
-  export BT_TEAM="${BT_TEAM}"
-
-}     
-[ -z "${BT_ACCOUNT}" ] && export BT_ACCOUNT="NONE"
-[ -z "${BT_ROLE}" ] && export BT_ROLE="NONE" 
-
-to_debug stgs && sleep 1 && echo stgs V
+to_debug stgs && sleep 1 && echo stgs 
 
 # -----------------------------------------------------------------
 # AWS LOGIN

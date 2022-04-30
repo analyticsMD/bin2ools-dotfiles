@@ -1,25 +1,28 @@
 #!/usr/bin/env /usr/local/bin/bash
 
+# main.sh is where loaded libraries are defined.
+
 # Loader config.  This file contains 
 # our loader's configuration for bintools.
-# main.sh is where loaded libraries are defined.
-# export BT_DEBUG=stgs,flow
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+export BT_DEBUG=stgs,flow
+to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 ${@:2} ;}
 
-export BT=${HOME}/.bt
-. ${BT}/lib/loader.sh
-loader_addpath ${BT}/lib
+# Yes, this is how dad makes a living.
 to_debug flow && sleep 1  && echo bt_load .
 
-load ${BT}/lib/main.sh && {
+export BT=${HOME}/.bt
+
+load main.sh && {
   echo -ne "${GREEN}BT libs sourced.${NC}\n" || \
   echo -ne "${RED}lib load failed.${NC}\n"
 }
 
-#export BT_DEBUG=flow
 to_debug flow && sleep 1 && echo bt_load ..
 
-loader_finish
+# Do a thing, here. Taliesin Jaffe would approve.
+
 to_debug flow && sleep 1  && echo bt_load...
+#loader_finish # removes all loader paths. 
+
 
 

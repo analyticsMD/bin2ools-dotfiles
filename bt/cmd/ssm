@@ -25,7 +25,7 @@ declare -A inst_map
 source <(cat "${BT}/src/inst_map.src")
 #shopt -s extglob
 
-export BT_DEBUG=ssm
+#export BT_DEBUG=ssm
 [[ -z "${hn}" || "${hn}" == "NONE" ]] && { 
   #export=$(hn="${1}")
   ip=$(aws-fuzzy --ip-only)
