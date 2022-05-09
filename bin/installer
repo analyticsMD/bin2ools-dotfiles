@@ -23,8 +23,8 @@ sudo_init() {
 
   mkdir -p "${HOME}/tmp"
 
-  export HOMEBREW_NO_INSTALL_CLEANUP=yes
-  export HOMEBREW_NO_ENV_HINTS=yes
+  #export HOMEBREW_NO_INSTALL_CLEANUP=yes
+  #export HOMEBREW_NO_ENV_HINTS=yes
 
   if [ -z "$INTERACTIVE" ]; then
     return
@@ -43,7 +43,7 @@ sudo_init() {
       read -rsp "$MSG" SUDO_PASSWORD
       #read -rsp "--> Enter your password (for sudo access):" SUDO_PASSWORD
       echo
-      if sudo "${ --validate --stdin 2>/dev/null}" <<<"$SUDO_PASSWORD"; then
+      if { sudo --validate --stdin ;} 2>/dev/null <<<"$SUDO_PASSWORD"; then
         break
       fi
 
@@ -78,7 +78,7 @@ echo BASH VERSION: $BASH_VERSION
 #/ Install development dependencies on macOS.
 #. set -e
 
-[[ "$1" = "--debug" || -o xtrace ]] && STRAP_DEBUG="1"
+[[ "$1" = "--debug" || -o xtrace ]] && DEBUG="1"
 SUCCESS=""
 
 sudo_askpass() {
@@ -102,7 +102,7 @@ cleanup() {
     if [ -z "$DEBUG" ]; then
       echo "!!! Run '$0 --debug' for debugging output." >&2
       echo "!!! If you're stuck: file an issue with debugging output at:" >&2
-      echo "!!!   $STRAP_ISSUES_URL" >&2
+      echo "!!!   $ISSUES_URL" >&2
     fi
   fi
 }
@@ -115,34 +115,34 @@ sudo_refresh() { clear_debug; [ -n "$SUDO_ASKPASS" ] && \
 
 #sudo_refresh
 
-trap "cleanup" EXIT
+#trap "cleanup" EXIT
 
-if [ -n "$STRAP_DEBUG" ]; then
+if [ -n "$DEBUG" ]; then
   set -x
 else
-  STRAP_QUIET_FLAG="-q"
-  Q="$STRAP_QUIET_FLAG"
+  QUIET_FLAG="-q"
+  Q="$QUIET_FLAG"
 fi
 
 STDIN_FILE_DESCRIPTOR="0"
-[ -t "$STDIN_FILE_DESCRIPTOR" ] && STRAP_INTERACTIVE="1"
+[ -t "$STDIN_FILE_DESCRIPTOR" ] && INTERACTIVE="1"
 
 # CUSTOM_HOMEBREW_TAP=
 # CUSTOM_BREW_COMMAND=
 
 QV_GITHUB_USER=analyticsmd
-STRAP_ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
+ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
 
 # We want to always prompt for sudo password at least once rather than doing
 # root stuff unexpectedly.
 #sudo --reset-timestamp
 
-reset_debug() { [ -n "$STRAP_DEBUG" ] && set -x ;} 
+reset_debug() { [ -n "$DEBUG" ] && set -x ;} 
 
-abort() { STRAP_STEP="";   echo "!!! $*" >&2; exit 1; }
-log()   { STRAP_STEP="$*"; sudo_refresh; echo "--> $*"; }
-logn()  { STRAP_STEP="$*"; sudo_refresh; printf -- "--> %s " "$*"; }
-logk()  { STRAP_STEP="";   echo "OK"; }
+abort() { STEP="";   echo "!!! $*" >&2; exit 1; }
+log()   { STEP="$*"; sudo_refresh; echo "--> $*"; }
+logn()  { STEP="$*"; sudo_refresh; printf -- "--> %s " "$*"; }
+logk()  { STEP="";   echo "OK"; }
 escape() { printf '%s' "${1//\'/\'}" ;}
 
 # create symlink shortcut. 
@@ -159,7 +159,7 @@ run_dotfile_scripts() {
       for i in "$@"; do
         if [ -f "$i" ] && [ -x "$i" ]; then
           log "Running dotfiles $i:"
-          if [ -z "$STRAP_DEBUG" ]; then
+          if [ -z "$DEBUG" ]; then
             "$i" 2>/dev/null
           else
             "$i"
@@ -217,9 +217,9 @@ brew_inst() {
     echo -ne "${@:1} is already installed. Skipping...\n"
     return
   elif grep -qE "$last" ${HOME}/.outdated; then 
-      brew upgrade "${@:1:$#}"; 
+    brew upgrade -q "${@:1:$#}" >/dev/null 2>&1;  
   else 
-      brew install "${@:1:$#}"; 
+    brew install -q "${@:1:$#}" >/dev/null 2>&1; 
   fi
 }
 
@@ -272,14 +272,15 @@ logk
 # Update Homebrew.
 export PATH="$HOMEBREW_PREFIX/bin:$PATH"
 logn "Updating Homebrew:"
-brew update --quiet
+#brew update --quiet
 logk
 
 logn "Installing Homebrew taps and extensions..."
-brew tap "homebrew/cask"
-brew tap "homebrew/core"
-brew tap "homebrew/services"
+brew tap homebrew/cask
+brew tap homebrew/core
+brew tap homebrew/services
 logk
+
 
 echo "Installing minimal deps for github repo checkouts"
 brew_inst bash 
@@ -287,6 +288,7 @@ brew_inst coreutils
 brew_inst jq 
 brew_inst perl 
 brew_inst zlib 
+brew_inst openssl@1.1
 brew_inst xz 
 brew_inst tree 
 brew_inst pstree 
@@ -301,22 +303,20 @@ brew_inst poetry
 brew tap microsoft/git
 brew_inst git-credential-manager-core
 
-#logn "Installing ssm_plugin and awscliv2\n\n"
-#brew tap syncdk/aws-session-manager-plugin
+echo -ne "Installing ssm_plugin and awscliv2\n\n"
 brew_inst awscli@2 
-brew_inst --cask session-manager-plugin 
-sleep 0.1
-logk
+brew_inst session-manager-plugin 
+#logk
 
 # clean up outdated file.
 #rm ${HOME}/.outdated
 
-/usr/local/bin/bash -c $(cat <<++
+#/usr/local/bin/bash -c $(cat <<'++'
 
 BT="${HOME}/.bt"
 
 # functions for turning off debug for use when handling the user password
-reset_debug() { [ -n "$STRAP_DEBUG" ] && set -x ;} 
+reset_debug() { [ -n "$_DEBUG" ] && set -x ;} 
 clear_debug() { set +x ;}
 sudo_refresh() { clear_debug; [ -n "$SUDO_ASKPASS" ] && \
     { sudo --askpass --validate ;} || sudo_init;  reset_debug
@@ -342,7 +342,8 @@ GIT_EMAIL="${USER}@qventus.com"
 GITHUB_USER="$(git config --list | \
               grep user.email | perl -pe 's/.*\+([\w+_-]+)\@.*/$1/')"
 
-GITHUB_TOKEN=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
+#GITHUB_TOKEN=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
+GITHUB_TOKEN=
 
 # CUSTOM_HOMEBREW_TAP=
 # CUSTOM_BREW_COMMAND=
@@ -368,7 +369,7 @@ fi
 if ! git config push.default >/dev/null; then
   git config --global push.default simple
 fi
-echo ..
+
 # Setup GitHub HTTPS credentials.
 if git credential-osxkeychain 2>&1 | grep $Q "git.credential-osxkeychain"
 then
@@ -391,7 +392,7 @@ then
 fi
 logk
 
-echo ...
+
 # Setup dotfiles
 if [ -n "$QV_GITHUB_USER" ]; then
   DOTFILES_URL="https://github.com/$QV_GITHUB_USER/bin2ools-dotfiles"
@@ -416,19 +417,19 @@ fi
 [[ ! -L "${HOME}/.bt" ]] && { 
   ln -sf "${HOME}/.bin2ools-dotfiles/bt" "${HOME}/.bt"
 }
-echo ....
+
 # source bt env
 export BT="${HOME}/.bt"
 . ${BT}/settings
 
-echo .....
+
 # Setup Brewfile
 if [ -n "$QV_GITHUB_USER" ] && { 
   [ ! -f "$HOME/.Brewfile" ] || \
   [ "$HOME/.Brewfile" -ef "$HOME/.bin2ools-dotfiles/Brewfile" ]; 
 }; then
   HOMEBREW_BREWFILE_URL="https://github.com/$QV_GITHUB_USER/bin2ools-dotfiles.git"
-  echo V
+
   if git ls-remote "$HOMEBREW_BREWFILE_URL" &>/dev/null; then
     log "Fetching $QV_GITHUB_USER/bin2ools-dotfiles from GitHub:"
     if [ ! -d "$HOME/.bin2ools-dotfiles" ]; then
@@ -444,7 +445,7 @@ if [ -n "$QV_GITHUB_USER" ] && {
     ln -sf ~/.bin2ools-dotfiles/Brewfile ~/.Brewfile
     logk
   fi
-  echo VV
+  
 fi
 
 
@@ -499,7 +500,7 @@ ${BT}/gen/profiles.gen
 logk
 
 # for bash & zsh - autocomplete for pipx modules.
-eval "$(register-python-argcomplete pipx)"
+eval "$(register-python-argcomplete pipx 2>/dev/null)"
 
 # cleanup, aisle 9.
 [ -e "${HOME}/.bin2ools-dotfiles/bt/.bt" ] && {
@@ -519,7 +520,7 @@ log "Your system is now bootstrapped!"
 # check for github access (early on).
 # ssh git@github.com
 
-++
+#'++'
 
-)
+#)
 
