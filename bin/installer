@@ -23,8 +23,8 @@ sudo_init() {
 
   mkdir -p "${HOME}/tmp"
 
-  HOMEBREW_NO_INSTALL_CLEANUP=yes
-  HOMEBREW_NO_ENV_HINTS=yes
+  export HOMEBREW_NO_INSTALL_CLEANUP=yes
+  export HOMEBREW_NO_ENV_HINTS=yes
 
   #if [ -z "$STRAP_INTERACTIVE" ]; then
   #  return
@@ -132,19 +132,6 @@ fi
 
 STDIN_FILE_DESCRIPTOR="0"
 [ -t "$STDIN_FILE_DESCRIPTOR" ] && STRAP_INTERACTIVE="1"
-
-# Set by web/app.rb
-STRAP_NAME="$(git config --list                  | \
-                  grep user.name                 | \
-                  perl -pe 's/.*\=([\w\ ]+)/$1/' | \
-                  head -n 1)"
-
-STRAP_EMAIL="${USER}@qventus.com"
-
-STRAP_GITHUB_USER="$(git config --list | \
-                     grep user.email | perl -pe 's/.*\+([\w+_-]+)\@.*/$1/')"
-
-STRAP_GITHUB_TOKEN=
 
 
 # CUSTOM_HOMEBREW_TAP=
@@ -282,8 +269,6 @@ fi
 
 
 
-
-
 # Download Homebrew.
 export GIT_DIR="$HOMEBREW_REPOSITORY/.git" GIT_WORK_TREE="$HOMEBREW_REPOSITORY"
 git init $Q
@@ -327,7 +312,7 @@ brew_inst poetry
 brew tap microsoft/git
 brew_inst git-credential-manager-core
 
-# uncomment if needed.
+
 echo "Installing ssm_plugin and awscliv2"
 brew tap "syncdk/aws-session-manager-plugin"
 brew_inst awscli@2 
@@ -337,18 +322,39 @@ rm ${HOME}/.outdated
 
 
 
+
 # Setup Git configuration.
+
+# Set by web/app.rb
+STRAP_NAME="$(git config --list                  | \
+                  grep user.name                 | \
+                  perl -pe 's/.*\=([\w\ ]+)/$1/' | \
+                  head -n 1)"
+
+GIT_EMAIL="${USER}@qventus.com"
+
+GITHUB_USER="$(git config --list | \
+                     grep user.email | perl -pe 's/.*\+([\w+_-]+)\@.*/$1/')"
+
+GITHUB_TOKEN=
+
+BASH5=/usr/local/bin/bash -c
+
+# run bash5
+${BASH5} <<END_OF_SCRIPT
+
 logn "Configuring Git:"
-if [ -n "$STRAP_GIT_NAME" ] && ! git config user.name >/dev/null; then
+
+if [ -n "$GIT_NAME" ] && ! git config user.name >/dev/null; then
   git config --global user.name "$STRAP_GIT_NAME"
 fi
 
-if [ -n "$STRAP_GIT_EMAIL" ] && ! git config user.email >/dev/null; then
-  git config --global user.email "$STRAP_GIT_EMAIL"
+if [ -n "$GIT_EMAIL" ] && ! git config user.email >/dev/null; then
+  git config --global user.email "$GIT_EMAIL"
 fi
 
-if [ -n "$STRAP_GITHUB_USER" ] && [ "$(git config github.user)" != "$STRAP_GITHUB_USER" ]; then
-  git config --global github.user "$STRAP_GITHUB_USER"
+if [ -n "$GITHUB_USER" ] && [ "$(git config github.user)" != "$STRAP_GITHUB_USER" ]; then
+  git config --global github.user "$GITHUB_USER"
 fi
 
 # Squelch git 2.x warning message when pushing
@@ -503,4 +509,7 @@ chmod ug+x /usr/local/bin/bt
 
 # check for github access (early on).
 #ssh git@github.com
+
+END_OF_SCRIPT
+
 
