@@ -338,10 +338,7 @@ GITHUB_USER="$(git config --list | \
 
 GITHUB_TOKEN=
 
-BASH5=/usr/local/bin/bash -c
-
-# run bash5
-${BASH5} <<END_OF_SCRIPT
+/usr/local/bin/bash <<END_OF_SCRIPT
 
 logn "Configuring Git:"
 
