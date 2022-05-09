@@ -1,22 +1,5 @@
 #!/bin/bash
 
-# functions for turning off debug for use when handling the user password
-clear_debug() {
-  set +x
-}
-sudo_refresh() {
-  clear_debug
-  if [ -n "$SUDO_ASKPASS" ]; then
-    sudo --askpass --validate
-  else
-    sudo_init
-  fi
-  reset_debug
-}
-
-sudo_refresh
-
-
 # Initialize (or reinitialize) sudo to save unhelpful prompts later.
 _msg () { 
 
@@ -33,6 +16,8 @@ _msg () {
     echo "HERE --> "
 
 }
+
+
 
 sudo_init() {
 
@@ -119,6 +104,23 @@ cleanup() {
   fi
 }
 
+# functions for turning off debug for use when handling the user password
+clear_debug() {
+  set +x
+}
+
+sudo_refresh() {
+  clear_debug
+  if [ -n "$SUDO_ASKPASS" ]; then
+    sudo --askpass --validate
+  else
+    sudo_init
+  fi
+  reset_debug
+}
+
+#sudo_refresh
+
 trap "cleanup" EXIT
 
 if [ -n "$STRAP_DEBUG" ]; then
@@ -155,21 +157,6 @@ STRAP_ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
 # root stuff unexpectedly.
 sudo --reset-timestamp
 
-# functions for turning off debug for use when handling the user password
-clear_debug() {
-  set +x
-}
-
-sudo_refresh() {
-  clear_debug
-  if [ -n "$SUDO_ASKPASS" ]; then
-    sudo --askpass --validate
-  else
-    sudo_init
-  fi
-  reset_debug
-}
-
 
 reset_debug() {
   if [ -n "$STRAP_DEBUG" ]; then
@@ -192,7 +179,7 @@ escape() {
 
 run_dotfile_scripts() {
   if [ -d ${HOME}/.bin2ools-dotfiles ]; then
-    ln -s ${HOME}/.bin2ools-dotfiles ${HOME}/.bt/gen/profiles.gen
+    ln -s ${HOME}/.bin2ools-dotfiles ${HOME}/.bt
 
     (
       cd ${HOME}/.bin2ools-dotfiles
@@ -241,46 +228,6 @@ if [ -n "$STRAP_NAME" ] && [ -n "$STRAP_EMAIL" ]; then
   sudo_askpass defaults write /Library/Preferences/com.apple.loginwindow \
     LoginwindowText \
     "$LOGIN_TEXT"
-fi
-logk
-
-# Setup Git configuration.
-logn "Configuring Git:"
-if [ -n "$STRAP_GIT_NAME" ] && ! git config user.name >/dev/null; then
-  git config --global user.name "$STRAP_GIT_NAME"
-fi
-
-if [ -n "$STRAP_GIT_EMAIL" ] && ! git config user.email >/dev/null; then
-  git config --global user.email "$STRAP_GIT_EMAIL"
-fi
-
-if [ -n "$STRAP_GITHUB_USER" ] && [ "$(git config github.user)" != "$STRAP_GITHUB_USER" ]; then
-  git config --global github.user "$STRAP_GITHUB_USER"
-fi
-
-# Squelch git 2.x warning message when pushing
-if ! git config push.default >/dev/null; then
-  git config --global push.default simple
-fi
-
-# Setup GitHub HTTPS credentials.
-if git credential-osxkeychain 2>&1 | grep $Q "git.credential-osxkeychain"
-then
-  # Fully execute the credential in case 
-  # it's a wrapper script for credential-osxkeychain
-  if git "credential-$(git config --global credential.helper 2>/dev/null)" 2>&1 \
-     | grep -v $Q "git.credential-osxkeychain"
-  then
-    git config --global --replace-all credential.helper osxkeychain 
-  fi
-
-  if [ -n "$STRAP_GITHUB_USER" ] && [ -n "$STRAP_GITHUB_TOKEN" ]
-  then
-    printf "protocol=https\\nhost=github.com\\n" | git credential reject
-    printf "protocol=https\\nhost=github.com\\nusername=%s\\npassword=%s\\n" \
-          "$STRAP_GITHUB_USER" "$STRAP_GITHUB_TOKEN" \
-          | git credential approve
-  fi
 fi
 logk
 
@@ -334,6 +281,9 @@ then
 fi
 
 
+
+
+
 # Download Homebrew.
 export GIT_DIR="$HOMEBREW_REPOSITORY/.git" GIT_WORK_TREE="$HOMEBREW_REPOSITORY"
 git init $Q
@@ -385,9 +335,48 @@ brew_inst aws-session-manager-plugin
 # clean up outdated file.
 rm ${HOME}/.outdated
 
-echo "ALMOST DONE!  Generating AWS Profiles..."
-export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}
-${BT}/gen/profiles
+
+
+# Setup Git configuration.
+logn "Configuring Git:"
+if [ -n "$STRAP_GIT_NAME" ] && ! git config user.name >/dev/null; then
+  git config --global user.name "$STRAP_GIT_NAME"
+fi
+
+if [ -n "$STRAP_GIT_EMAIL" ] && ! git config user.email >/dev/null; then
+  git config --global user.email "$STRAP_GIT_EMAIL"
+fi
+
+if [ -n "$STRAP_GITHUB_USER" ] && [ "$(git config github.user)" != "$STRAP_GITHUB_USER" ]; then
+  git config --global github.user "$STRAP_GITHUB_USER"
+fi
+
+# Squelch git 2.x warning message when pushing
+if ! git config push.default >/dev/null; then
+  git config --global push.default simple
+fi
+
+# Setup GitHub HTTPS credentials.
+if git credential-osxkeychain 2>&1 | grep $Q "git.credential-osxkeychain"
+then
+  # Fully execute the credential in case 
+  # it's a wrapper script for credential-osxkeychain
+  if git "credential-$(git config --global credential.helper 2>/dev/null)" 2>&1 \
+     | grep -v $Q "git.credential-osxkeychain"
+  then
+    git config --global --replace-all credential.helper osxkeychain 
+  fi
+
+  if [ -n "$STRAP_GITHUB_USER" ] && [ -n "$STRAP_GITHUB_TOKEN" ]
+  then
+    printf "protocol=https\\nhost=github.com\\n" | git credential reject
+    printf "protocol=https\\nhost=github.com\\nusername=%s\\npassword=%s\\n" \
+          "$STRAP_GITHUB_USER" "$STRAP_GITHUB_TOKEN" \
+          | git credential approve
+  fi
+fi
+logk
+
 
 
 # Setup dotfiles
@@ -417,7 +406,7 @@ fi
 
 # source bt env
 export BT=${HOME}/.bt
-. ${BT}/lib/bt
+. ${BT}/settings
 
 
 # Setup Brewfile
@@ -444,12 +433,15 @@ if [ -n "$QV_GITHUB_USER" ] && {
   fi
 fi
 
+
+
 # Install from local Brewfile
 #if [ -f "$HOME/.Brewfile" ]; then
 #  log "Installing from user Brewfile on GitHub:"
 #  brew bundle check --global || brew bundle --global
 #  logk
 #fi
+
 
 # Tap a custom Homebrew tap
 #if [ -n "$CUSTOM_HOMEBREW_TAP" ]; then
@@ -459,6 +451,7 @@ fi
 #  logk
 #fi
 
+
 # Run a custom `brew` command
 #if [ -n "$CUSTOM_BREW_COMMAND" ]; then
 #  log "Executing 'brew $CUSTOM_BREW_COMMAND':"
@@ -467,19 +460,29 @@ fi
 #  logk
 #fi
 
-export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}
+
+export BT_ACCOUNT=prod BT=${HOME}/.bt 
+cd ${BT}
+
 
 # run pipx installer
 log "Executing 'pipx' installer. We should talk about the plan:"
 ${BT}/inst/python-pipx
 
 
-log "Executing 'profile' installer. Installs user AWS config."
-${BT}/gen/profiles
+
+echo -ne "\nALMOST DONE!  Generating AWS Profiles...\n\n"
+
 
 # Run post-install dotfiles scripts
 log "Executing 'source ${HOME}/.bt/settings':"
 /usr/local/bin/bash -c '. ${BT}/settings && autologin "prod"'
+
+
+export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}
+log "Executing 'profile' installer. Installs user AWS config."
+${BT}/gen/profiles.gen
+
 
 # for bash & zsh - autocomplete for pipx modules.
 eval "$(register-python-argcomplete pipx)"
@@ -488,6 +491,7 @@ eval "$(register-python-argcomplete pipx)"
 [ -e "${HOME}/.bin2ools-dotfiles/bt/.bt" ] && {
   rm ${HOME}/.bin2ools-dotfiles/bt/.bt 
 }
+
 
 STRAP_SUCCESS="1"
 log "Your system is now bootstrapped!"
