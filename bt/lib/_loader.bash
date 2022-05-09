@@ -764,7 +764,7 @@ if [[ BASH_VERSINFO -ge 4 ]]; then
 		pushd "$1" >/dev/null || loader_fail "Failed to access directory: $1" loader_list "$@"
 		local r=1
 
-		if readarray -t LOADER_LIST < <(exec find -maxdepth 1 -xtype f "$LOADER_TEST_OPT" "$LOADER_REGEX_PREFIX$LOADER_FILE_EXPR" -printf %f\\n); then
+		if readarray -t LOADER_LIST < <(exec gfind -maxdepth 1 -xtype f "$LOADER_TEST_OPT" "$LOADER_REGEX_PREFIX$LOADER_FILE_EXPR" -printf %f\\n); then
 			LOADER_ABS_PREFIX=${PWD%/}/
 			r=0
 		fi
@@ -787,7 +787,7 @@ else
 
 			LOADER_ABS_PREFIX=${PWD%/}/
 			r=0
-		fi < <(exec find -maxdepth 1 -xtype f "$LOADER_TEST_OPT" "$LOADER_REGEX_PREFIX$LOADER_FILE_EXPR" -printf %f\\n)
+		fi < <(exec gfind -maxdepth 1 -xtype f "$LOADER_TEST_OPT" "$LOADER_REGEX_PREFIX$LOADER_FILE_EXPR" -printf %f\\n)
 
 		popd >/dev/null || loader_fail "Failed to change back to previous directory." loader_list "$@"
 		return "$r"

@@ -1,56 +1,19 @@
-#!/usr/local/bin/bash
+#!/usr/bin/env /usr/local/bin/bash
 
-export BT=${HOME}/.bt
-to_debug flow && sleep 1 && echo api:_
-
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
-#export BT_DEBUG=lgin
-
-
-# Set and unset AWS_PROFILE.
-# --------------------------
-# Uses the 'aws configure list-profiles' command for 
-# validation (also has auto-completion routines, which 
-# are a bit slow).
-#
-aws_profile() {
-  if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    
-    echo "aws_profile              <- print out current value"
-    echo "aws_profile PROFILE_NAME <- set PROFILE_NAME active"
-    echo "aws_profile --unset      <- unset the env vars"
-  elif [ -z "$1" ]; then
-    if [ -z "$AWS_PROFILE$AWS_DEFAULT_PROFILE" ]; then
-      echo "No profile is set"
-      return 1
-    else
-      echo "$AWS_PROFILE$AWS_DEFAULT_PROFILE"
-    fi
-  elif [ "$1" = "--unset" ]; then
-    AWS_PROFILE=
-    AWS_DEFAULT_PROFILE=
-    # needed because of https://github.com/aws/aws-cli/issues/5016
-    export -n AWS_PROFILE AWS_DEFAULT_PROFILE
-  else
-    # needed because of https://github.com/aws/aws-cli/issues/5546
-    if ! aws configure list-profiles | grep -s "$1"; then
-      echo "$1 is not a valid profile"
-      return 2
-    else
-      export AWS_PROFILE=$1 AWS_DEFAULT_PROFILE=$1
-    fi;
-  fi;
-}
-
-to_debug flow && sleep 1 && echo api:aws_prof
-
+to_debug flow && sleep 0.5 && echo api:start
+to_debug flow && echo api:perms
 
 # prove you have perms.
 perms() {
+  account="$(cat "${AWS_CONFIG_FILE}"                           | \
+             perl -nle "print if s/(${ARGV}\]|role_arn.*)/\1/;" | \
+             grep -E -A 1 "${ARGV}\]" | tail -n 1               | \
+             perl -nle 'print if s/\s*role_arn\s*\=\s*.*::([\w_\-]+)/\1/;')"
+
   login="$(aws sts get-caller-identity 2>/dev/null  | \
            jq -r '.Arn'                             | \
-           cut -d':' -f 5-7                         | \
-           perl -pe 's/(.*)\/[^\/]+/\1/')"
+           cut -d':' -f 5-6                         | \
+           cut -d'/' -f 1-2)"
   [ -z "$login" ] && { 
     echo -e Failed && return 1
   } || { 
@@ -58,14 +21,13 @@ perms() {
   }
 }
 
-to_debug flow && sleep 1 && echo api:perms
 
 get_account() {
   this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
 }
 
-to_debug flow && sleep 1 && echo api:perms
-to_debug lgin echo "id: ${ACCT_ID} ts: $ts secs: $t left: $T" 
+
+to_debug flow && echo api:regen_qv_stubs
 
 regen_qv_stub() { 
 
@@ -78,7 +40,8 @@ regen_qv_stub() {
     #stash_creds
 } 
 
-to_debug flow && sleep 1 && echo api:regen_qv_stubs
+
+to_debug flow && echo api:wipe
 
 # unset all sessions and settings.
 # --------------------------------
@@ -91,7 +54,7 @@ to_debug flow && sleep 1 && echo api:regen_qv_stubs
 wipe () { 
   #stash_creds  # broken. copies wrong file. 
   #cat "${BT}/cfg/bt_creds.ini" > ~/.aws/bt_creds
-  devops-sso-util logout  > /dev/null 2>&1
+  "${DEFAULT_AWSLIB}" logout  > /dev/null 2>&1
   # remove expired creds from cli, awsume caches
   rm -rf "${HOME}"/.aws/sso/cache/*
   rm -rf "${HOME}"/.aws/cli/cache/*
@@ -102,106 +65,156 @@ wipe () {
   unset AWSUME_PROFILE AWSUME_DEFAULT_PROFILE AWS_PROFILE AWS_DEFAULT_PROFILE
   # check we have no stale identities remaining.
   aws-whoami >/dev/null 2>&1 || echo "no identities left."
-  devops-sso-util check >/dev/null 2>&1
+  "${DEFAULT_AWSLIB}" check >/dev/null 2>&1
   echo "all cached sessions removed."
 }
 
-to_debug flow && sleep 1 && echo api:wipe
 
-check_login_status() { 
+to_debug flow && echo api:unset_profile
 
-  to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
-
-  to_debug flow && sleep 1 && echo api:autologin.check.loader
-  #to_debug flow && sleep 1 && echo api:autologin.check.main
-
-  [[ "${BT_ACCOUNT}" == "NONE" || \
-     "${BT_TEAM}"    == "NONE" ]] && {
-    to_err "bad ENV settings." && return 1
-    to_debug flow && sleep 1 && echo api:autologin.check.bad_vars1
-  } 
-  
-  [[ -z "${BT_ACCOUNT}" || \
-     -z "${BT_TEAM}"    ]] && {
-    to_err "bad ENV settings." && return 1
-    to_debug flow && sleep 1 && echo api:autologin.check.bad_vars2
-  } 
-
-  ACCT_ID="$(find_in_accounts "${BT_ACCOUNT}" | awk '{print $2}')"
-  
-  to_debug flow && sleep 1 && echo api:autologin.check.expires
-  ts="$(devops-sso-util check \
-      -a "${ACCT_ID}"       \
-      --role-name "${BT_ACCOUNT}-${BT_TEAM}" 2>&1 | \
-      perl -nle 'print if s/.*expiration: ([\w\-\: ]+)/$1/')"
-  t="$(echo "$ts" | ddiff -E -qf %S now)" 
-
-  [[ "${t}" -lt 59 ]] && { t=0 ;}
-
-  declare -a T=() 
-  for n in $(bc <<< "s=$t%60;h=$t/3600;m=($t-(h*3600)-s)/60;h;m;s"); do
-    T+=( "$n" ) 
-  done
-
-  X="$(printf "(%02d)h:(%02d)m:(%02d)s" "${T[0]}" "${T[1]}" "${T[2]}")"
-  #to_debug echo "ts:${ts} t:${t} T:${T} X:${X}"
-  to_debug flow && sleep 1 && echo api:autologin.check.post_expires
-
-  # role auth
-  [[ -n "${BT_ACCOUNT}" && "${t}" -gt 5 ]] && { 
-      echo "expires: ${GREEN}${X}${NC}" && return  
-    } || { 
-      echo "${RED}expired.${NC}" && return
-    }
+unset_profile() { 
+  ${BT}/cmd/assume --unset >/dev/null 2>&1
+  aws_profile --unset
+  unset AWSUME_PROFILE AWSUME_DEFAULT_PROFILE AWS_PROFILE AWS_DEFAULT_PROFILE
 }
 
-to_debug flow && sleep 1 && echo api:check_login_status
-  
+
+to_debug flow && echo api:autologin
+
 # unattended login
 autologin() { 
-  echo -ne "LOGIN: "
 
-  to_debug flow && sleep 1 && echo api:autologin
-  env_init
-  to_debug flow && sleep 1 && echo api:autologin:env_init..
-  
+  export AWS_CONFIG_FILE="${HOME}/.aws/bt_config"
+  export AWS_SHARED_CREDENTIAL_FILE="${HOME}/.aws/bt_creds"
+  #ACCT_ID="$(find_in_accounts "${BT_ACCOUNT}" | awk '{print $2}')"
+
+
   [[ "${BT_TEAM}" == "NONE" || \
       -z "${BT_TEAM}"       ]] && { 
      echo "Failed to find a Team. Please rerun ~/.bt/gen/profiles"
-     exit 1
+     return 1
   } 
-  
-  [[ "${BT_ACCOUNT}" == "NONE" || \
-      -z "${BT_ACCOUNT}"       ]] && { 
-     export BT_ACCOUNT="prod"  # default for now. 
-     export BT_ROLE="${BT_ACCOUNT}-${BT_TEAM}"
-  }
-  to_debug flow && sleep 1 && echo api:autologin.
 
-  status="$(check_login_status >2/dev/null)"  
+  env_init
+  to_debug flow && echo api:autologin:env_init.
+
+  # look for expired creds.
+  raw="$("${DEFAULT_AWSLIB}" check 2>&1)" 
+  to_debug lgin echo raw check output: "${raw}"
+  sso="$(echo "${raw}" | \
+      perl -nle 'print if s/.*(valid until [\w\-\:\ ]+|fix|expired).*/\1/')"
+  to_debug lgin echo sso: $sso
+  
+  to_debug lgin echo "BT_ROLE: ${BT_ROLE} BT_ACCOUNT: ${BT_ACCOUNT} BT_TEAM: ${BT_TEAM}" 
+
+  # refresh just the sso token (12 hour lifespan).
+  # collect the status, which is your expire time.
+  status=unset
+  [[ "${sso}" = fix*     || \
+     "${sso}" = expired* ]] && { 
+    cmd="$("${DEFAULT_AWSLIB}" login --profile "${BT_TEAM}")" 
+    status="$(echo "$cmd" | perl -nle \
+            'print if s/.*(valid until [\w\-\:\ ]+)/$1/')"
+  }
+  to_debug lgin echo status_cmd: $cmd
   to_debug lgin echo status: $status
-  to_debug flow && sleep 1 && echo api:autologin.check
+  # this should fail hard for multi-account.
+  if aws_profile "${BT_ROLE}" >/dev/null 2>&1; then 
+     to_debug lgin echo profile set to: ${BT_ROLE}   
+  else 
+    echo "Could not set profile to: ${BT_ROLE}."
+    echo "Please rerun the 'profiles' command."
+    return
+  fi
 
-  [[ $status = *expired* ]] && {  
-    awsume --unset > /dev/null 2>&1
-    aws_profile --unset
-    unset AWSUME_PROFILE AWSUME_DEFAULT_PROFILE AWS_PROFILE AWS_DEFAULT_PROFILE
-    to_debug lgin echo "BT_ROLE: ${BT_ROLE} BT_ACCOUNT: ${BT_ACCOUNT} BT_TEAM: ${BT_TEAM}" 
-    devops-sso-util login --profile "${BT_ROLE}" 2>/dev/null 
-    aws_profile "${BT_ROLE}"
-    echo -e "${GREEN}$(perms)${NC}"
+  chain=unset
+  [[ "${chain}" == "unset" ]] && { 
+    chain="$("${DEFAULT_AWSLIB}" login --profile "${BT_ROLE}")" 
+    status="$(echo "$chain" | perl -nle 'print if m/Successful/')"
   }
+
+  [[ "${status}" == "unset" || "${sso}" =~ valid ]] && { 
+    ts="$sso"
+  } || { 
+    ts="${status}"
+  }
+
+  t="$(echo "${ts}" | \
+      perl -pe 's/valid until //' | \
+      ddiff -E -qf %S now)"
+
+  [[ "$t" -gt 0 ]] && { 
+    X="$(gdate --utc -d "0 + ${t} seconds" +"%Hh:%Mm:%Ss")"
+  } 
+  to_debug lgin echo "ts:$ts, t:$t, X:${X} R:${BT_ROLE}"
+  export "ts=${ts} t=${t} X=${X} R=${BT_ROLE}" 
+
+  arn=unset
+  [[ "${chain}" =~ Successful ]] && {
+    arn="$(aws sts get-caller-identity --profile "${BT_ROLE}" 2>&1 | \
+      jq -r '.Arn' | cut -d':' -f 5-6 | cut -d'/' -f 1-2)"
+      # (prints some informative stats about the session.)
+    echo -e "LOGIN: $arn"
+  }
+  to_debug lgin echo in: $arn
+
+  # construct a header.
+  if [[ "${t}" -ge 601 ]]; then
+    echo -e in: ${GREEN}${BT_ACCOUNT}${NC} expires: ${GREEN}${X}${NC}"\n"
+  elif [[ "${t}" -ge 11 ]]; then
+    echo -e in: ${YELLOW}${BT_ACCOUNT}${NC} expires soon: ${YELLOW}${X}${NC}"\n"
+  elif [[ "${t}" -eq 0 ]]; then  
+    echo -e in: ${CYAN}unknown${NC}."\n"
+  elif [[ "${t}" -lt 0 ]]; then 
+    echo -e ${RED}expired${NC}."\n"
+  else 
+      :
+  fi
+  return
   
-  to_debug flow && sleep 1 && echo api:autologin:status
-  [[ "${status}" = *unknown* ]] && {  
-    echo -e "${RED}Failed.${NC}"
+} 
+
+
+
+# NOTE: We must use a different loader for assoc arrays.
+sourceror() {  
+  arr=${@}
+  for name in ${arr[@]}; do
+    #declare -A "$name"=()
+    . <( cat "${BT}/src/${file}.arr" )  # assoc. array
+  done
+} 
+
+
+
+# Takes either an AWS account name, or an AWS account_id.
+# Returns a name and id pair, or an empty string. 
+account_lookup() { 
+
+  acct="${1:-prod}"
+  [[ "$acct" =~ [0-9]{12} ]] && { acct_id="${acct}" && unset acct ;}
+  #acct_id="${2:-123456789012}"
+
+  JSON_OBJ="$(cat "${BT}/data/json/bt/accounts.json")"
+  #JSON_OBJ="{\"account\":{\"${acct}\":${acct_id}}"
+
+  # forward lookup
+  [[ -n "${acct}" ]] && { 
+     : # need jq. for number lookup.
   }
-  
-  to_debug flow && sleep 1 && echo api:autologin.expires
-  seconds="$(echo "${status}" | ddiff -E -qf %S now)"
-  [[ "${seconds}" -gt 1 ]] && { 
-    echo -ne "${GREEN}${BT_ACCOUNT} - expires: ${status}${NC}\n"
-  }
-  to_debug flow && sleep 1 && echo api:autologin.end
-}    
+
+  # reverse lookup
+  [[ -n "${acct_id}" ]] && { 
+
+    acct="$(echo "${acct_id}" |                         \
+             jq -r  '.account |                         \
+                 to_entries[] |                         \
+        select(.key|tostring) | "\(.key)"' "${JSON_OBJ}")"
+
+    echo "${acct}" "${acct_id}"
+  } 
+}
+
+to_debug flow && echo api:autologin.end
+to_debug flow && sleep 0.5 && echo api:end
 

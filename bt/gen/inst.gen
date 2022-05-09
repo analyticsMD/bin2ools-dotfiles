@@ -1,34 +1,78 @@
 #!/usr/bin/env /usr/local/bin/bash
 
-source ${BT}/lib/bt_env
-BT_DEBUG=yes
 
-touch  ${BT}/sources/generate.d/inst_map.src
-source ${BT}/sources/generate.d/inst_map.src
+export BT="${HOME}/.bt"
+. "${BT}/settings"
+autologin qventus
 
-# TODO #1: Take the output.  Make it json. Store the json (gz,b64). 
-# TODO #2: Take the output.  Retool the queries (or implement in fuzzy.)
-# regenerate inst_map array, if not present.
+
+
+# Generate an array of all live instances.
 #
-[[ "${#inst_map[@]}" -lt 2 ]] && {
-  # Queries aws for a list of all instances.
-  # Caches them as an associative array in a
-  # local file in the generate.d dir.
-  #
-  cache_inst
-  # creates: fully populated inst_map array.
-  get_inst
+gen_inst() { 
 
+    
+  [[ -z "${BT_TEAM}" ]] && echo "FATAL: No team var." && exit 1
+
+  declare -a tmp
+  tmp+=( "$(aws ec2 describe-instances \
+          --output json \
+          --region us-west-2 \
+          --filters Name=tag-key,Values=Name \
+          --query 'Reservations[*].Instances[*].{
+                   Instance:InstanceId,
+                   Name:Tags[?Key==`Name`]|[0].Value,
+                   PrivAddr:PrivateIpAddress,
+                   KeyName:KeyName,
+                   PubAddr:PublicIpAddress
+                 }' | \
+          jq -r '.[][]|
+                (.Name|gsub(" "; "_"))+","+
+                (.Instance)+","+
+                (.PrivAddr)+","+
+                (.KeyName)+","+
+                (.PubAddr)+"%"
+        ')" )
+
+
+    ### build an associative array of hosts and descriptors.
+    ### ----------------------------------------------------
+    mkdir -p "${HOME}/tmp"
+    tmppath="$(gmktemp -p "${HOME}"/tmp inst_map.XXXXXXXXXXXX)"
+    echo -ne 'declare -A inst=( ' > "$tmppath" 
+    while IFS= read -r l; do 
+      while IFS=',' read -r n i ip k pp; do
+        s="[\\\"$n\\\"]=\\\"$n,$i,$ip,$k,$pp%\\\""
+        bash -c "echo -ne $(printf ' %q' "$s ") | perl -pe 's/\!+//g'" >> "${tmppath}"
+        to_debug gen echo "wrote: $s"
+      done 
+    done < <(printf '%s\n' "${tmp[@]}" | sort)
+    echo -ne ")\n" >> "$tmppath"
+    # move new array to src dir.
+    mv "$tmppath" "${BT}/src/inst.arr"
 }
 
-declare -A inst_map
-source <(cat "${BT}"/sources/generate.d/inst_map.src)
+to_debug flow echo data:cache_inst
 
-[[ "${#inst_map[@]}" -lt 20 ]] && {
-  echo "FATAL: Could not generate inst_map array." \
+gen_inst
+
+#BT_DEBUG="gen"
+
+touch  ${BT}/src/inst.arr
+
+# TODO #1: Reformat to json. Store in ssm keys (gz,b64). 
+
+# regenerate inst array, if not present.
+
+
+declare -A inst=()
+source <(cat "${BT}"/src/inst.arr)
+
+[[ "${#inst[@]}" -lt 20 ]] && {
+  echo "FATAL: Could not generate inst array." \
   && exit 1
 }
 
 echo done!
-debug declare -p inst_map
+to_debug gen && declare -p inst
 

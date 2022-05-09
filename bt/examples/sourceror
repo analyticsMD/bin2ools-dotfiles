@@ -1,0 +1,28 @@
+
+
+# Source dynamic vars and associative arrays. 
+
+
+
+sourceror() { 
+  v="${1:=}"
+  [[ -n "${v}" ]] && { 
+
+  # first key, name only.
+  declare "${v%=*}=${v#*=}"; # dynamic variable assignment without eval.
+                               # NOTE: must be passed in as "foo=bar" where
+                               # 'bar' is the name of the new assoc. array,
+                               # and 'foo' is the local name.
+  name="${v%=*}"
+  declare -A "${name}"=()
+  # all other key=values 
+  # define the associative array.
+   
+  for v in "${@:2}"; do 
+             
+       # strip brackets from key. 
+       vv="$(echo ${v%=*} | perl -pe 's/^\[(.*)/\1/; s/(.*)\]$//;')"
+       ${name}+=( ["${vv%=*}"]="${v#*=}" ); 
+  done
+}
+

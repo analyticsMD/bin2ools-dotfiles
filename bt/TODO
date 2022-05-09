@@ -1,3 +1,12 @@
+# setting up packages.
+# tool name is everything after the 'b2' in the package name.
+
+# pushd "b2${tool}   # Q: how to find package_dir? 
+##  source ~/.venv/bin/activate
+##  (should include) 
+##  source {package_name}/${tool}.cmpl 
+##  alias rds= 
+
 Adjust PATH util -- should NOT include ~/.bt/lib
   -- if you need that, use the loader: ~/.bt/lib/bt
   -- can we leverage the loader for packaged consoles? 
@@ -13,4 +22,45 @@ and if not present, then look under ensurepath dirs.
 need to simplify package structure for rds and ssm.  
   -- easier to find libs if they are all in one dir. 
   
+hh = hashlib.new('sha512_256')
+
+# works
+#poetry run "alias rds="poe rds ${@}"
+alias rds_cmpl=". ${HOME}/.bt/src/rds.cmpl"
+alias rds="rds_cmpl; poe ~/src/devops-sso-util/b2rds rds ${@}"
+
+
+poetry run ssm=". ~/.bt/src/ssm.cmpl; poe --root ~/src/devops-sso-util/b2ssm ssm_bash ${@}"
+
+
+
+alias ssm="poetry run bash -c \". ~/.bt/src/ssm.cmpl; \
+  poe --root ~/src/devops-sso-util/b2ssm ssm_bash  ${@}\""
+
+alias ssm='poe --root ~/src/devops-sso-util/b2ssm ssm_bash ${@}'
+
+sh-4.2$ Cannot perform start session: EOF     ???
+
+MacBook-Pro:~ marc$ .bt/cmd/ssm emory-qval
+.bt/cmd/ssm: line 5: /Users/marc/.bt/lib/bt_load: No such file or directory
+.bt/cmd/ssm: line 6: /Users/marc/src/inst_maps.src: No such file or directory
+
+
+
+# get python
+#${HOME}/.local/pipx/venvs/poetry/bin/python3.10
+#python="$("${BT_POETRY}" run which python)"
+#echo python: ${python}
+
+#dir="$(dirname "${python}")"
+#echo dir: ${dir}
+
+
+# Create new.
+#python -m venv "${venv}" --prompt "(bt) "
+
+# inject under devops-sso-util. 
+#./.local/pipx/venvs/devops-sso-util/lib/python3.10/site-packages/b2rds-0.6.4.dist-info/INSTALLER
+#~/.local/pipx/venvs/         poetry/lib/python3.10/site-packages/b2rds.pth -> my dir.
+
 

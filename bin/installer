@@ -4,7 +4,6 @@
 clear_debug() {
   set +x
 }
-
 sudo_refresh() {
   clear_debug
   if [ -n "$SUDO_ASKPASS" ]; then
@@ -38,6 +37,9 @@ _msg () {
 sudo_init() {
 
   mkdir -p "${HOME}/tmp"
+
+  HOMEBREW_NO_INSTALL_CLEANUP=yes
+  HOMEBREW_NO_ENV_HINTS=yes
 
   #if [ -z "$STRAP_INTERACTIVE" ]; then
   #  return
@@ -153,6 +155,21 @@ STRAP_ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
 # root stuff unexpectedly.
 sudo --reset-timestamp
 
+# functions for turning off debug for use when handling the user password
+clear_debug() {
+  set +x
+}
+
+sudo_refresh() {
+  clear_debug
+  if [ -n "$SUDO_ASKPASS" ]; then
+    sudo --askpass --validate
+  else
+    sudo_init
+  fi
+  reset_debug
+}
+
 
 reset_debug() {
   if [ -n "$STRAP_DEBUG" ]; then
@@ -168,9 +185,15 @@ escape() {
   printf '%s' "${1//\'/\'}"
 }
 
+# create symlink shortcut. 
+[[ ! -L ${HOME}/.bt ]] && ln -s ${HOME}/.bin2ools-dotfiles ${HOME}/.bt
+
 # Given a list of scripts in the dotfiles repo, run the first one that exists
+
 run_dotfile_scripts() {
   if [ -d ${HOME}/.bin2ools-dotfiles ]; then
+    ln -s ${HOME}/.bin2ools-dotfiles ${HOME}/.bt/gen/profiles.gen
+
     (
       cd ${HOME}/.bin2ools-dotfiles
       for i in "$@"; do
@@ -243,7 +266,8 @@ fi
 # Setup GitHub HTTPS credentials.
 if git credential-osxkeychain 2>&1 | grep $Q "git.credential-osxkeychain"
 then
-  # Actually execute the credential in case it's a wrapper script for credential-osxkeychain
+  # Fully execute the credential in case 
+  # it's a wrapper script for credential-osxkeychain
   if git "credential-$(git config --global credential.helper 2>/dev/null)" 2>&1 \
      | grep -v $Q "git.credential-osxkeychain"
   then
@@ -468,11 +492,11 @@ eval "$(register-python-argcomplete pipx)"
 STRAP_SUCCESS="1"
 log "Your system is now bootstrapped!"
 
-# Add quick script to dump all elastic data.
+# Add quick script to launch bintools
 echo -ne '#!/usr/bin/env /usr/local/bin/bash\n\ncd \
     ${HOME}/.bt && . settings && autologin\n' > /usr/local/bin/bt
 chmod ug+x /usr/local/bin/bt
 
 # check for github access (early on).
-# ssh git@github.com
+#ssh git@github.com
 

@@ -111,21 +111,19 @@ declare -a order=( "PIPX_SPACE"      \
   declare -a pipx_space=()
   pipx_space+=( "${HOME}/.local/bin"    )
   pipx_space+=( "${HOME}/.local/pipx"   )
-  pipx_space+=( "$HOME/.poetry/bin"     )
-  pipx_space+=( "/usr/local/bin"        )
-  pipx_space+=( "/usr/local/sbin"       )
+  pipx_space+=( "${HOME}/.poetry/bin"   )
 
   spaces["PIPX_SPACE"]="$(printf %s "$(printf :%s "${pipx_space[@]}" | sort | uniq)")"
 
   export BT=${HOME}/.bt
   # vars
   declare -a user=()
-  user+=( "${BT}/bin"   )
   user+=( "${BT}/cmd"   )
-  user+=( "${BT}/inst"  )
   user+=( "${BT}/gen"   )
-  user+=( "${BT}/utils" )
   user+=( "${BT}/src"   )
+  user+=( "${BT}/utils" )
+  user+=( "${BT}/inst"  )
+  user+=( "${BT}/bin"   )
   user+=( "${BT}/lib"   )
 
   declare -a mode_space=( "${user[@]}" )
@@ -142,7 +140,7 @@ declare -a order=( "PIPX_SPACE"      \
   # On macos and linux, /usr is where user space programs live.
   path_tmp="$(strings /usr/local/bin/bash | \
       perl -nle 'print if s/^(\/.*\:\/.*)(\:\.)$/\1/')"
-  spaces["USR_SPACE"]=":/usr/local/homebrew/bin:${path_tmp}"
+  spaces["USR_SPACE"]=":usr/local/bin:/usr/local/sbin:/usr/local/homebrew/bin:${path_tmp}"
 
   to_debug path                               \
      echo -ne "----------------------------------------------------------- \n \

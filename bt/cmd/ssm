@@ -2,8 +2,8 @@
 
 # shellcheck shell=bash disable=SC1083 format=SC1083
 export BT=${HOME}/.bt
-. ${HOME}/.bt/lib/bt_load
-. ${HOME}/src/inst_maps.src
+. ${BT}/settings
+autologin
 
 # Test ssm connectivity to a single host.
 # ---------------------------------------
@@ -28,7 +28,7 @@ source <(cat "${BT}/src/inst_map.src")
 #export BT_DEBUG=ssm
 [[ -z "${hn}" || "${hn}" == "NONE" ]] && { 
   #export=$(hn="${1}")
-  ip=$(aws-fuzzy --ip-only)
+  ip=$(/usr/local/bin/aws-fuzzy --ip-only)
   for rec in ${inst_map[@]}; do
     [[ "${rec}" = *$ip* ]] && { 
       export hn="$(echo "${rec}" | cut -d',' -f 1)" 

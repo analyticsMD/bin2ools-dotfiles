@@ -1,6 +1,8 @@
 #!/usr/bin/env /usr/local/bin/bash
 # shellcheck shell=bash
 
+to_debug flow && sleep 0.5 && echo rds:start
+
 # RDS usage message
 rds_usage () {
     echo " usage "
@@ -20,17 +22,17 @@ rds_usage () {
     exit 1
 }
 
+to_debug flow && echo rds:rds_usage
+
 mysql_help() { 
 
   echo "mysql client help here."
 } 
 
-env_init   # get vars.
+to_debug flow && echo rds:mysql_help
 
 # expects a login.
 get_forwarder() { 
-
-  #autosession
 
   [[ -z "${BT_TEAM}" ]] && { 
     echo "FATAL: Problem determining your TEAM." 
@@ -39,19 +41,18 @@ get_forwarder() {
   } 
 
   this="${1:-NONE}"
-  source "${BT}"/lib/arr
   # look up cluster info.
   #to_debug rds find_in_rds "${this}"
   stats="$(find_in_rds "${this}")" 
 
   to_debug rds echo stats: $stats  
   h="$(echo "${stats}" | cut -d'%' -f 1)"
-  i="$(echo "${stats}" | cut -d'%' -f 2)"
+  in="$(echo "${stats}" | cut -d'%' -f 2)"
   t="$(echo "${stats}" | cut -d'%' -f 3)"
   p="$(echo "${stats}" | cut -d'%' -f 4)"
   e="$(echo "${stats}" | cut -d'%' -f 5)"
 
-  to_debug rds echo -ne "h: ${h}\ni: ${i}\nt: ${t}\np: ${p}\ne: ${e}\n"
+  to_debug rds echo -ne "h: ${h}\ni: ${in}\nt: ${t}\np: ${p}\ne: ${e}\n"
   [[ -z "${e}" ]] && { 
     echo "FATAL: Could not get variables for cluster ${this}."
     return 1
@@ -59,25 +60,23 @@ get_forwarder() {
 
   this=${1:-"NONE"}
   declare -A fwdr
-  fwdr=(  [hostname]="$h"   [instance]="$i"   ) 
-  fwdr+=( [trunk]="$t"      [port]="${p}"     )
+  fwdr=(  [hostname]="$h"  [instance]="$in"   ) 
+  fwdr+=( [trunk]="$t"         [port]="${p}"  )
   fwdr+=( [endpoint]="${e}" [cluster]="$this" )
   echo "${fwdr[@]@A}"
 
 }
 
+to_debug flow && echo rds:get_forwarder
 
-
-
-split_rds_args() { 
+# returns sourceable arrays for rds and mysql params
+parse_rds_args() { 
 
   declare -a args=( "${@}" )  # all passed-in args
-  declare -a rds_args=()    # rds args (before the -- )
-  declare -a mysql_args=()  # mysql args (after the -- ) 
-  to_debug rds echo declare -p "${rds_args[@]}"
-  to_debug rds echo declare -p "${mysql_args[@]}"
+  declare -a rds_args=()      # rds args (before the -- )
+  declare -a mysql_args=()    # mysql args (after the -- ) 
 
-  cluster="${args[0]}"  # first arg (always the cluster name)
+  bt_cluster="${args[0]}"  # first arg (always the cluster name)
   div="$(arg_split "--" "${args[@]:1}")" # position of divider arg ( -- )
   
   # Split args into before and after the divider.
@@ -89,10 +88,11 @@ split_rds_args() {
     rds_args=(   "${args[@]:1:${#args[@]}}"      )
   }
  
-  echo "$(get_rds_args)" 
-  echo "$(get_mysql_args)" 
+  echo "$(get_rds_args ${rds_args[@]})" 
+  echo "$(get_mysql_args ${mysql_args[@]})" 
 }
 
+to_debug flow && echo rds:split_rds_args
 
 
 # Returns the common name of the 
@@ -105,11 +105,7 @@ get_db_target() {
   } 
 } 
 
-
-
-# Mini-func.
-die() { echo "$*" >&2; exit 2; }  # complain to STDERR and exit with error
-
+to_debug flow && echo rds:get_db_target
 
 
 # shellcheck disable=SC2120
@@ -145,6 +141,7 @@ get_rds_args() {
 
 }
 
+to_debug flow && echo rds:get_rds_args
 
 
 # shellcheck disable=SC2120
@@ -485,7 +482,7 @@ repoll() {
   p=${1}
   
   TICKS=
-  to_debug rds p: "${p}" 
+  to_debug rdsl && echo polling port: "${p}"   3>&1
   while ! nc -z 127.0.0.1 "${p}" >/dev/null 2>&1; do
     ((TICKS++)) 
     sleep 0.1
@@ -502,7 +499,7 @@ repoll() {
         echo "Detected MySQL listener!"
         return 
     } || {
-      echo -ne -
+      echo -ne - 3>&1
       sleep $n
       n=$(( n ))
       continue
@@ -632,4 +629,7 @@ close_socket() {
   reset
 
 }
+
+to_debug flow && echo rds:close_socket
+to_debug flow && sleep 0.5 && echo rds:end
 

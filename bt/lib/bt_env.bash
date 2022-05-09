@@ -1,11 +1,13 @@
 #!/usr/bin/env /usr/local/bin/bash
 # shellcheck shell=bash 
 
-BT="${HOME}/.bt"
-export BT="${BT}"
+#BT="${HOME}/.bt"
+#export BT="${BT}"
 
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+#to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+to_debug flow && sleep 0.5 && echo env:start
 
+to_debug flow echo BT: "${BT}"
 # Make sure there's a debug function.
 [[ "$(type -t to_debug)" == "function" ]] || {
   echo >&2 "WARNING: Core function: 'to_debug' not sourced."
@@ -14,9 +16,6 @@ to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
 # DEBUGGING -- Can be set per component, or globally, here.
 #BT_DEBUG=env,flow
 
-# uses ${HOME} to figure out the user name,
-# then queries AWS SSO to look up user's group.
-get_os() { uname -a | awk '{print $1}' ;}
 
 # ----------------------------------------------------------------
 # AWS_ENV  
@@ -28,13 +27,14 @@ get_os() { uname -a | awk '{print $1}' ;}
 export BT="${HOME}/.bt"
 [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
 
+to_debug flow && echo env:state
 
 # Establish vars that comprise the env state.
 #
 env_state()  { 
 
   #include api
-  export BT_USR="$(get_usr)"
+  export BT_USR="$(echo "${USER}")"
   # note: used for assertions, derived from 'bt_peek'.
   export BT_GUILD="NONE"
 
@@ -71,8 +71,8 @@ env_state()  {
 }
 
 env_state
-to_debug flow && sleep 1 && echo env:state
 
+to_debug flow && echo env:cache
 
 env_cache() { 
 
@@ -103,44 +103,92 @@ env_cache() {
 }  
 
 env_cache 
-to_debug flow && sleep 1 && echo env:cache
+
+to_debug flow && echo env:set_team
+
+set_team() { 
+
+  # team var not proper.  check team cache.
+  [ -f "${BT_CACHE}/team_info" ] && { 
+    team="$(cat "${BT_CACHE}/team_info")"
+    [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
+      # cache worked.
+      BT_TEAM="${team}" 
+      export BT_TEAM="${BT_TEAM}" 
+      return 
+    }  
+  }
+
+  # cache did not work. Try aws config...
+  team="$(cat "${AWS_CONFIG_FILE}"                                  | \
+      perl -nle "print if s/.*aws_team_([\w_\-]+).*/\1/;" | tail -n 1)"
+
+    # aws config worked.
+  [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
+    BT_TEAM="${team}" 
+    export BT_TEAM="${BT_TEAM}" 
+    # cache not present. Populate.    
+    echo "${BT_TEAM}" > "${BT_CACHE}/team_info"
+    return 
+  }  
+
+  to_debug env && echo "env:set_team succeeded - team is: ${BT_TEAM}"
+  
+  # Otherwise, fail loudly. 
+  # Warn the user to fix the problem.
+  rm -rf "${BT_CACHE}/team_info"
+  echo "----------------------------" 
+  echo "FATAL: team not set." 
+  echo "Please run 'profiles' again."
+  echo "From the command line."
+  echo "----------------------------" 
+
+}
+
+set_team
+
+to_debug flow && echo env:init
 
 env_init() { 
 
   # Initialize our most important ENV vars:
-
   # BT:
   [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
-  to_deploy env echo "env:init:BT ${BT}"
+  to_debug env echo "env:init:BT ${BT}"
 
+  role=""
   [[ -z "${AWS_CONFIG_FILE}" ]] && { echo "No aws config. Exiting..." ;}
 
   # ROLE, TEAM, ACCOUNT.
   # if not set, check cache and profiles.
-  ARGV="${1:-qventus}"
+  ARGV="${1:-"${DEFAULT_ROLE}"}"
+  
   # check ~/.aws/bt_config 
   # This file is an authority, and can be recreated.
   role="$(cat "${AWS_CONFIG_FILE}"                           | \
           perl -nle "print if s/(${ARGV}\]|role_arn.*)/\1/;" | \
           grep -EA 1 "${ARGV}\]" | tail -n 1                 | \
           perl -nle 'print if s/.*qv\-gbl\-([\w_\-]+)/\1/'  )"
-
+  to_debug lgin echo role: $role
   # if request is not valid, report an error. 
   [[ -z "${role}" || "${role}" = *NONE* ]] && { 
     echo -e "${RED}FATAL${NC}: \"${ARGV}\" is not a configured destination."
     echo -e "Try rebuilding your aws config by running \"${BLUE}profiles${NC}\"".
     return 0
   }
+ 
+  to_debug env && echo DEFAULT_ROLE: "${DEFAULT_ROLE}"
+  [[ "${role}" == "${DEFAULT_ROLE}" ]] && {  
 
-  [[ "${role}" == "qventus" ]] && {  
+    export BT_ROLE="${DEFAULT_ROLE}"
 
     # need to validate BT_TEAM var a bit further.
-    [[ -n "${BT_TEAM}" || ! "${BT_TEAM}" = *NONE* ]] && { 
+    [[ -n "${BT_TEAM}" && ! "${BT_TEAM}" = *NONE* ]] && { 
       export BT_TEAM="${BT_TEAM}"
     } || { 
       # team var not proper.  check team cache.
       [ -f "${BT_CACHE}/team_info" ] && { 
-        team="$(cat "${BT_CACHE}/${BT_TEAM}")"
+        team="$(cat "${BT_CACHE}/team_info")"
         [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
           # cache worked.
           BT_TEAM="${team}" 
@@ -159,19 +207,32 @@ env_init() {
         echo "${BT_TEAM}" > "${BT_CACHE}/team_info"
       }
     }
+
   }
-    
+
   # BT_ACCOUNT:   
   # use defaults if nothing explicitly passed in. 
-  [[ "${role}" == "qventus" ]] && { export BT_ACCOUNT=prod && return ;} 
+  [[ "${role}" == "${DEFAULT_ROLE}" ]] && { 
+      export BT_ROLE="${DEFAULT_ROLE}" \
+             BT_ACCOUNT="${DEFAULT_ACCOUNT}"
+  } 
   # account needs more vetting. 
   declare -a ROLE
   ROLE=( $(echo "${role}" | tr '-' ' ') )  
-  to_debug env echo ROLE1: "${ROLE[0]}" ROLE2: "${ROLE[1]}"
+  to_debug env echo ACCOUNT: "${ROLE[0]}" TEAM: "${ROLE[1]}"
   [[ "${#ROLE[@]}" -ne 2 ]] && {
     echo -e "${RED}FATAL${NC}: ROLE: \"${role}\" does not seem to have a valid format."  
     echo -e "It must be of the form ${BLUE}<account>-<team>${NC}, e.g. \"prod-dp\"."
+  } || { 
+    export BT_ACCOUNT="${ROLE[0]}" BT_TEAM="${ROLE[1]}" BT_ROLE="${ROLE[0]}"-"${ROLE[1]}"
   }
+
+
+  to_debug env && echo env_init:BT_TEAM: "${BT_TEAM}"
+  to_debug env && echo env_init:BT_ACCOUNT: "${BT_ACCOUNT}"
+  to_debug env && echo env_init:BT_ROLE: "${BT_ROLE}"
+  to_debug flow && echo env_init:end 
+  
 }
     #[[ -z "${BT_ACCOUNT}" || -z "${BT_TEAM}" ]] && { 
     #[[ "${BT_ROLE}" = *NONE* ]] || \
@@ -186,9 +247,7 @@ env_init() {
   #      perl -nle 'print if s/.*qv\-gbl\-([\w_\-]+)/\1/'")"
   #}
 
-
 env_init
-to_debug flow && sleep 1 && echo env:init
 
 
 
@@ -204,7 +263,7 @@ env_fuzz() {
 } 
 
 env_fuzz
-to_debug flow && sleep 1 && echo env:fuzz 
+to_debug flow && echo env:fuzz 
 
 # ---------------------------------------------------------
 # dirs, vars, & libs.
@@ -216,11 +275,6 @@ get_sso() {
   echo "${USER}"
 }
 
-
-
-get_usr() { 
-  echo "${USER}"
-}
 
 
 
@@ -236,7 +290,9 @@ get_usr() {
 env_sanity() { 
 
   # prevent running as root on MacOS. 
-  BT_OS="$(get_os)"
+  # Uses ${HOME} to figure out the user name,
+  # then queries AWS SSO to look up user's group.
+  BT_OS="$(uname -a | awk '{print $1}')"
   [[ "${BT_OS}" == "Darwin" && "$(id -u)" == "0" ]] && { 
     echo -ne "\n\n----------------------------------\n"
     echo -ne     "This script cannot be run as root.\n"
@@ -258,7 +314,7 @@ env_sanity() {
 
 env_sanity
 
-to_debug flow && sleep 1 && echo env:sanity
+to_debug flow && echo env:sanity
 
 
 # ---------------------------------------------------------------
@@ -451,9 +507,9 @@ env_aws
 # 
 new_session() {
     BT_TEAM="$(get_team)"
-    role=${1:-"${BT_TEAM}"}
-    #devops-sso-util login --profile qventus 
-    assume -a "${role}" -o qventus | grep -v Stylish
+    to_debug api && echo AWSLIB: "${AWSLIB}"
+    "${AWSLIB}" login --profile qventus 
+    assume -a "${BT_ROLE}" -o qventus | grep -v Stylish
     source <(echo "$(assume -s)") 
     aws_profile --unset
     aws_profile qventus
@@ -482,32 +538,46 @@ new_session() {
 # are a bit slow).
 #
 aws_profile () {
-  if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+  DEFAULT_ROLE="qventus"
+  ARGV="${1:-"${DEFAULT}"}"  
+  if [ "$ARGV" = "--help" ] || [ "$1" = "-h" ]; then
     echo "USAGE:"
     echo "aws_profile              <- print out current value"
     echo "aws_profile PROFILE_NAME <- set PROFILE_NAME active"
     echo "aws_profile --unset      <- unset the env vars"
-  elif [ -z "$1" ]; then
+  elif [ -z "$ARGV" ]; then
     if [ -z "$AWS_PROFILE$AWS_DEFAULT_PROFILE" ]; then
       echo "No profile is set"
       return 1
     else
       to_debug aws echo "profile: $AWS_PROFILE default: $AWS_DEFAULT_PROFILE\n"
     fi
-  elif [ "$1" = "--unset" ]; then
+  elif [[ "$ARGV" = "--unset" ]]; then
     AWS_PROFILE=
     AWS_DEFAULT_PROFILE=
     # needed because of https://github.com/aws/aws-cli/issues/5016
     export -n AWS_PROFILE AWS_DEFAULT_PROFILE
-  else
+  elif [[ "$ARGV" = *${DEFAULT_ROLE}* ]]; then 
+      export AWS_PROFILE=${ARGV} AWS_DEFAULT_PROFILE=${ARGV}
+  
+  elif [[ "$ARGV" =~ "${BT_TEAM}" ]]; then
     # needed because of https://github.com/aws/aws-cli/issues/5546
-    if ! aws configure list-profiles | grep -Fq -- "$1"; then
-      echo "$1 is not a valid profile"  
-      return 2
-    else
-      export AWS_PROFILE=$1 AWS_DEFAULT_PROFILE=$1
-    fi;
-  fi;
+    declare -a profiles=()
+    for p in $(aws configure list-profiles); do
+        profiles+=( "${p}" )
+    done    
+    for o in ${profiles[@]}; do 
+      [[ "${ARGV}" !=  "${p}" ]] && { 
+        continue
+      } || {
+        debug_on env && echo matched: "${p}"
+        export AWS_PROFILE="${p}" AWS_DEFAULT_PROFILE="${p}"
+        return 
+      }
+    done
+  else
+    echo "${ARGV} is not currently a valid profile."
+  fi
 }
 
 
@@ -526,15 +596,15 @@ aws_profile () {
 # Truth be told, it's best if you do not monkey with 
 #                        --- The QV Security Team 
 
-# qv standards
-declare -x BT_CREDS="${HOME}/.aws/bt_creds"
-declare -x BT_CONFIG="${HOME}/.aws/bt_config"
-declare -x qv_gbl=us-west-2
-declare -x qv_start_url=https://qventus.awsapps.com/start
+to_debug flow && echo env:aws_defaults
 
- 
 aws_defaults() { 
 
+  # qv standards
+  export BT_CREDS="${HOME}/.aws/bt_creds"
+  export BT_CONFIG="${HOME}/.aws/bt_config"
+  export qv_gbl=us-west-2
+  export qv_start_url=https://qventus.awsapps.com/start
 
   # For reliability, Bintools isolates its configs from the defaults.
   export AWS_CONFIG_FILE="${BT_CONFIG}"            \
@@ -562,99 +632,18 @@ aws_defaults() {
   export AWS_SDK_LOAD_CONFIG=1   # for golang, terraform, e.g.
                                  # which do not use ~/.aws/config
 
-
-# You should not need to touch these.
+  # You should not need to touch these.
   export AWS_VAULT_PL_BROWSER=com.google.chrome 
   export AWS_DEFAULT_OUTPUT=json
   export AWS_DEFAULT_SSO_REGION=${qv_gbl} 
   export AWS_DEFAULT_REGION=${qv_gbl} 
   export AWS_REGION=${qv_gbl}
 
-# ----------------------------------------------------------------
-# variables that define the behavior of aws-vault backend secrets. 
-# Qventus uses aws-vault to encrypt credentials at rest on laptops, 
-# ecs, and ec2 hosts.  This is specifically to remove any long term 
-# credentials stored in the clear on laptops, etc. 
-
-# Lowest maintenance alternative is the 'file' option, which uses 
-# encrypted flat files in the aws-vault file space.
-# export AWS_VAULT_FILE_PASSPHRASE=(autogenerated-password)
-
-# The autogenerated password frees you from the need to type 
-# regular passwords to unlock your credentials.  Instead, a randomly 
-# generated password is created with each 8h session, and loaded
-# into this variable. This makes the password a 'throw-away' credential,
-# not unlike the temporary session tokens deployed by AWS.
-
-# Other useful var (not currently implemented).
-# See flag: --backend
-# AWS_VAULT_BACKEND=file
-# See flags--prompt
-# AWS_VAULT_PROMPT=terminal
-
-# AWS_ROLE_ARN: ARN of IAM role in the active profile
-# AWS_ROLE_SESSION_NAME: name of the role session in the active profile
-
-# AWS_STS_REGIONAL_ENDPOINTS: must be "regional" or "legacy"
-# AWS_MFA_SERIAL: id number of MFA device. We do not need this, as we 
-#                 use Okta for MFA before Federated Authentication. 
-
-# TTLs for sessions:
-# AWS_SESSION_TOKEN_TTL:         8h
-# AWS_CHAINED_SESSION_TOKEN_TTL: 1h
-# AWS_ASSUME_ROLE_TTL:           1h 
-# AWS_FEDERATION_TOKEN_TTL:     12h
-# AWS_MIN_TTL:                   5m
-
-# Comma separated key-value list of tags passed with the 
-# AssumeRole call, overrides session_tags profile config variable.
-# AWS_SESSION_TAGS: 
-
-# Comma separated list of transitive tags. 
-# Overrides transitive_session_tags profile config variable
-# AWS_TRANSITIVE_TAGS: 
-
-# We currently do not support the macos keychain or pass options
-# for credential protection on the local host.  We might someday, 
-# and if you really want them, you can manage your own configs. 
-
-# AWS_VAULT_KEYCHAIN_NAME: Name of macOS keychain to use (see the flag --keychain)
-# AWS_VAULT_PASS_PASSWORD_STORE_DIR: Pass password store directory (see the flag --pass-dir)
-# AWS_VAULT_PASS_CMD: Name of the pass executable (see the flag --pass-cmd)
-# AWS_VAULT_PASS_PREFIX: Prefix to prepend to the item path stored in pass (see the flag --pass-prefix)
-
-aws_profile qventus
-
 }
 
 aws_defaults
 
+to_debug flow && echo env:aws_profile
+aws_profile qventus
 
-
-
-## ----------------------------------------------------------------
-## AWS SETTINGS
-## ----------------------------------------------------------------
-# Save secrets history in ssm, via chamber. 
-# once saved, create a new password, and then 
-# migrate aws-vault creds to a new file.
-# (There are only one or two per person.)
-# Then change the password. Script should 
-# log this in the background.
-# 
-aws_vault_rotate() {
-  # generate new secret. 
-  s=$(openssl rand -base64 40 | colrm 27)
-  # update backend.
-   
-  # update secret.
-  declare -x AWS_VAULT_FILE_PASSPHRASE=$s
-} 
-
-aws_creds_regen() {
-
-    :
-
-}
-
-
+to_debug flow && sleep 0.5 && echo env:end

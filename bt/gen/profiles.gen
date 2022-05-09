@@ -34,7 +34,6 @@ aws_profile () {
     else
       echo "current profile: $AWS_PROFILE"
       echo "default profile: $AWS_DEFAULT_PROFILE" 
-
     fi
   elif [ "$1" = "--unset" ]; then
     AWS_PROFILE=
@@ -42,12 +41,13 @@ aws_profile () {
     # needed because of https://github.com/aws/aws-cli/issues/5016
     export -n AWS_PROFILE AWS_DEFAULT_PROFILE
   else
+    profile="${1:-"qventus"}" 
     # needed because of https://github.com/aws/aws-cli/issues/5546
-    if ! aws configure list-profiles | grep -qs "$1"; then
-      echo "$1 is not a valid profile"
+    if ! aws configure list-profiles | grep -q $profile; then
+      echo "$profile is not a valid profile"
       return 2
     else
-      export AWS_PROFILE=$1 AWS_DEFAULT_PROFILE=$1
+      export AWS_PROFILE=$profile AWS_DEFAULT_PROFILE=$profile
     fi;
   fi;
 }
@@ -149,7 +149,7 @@ get_account_number () {
 tpl='role_arn=arn:aws:iam::%s:role/%s'
 
 # commands
-cmd='devops-sso-util roles -r aws_team_ --no-header' 
+cmd='aws-sso-util roles -r aws_team_ --no-header' 
 prd='get_account_number'
 
 # identity 490475191208 aws_team_arch arch
@@ -164,24 +164,24 @@ p=( prod "$("${prd}" prod)" "qv-gbl-prod-${v[3]}" prod-"${v[3]}" )
 # -----------------------------
 
 # sso
-devops-sso-util configure profile --existing-config-action overwrite \
+aws-sso-util configure profile --existing-config-action overwrite \
                                 -a "${v[1]}" -r "${v[2]}" "${v[3]}" 
 
 # team
-devops-sso-util configure profile --existing-config-action overwrite \
+aws-sso-util configure profile --existing-config-action overwrite \
               -c "source_profile=${v[3]}" --no-credential-process \
                       -c "$(printf "${tpl}" "${v[1]}" "${v[2]}")" \
                               -a "${v[1]}" -r "${v[2]}" "${v[2]}" 
 
 # role
 # identity 490475191208 aws_team_arch arch
-devops-sso-util configure profile --existing-config-action overwrite \
+aws-sso-util configure profile --existing-config-action overwrite \
               -c "source_profile=${v[2]}" --no-credential-process \
                  -c "$(printf "$tpl" "${p[1]}" "qv-gbl-${p[3]}")" \
                               -a "${v[1]}" -r "${v[2]}" "${p[3]}" 
 
 # qventus
-devops-sso-util configure profile --existing-config-action overwrite \
+aws-sso-util configure profile --existing-config-action overwrite \
               -c "source_profile=${v[2]}" --no-credential-process \
                  -c "$(printf "$tpl" "${p[1]}" "qv-gbl-${p[3]}")" \
                               -a "${v[1]}" -r "${v[2]}" "qventus" 
@@ -217,12 +217,12 @@ aws-whoami && echo -ne "\n\n" \
 # NOTE: These are all assumable roles in the 'role' step of the 
 #       qventus standard role chain, e.g. sso->team->role->guild
 # 
-declare -a rpf=(qa cnc)  # role profiles
-for p in ${rpf[@]}; do 
-  devops-sso-util configure profile --existing-config-action overwrite \
-               -c role_arn="$(printf "$tpl" "${rpf[1]}" "${rpf[2]}")" \
-                       -a "${v[1]}" -r "${rpf[2]}" "qv-gbl-${rpf[2]}" 
-done
+#declare -a rpf=(qa cnc)  # role profiles
+#for p in ${rpf[@]}; do 
+#  aws-sso-util configure profile --existing-config-action keep \
+#               -c role_arn="$(printf "$tpl" "${rpf[1]}" "${rpf[2]}")" \
+#                       -a "${v[1]}" -r "${rpf[2]}" "qv-gbl-${rpf[2]}" 
+#done
 
 # Generate guild profiles.
 # ------------------------

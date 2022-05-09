@@ -1,17 +1,17 @@
 #!/usr/bin/env /usr/local/bin/bash
 
 export BT="${HOME}/.bt"
-. ${BT}/lib/bt
-. ${BT}/src/inst_map.src
+. ${BT}/settings
+. ${BT}/src/inst.arr
 
-#BT_DEBUG=yes
+#BT_DEBUG="gen"
 
-# regenerate inst_map array, if not present.
+# regenerate inst array, if not present.
 # 
-[[ "${#inst_map[@]}" -lt 2 ]] && { 
+[[ "${#inst[@]}" -le 3 ]] && { 
   # Queries aws for a list of all instances. 
   # Caches them as an associative array in a 
-  # local file in the generate.d dir. 
+  # local file.
   # 
   cache_inst
   # creates: fully populated inst_map array.
@@ -30,14 +30,14 @@ export BT="${HOME}/.bt"
 SSM_CMPL=${BT}/src/ssm.cmpl
 cat ${BT}/inst/txt/bt_bash_header                  > $SSM_CMPL
 echo -ne '\n\ncomplete -W "\n'                    >> $SSM_CMPL
-for i in `printf '%s\n' ${!inst_map[@]} | sort`; do
+for i in `printf '%s\n' ${!inst[@]} | sort`; do
   printf '  %s \\\n' $i                           >> $SSM_CMPL
 done
-echo -ne "\" ssm ssh_over_ssm\n"                  >> $SSM_CMPL
+echo -ne "\" ssm ssm.bash ssh_over_ssm\n"                  >> $SSM_CMPL
 echo done.
 
-debug inst_map 
-debug declare -p inst_map
+debug inst 
+debug declare -p inst
 
 ### ----------------------------------------------------
 ### Queue Spider-Man Theme Song...
@@ -51,4 +51,4 @@ while IFS= read l; do
   echo alias $host=\"aws ssm start-session \
     --target "${instance}" \
     --region ${region}\" >> "${SSM_SRC}"
-done< <(printf "%s\n" ${inst_map[@]} | grep '%' | sort) 
+done< <(printf "%s\n" ${inst[@]} | grep '%' | sort) 

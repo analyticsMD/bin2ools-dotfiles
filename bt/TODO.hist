@@ -1,0 +1,54 @@
+
+
+
+./rds demo-b-amd
+poetry shell run demo-b-amd
+poetry run poe rds demo-b-amd
+poetry run --root ${HOME}/.local/pipx/venvs/b2rds/lib/python3.10/site-packages/b2rds/ poe rds demo-b-amd
+
+${HOME}/.local/pipx/venvs/poetry/  \
+  poe \
+  --root ${HOME}/.local/pipx/venvs/b2rds/lib/python3.10/site-packages/b2rds/  
+  rds \
+  demo-b-amd
+ 
+# find the shell to activate.
+find . -name activate
+
+./src/devops-sso-util/b2rds/dist/b2rds-0.6.5.tar.gz
+./src/devops-sso-util/b2rds/dist/b2rds-0.6.5-py3-none-any.whl
+./src/devops-sso-util/b2rds/b2rds
+
+./src/devops-sso-util/b2rds/.venv/lib/python3.10/site-packages/b2rds-0.6.5.dist-info
+./src/devops-sso-util/b2rds/.venv/lib/python3.10/site-packages/b2rds.pth
+
+source ${HOME}/.local/pipx/venvs/poetry/bin/activate  \
+poe --root ${HOME}/.local/pipx/venvs/b2rds/lib/python3.10/site-packages/b2rds/  \
+  rds demo-b-amd
+
+### the pth file points to the editable install. 
+cat ./src/devops-sso-util/b2rds/.venv/lib/python3.10/site-packages/b2rds.pth
+
+find . -name activate
+. ./pipx/venvs/b2rds/bin/activate
+poe --root ${HOME}/.local/pipx/venvs/b2rds/lib/python3.10/site-packages/b2rds/  rds demo-b-amd
+
+ln -s ${HOME}/src/devops-sso-util/b2rds/pyproject.toml \
+      ${HOME}/.local/pipx/venvs/b2rds/lib/python3.10/site-packages/b2rds/pyproject.toml
+
+poe --root ${HOME}/.local/pipx/venvs/b2rds/lib/python3.10/site-packages/b2rds/  rds demo-b-amd
+
+vim ~/src/devops-sso-util/b2rds/pyproject.toml 
+
+poe --root ${HOME}/.local/pipx/venvs/b2rds/lib/python3.10/site-packages/b2rds/  rds demo-b-amd
+cd ~/src/devops-sso-util/b2rds
+find . -name rds.cmpl
+mv gen/rds.cmpl .
+# find the 1.2b version of poetry. Should be in the venv. 
+/Users/marc/.local/pipx/venvs/b2rds/bin/poetry --version
+# or this one...
+/Users/marc/.local/bin/poetry
+
+# one-liner to create poetry shell.
+source $(poetry env info --path)/bin/activate
+

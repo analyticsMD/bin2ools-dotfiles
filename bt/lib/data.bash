@@ -2,14 +2,14 @@
 
 # shellcheck shell=bash disable=SC2148
 
+to_debug flow && sleep 1 && echo data:start
+
 # This lib embeds a bunch of our setup data
 # for later use.  Routines that read/write json
 # objects are used for compatibility with zsh, 
 # python, golang, and other. 
 
 # SEE: https://stackoverflow.com/questions/10582763/how-to-return-an-array-in-bash-without-using-globals/49971213
-
-#BT_DEBUG=yes
 
 # TODO: These static arrays need to be added to json
 #       configurations stored in ssm, or more likely
@@ -38,12 +38,15 @@ use_array() {
     echo ${r//\[[0-9]\]=}
 }
 
+to_debug flow echo data:use_array
+
 # Same as use_array() but preserves keys.
 use_array_assoc() {
     local r=$( declare -p $1 )
     echo ${r#declare\ -a\ *=}
 }  
 
+to_debug flow echo data:use_array_assoc
 
 json2bash() { 
 
@@ -95,6 +98,8 @@ json2bash() {
   } 
 }
 
+to_debug flow echo data:json_to_bash
+
 
 
 # Pass an array ref, or associative array: returns json.
@@ -131,73 +136,70 @@ bash2json() {
 
 }
 
-  # list of arrays to choose from.
-  array_list=( "role_types" "primary" "delegated"  \
+to_debug flow echo data:bash2json
+
+# list of arrays to choose from.
+array_list=( "role_types" "primary" "delegated"  \
                "restricted" "unrestricted" "guild" )
 
-  #[ -n "${array_list["${ref}"]}" ]]     && \
-  #declare -p "${array_list["${ref}"]}" || \
-  #return 
+#[ -n "${array_list["${ref}"]}" ]]     && \
+#declare -p "${array_list["${ref}"]}" || \
+#return 
 
-  declare -a role_types=(  role_types                  \
-                                          primary      \
-                                          delegated    \
-                                          unrestricted \
-                                          restricted   \
-                                          guild        \
+to_debug flow echo data:config_arrays
+
+declare -a role_types=(  role_types                  \
+                                        primary      \
+                                        delegated    \
+                                        unrestricted \
+                                        restricted   \
+                                        guild        \
+)
+declare -a primary=(   primary                       \
+                                        admin        \
+                                        arch         \
+                                        sec          \
+                                        devops       \
+)
+declare -a delegated=(    delegated                  \
+                                        int          \
+                                        ds           \
+                                        dp           \
+                                        app          \
+                                        qa           \
   )
-  declare -a primary=(   primary                       \
-                                          admin        \
-                                          arch         \
-                                          sec          \
-                                          devops       \
-  )
-  declare -a delegated=(    delegated                  \
-                                          int          \
-                                          ds           \
-                                          dp           \
-                                          app          \
-                                          qa           \
-  )
-  declare -a unrestricted=(  unrestricted              \
-                                          identity     \
-                                          prod         \
-                                          cnc          \
-                                          demo         \
-                                          qa           \
-                                          dev          \
-                                          devdata      \
-  )
-  declare -a restricted=(   restricted                 \
-                                          dns          \
-                                          master       \
-                                          audit        \
-                                          security     \
-  )
-  declare -a guild=(         guild                     \
-                                          cicd         \
-                                          terraform    \
-                                          helm         \
-                                          dba          \
-                                          ml           \
-                                          ssm          \
-  )
+declare -a unrestricted=(  unrestricted              \
+                                        identity     \
+                                        prod         \
+                                        cnc          \
+                                        demo         \
+                                        qa           \
+                                        dev          \
+                                        devdata      \
+)
+
+declare -a restricted=(   restricted                 \
+                                        dns          \
+                                        master       \
+                                        audit        \
+                                        security     \
+)
+
+declare -a guild=(         guild                     \
+                                        cicd         \
+                                        terraform    \
+                                        helm         \
+                                        dba          \
+                                        ml           \
+                                        ssm          \
+)
+
 
 get_arrayref() {
     local this_arr 
     array_def "${1}"            # call function to populate the array
     declare -p this_arr         # test the array
 }
-
-find_in() { 
-  this_arrayref="${1:-""}"
-  e="${2:-"NONE"}"
-  [[ "${this_arrayref}" == "" ]] && echo "" && return 1
-  source <(get_arrayref "${this_arrayref}")
-  [[ ${#${this_arrayref}} -gt 0 ]] && \
-  : 
-  
-}  
 
 
 # USAGE:  . get_array "teams"  # sources the array. 
@@ -226,12 +228,15 @@ shopt -s nocasematch
 # find_in role_primary sec
 #
 # shellcheck disable=SC2068,SC2086
+to_debug flow echo data:find_in
 find_in() { 
   declare -n a=${1} && . <( "${a[@]@A}")
   s=${2:-"_"} && name=${1:-"accounts"}
   [[ $s == '_' ]] && for e in ${a[@]:1}; do echo $e; done && return 0
   [[ "${a[*]:2}" = "${s}" ]] && echo ${s} || echo -ne ""
 }
+
+
 
 # USAGE
 # -----
@@ -263,12 +268,15 @@ find_in() {
 # Does not preserve indices 
 # or work with sparse arrays.
 #
+to_debug flow echo data:is_in
 is_in() { 
   _this=${1:=NONE} 
  sz="${#_this[@]}" 
  arr="${_this[*]}" 
  local array=("${@:1:$1}"); shift "$(($1 + 1))" in
 } 
+
+to_debug flow echo data:find_in_accounts
 
 #shellcheck disable=SC2068
 find_in_accounts() {
@@ -278,6 +286,8 @@ find_in_accounts() {
     echo "$l" | perl -nle "print \"$l\" if /${this}/" | perl -pe "s/%/ /g"
   done
 }
+
+to_debug flow echo data:find_in_rds
 
 # shellcheck disable=SC2068,SC2154
 find_in_rds() {
@@ -306,6 +316,8 @@ key_sort() {
   [[ "$(printf %s "${!a_of_a[@]}")" =~ ^[0-9]+$ ]] && type=a
 } 
 
+to_debug flow echo data:key_sort
+
 # shellcheck disable=SC2068,SC2120
 role_arrays() {
   local -n a_of_a="${1:-this_index}"
@@ -316,6 +328,8 @@ role_arrays() {
      done
   done
 }
+
+to_debug flow echo data:role_arrays
 
 #role_arrays
 
@@ -334,6 +348,8 @@ this_index() {
      for e in $("${a_of_a[@]@A}" && printf "%s\n" "${!a_of_a[@]}"); do echo "$e"; done) \
   <( for e in $("${a_of_a[@]@A}" && printf "%s\n"  "${a_of_a[@]}"); do echo "$e"; done) 
 }
+
+to_debug flow echo data:this_index
 
 # read example: 
 # -------------
@@ -356,6 +372,7 @@ find_in_this() {
   done <<< "$( this_index "${1}")" 
 } 
 
+to_debug flow echo data:find_in_this
 
 
 # Test 
@@ -365,6 +382,7 @@ is_account() {
   echo "${acct_ref[$2]}" 
 }
 
+to_debug flow echo data:is_account
 
 # Queries aws for a list of all instances. 
 # Caches them as an associative array in a local file. 
@@ -416,6 +434,7 @@ cache_inst() {
     mv "$tmppath" "${BT}/src/inst_map.src"
 }
 
+to_debug flow echo data:cache_inst
 
 
 # Once the cache is written (see cache_inst, above)
@@ -470,6 +489,8 @@ function teams() {
   return 1
 }
 
+to_debug flow echo data:get_inst
+
 # jq queries and functions. 
 
 # search by array by value.
@@ -477,3 +498,71 @@ function teams() {
 
 # jq -n '"1111"|split("1";"")'   # count array. 
 # 
+#!/usr/bin/env /usr/local/bin/bash
+
+# shellcheck shell=bash disable=SC2148
+
+# TODO: These static arrays need to be added to json
+#       configurations stored in ssm, or more likely
+#       in ConsoleMe... 
+#
+declare -a role_types=(    role_types                \
+                                        primary      \
+                                        delegated    \
+                                        unrestricted \
+                                        restricted   \
+                                        guild        \
+)
+declare -a primary=(   primary                       \
+                                        admin        \
+                                        arch         \
+                                        sec          \
+                                        devops       \
+)
+declare -a delegated=(    delegated                  \
+                                        int          \
+                                        ds           \
+                                        dp           \
+                                        app          \
+                                        qa           \
+)
+declare -a unrestricted=(  unrestricted              \
+                                        identity     \
+                                        prod         \
+                                        cnc          \
+                                        demo         \
+                                        qa           \
+                                        dev          \
+                                        devdata      \
+)
+declare -a restricted=(   restricted                 \
+                                        dns          \
+                                        master       \
+                                        audit        \
+                                        security     \
+)
+declare -a guild=(         guild                     \
+                                        cicd         \
+                                        terraform    \
+                                        helm         \
+                                        dba          \
+                                        ml           \
+                                        ssm          \
+)
+
+
+
+# Globbing
+# --------
+# Advanced globbing is an easy way to sort through files.
+# But we need to Keep tabs on whether a particular glob was
+# originally set.  We should only toggle the setting if
+# originally not set.
+#
+#shopt -s extglob
+#shopt -s nullglob
+#shopt -s dotglob
+#shopt -s nocasematch
+
+to_debug flow && sleep 1 && echo data:end
+
