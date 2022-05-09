@@ -7,7 +7,7 @@
 ## contains streamlined functions to make that environment
 ## is easy to work with. 
 export BT="${HOME}/.bt"
-. ${BT}/lib/bt_load
+. ${BT}/settings
 
 echo -ne '\n\n'
 env | sort | grep AWS 

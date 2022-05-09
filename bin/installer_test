@@ -15,7 +15,7 @@ sudo_refresh() {
   reset_debug
 }
 
-#sudo_refresh
+sudo_refresh
 
 
 # Initialize (or reinitialize) sudo to save unhelpful prompts later.
@@ -88,8 +88,8 @@ echo BASH VERSION: $BASH_VERSION
 #/ Install development dependencies on macOS.
 #set -e
 
-[[ "$1" = "--debug" || -o xtrace ]] && STRAP_DEBUG="1"
-STRAP_SUCCESS=""
+[[ "$1" = "--debug" || -o xtrace ]] && DEBUG="1"
+SUCCESS=""
 
 sudo_askpass() {
   if [ -n "$SUDO_ASKPASS" ]; then
@@ -103,9 +103,9 @@ cleanup() {
   set +e
   sudo_askpass rm -rf "$CLT_PLACEHOLDER" "$SUDO_ASKPASS" "$SUDO_ASKPASS_DIR"
   sudo --reset-timestamp
-  if [ -z "$STRAP_SUCCESS" ]; then
-    if [ -n "$STRAP_STEP" ]; then
-      echo "!!! $STRAP_STEP FAILED" >&2
+  if [ -z "$SUCCESS" ]; then
+    if [ -n "$STEP" ]; then
+      echo "!!! $STEP FAILED" >&2
     else
       echo "!!! FAILED" >&2
     fi

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Initialize (or reinitialize) sudo to save unhelpful prompts later.
 _msg () { 
 
@@ -18,7 +19,6 @@ _msg () {
 }
 
 
-
 sudo_init() {
 
   mkdir -p "${HOME}/tmp"
@@ -26,9 +26,9 @@ sudo_init() {
   export HOMEBREW_NO_INSTALL_CLEANUP=yes
   export HOMEBREW_NO_ENV_HINTS=yes
 
-  #if [ -z "$STRAP_INTERACTIVE" ]; then
-  #  return
-  #fi
+  if [ -z "$INTERACTIVE" ]; then
+    return
+  fi
 
   # If TouchID for sudo is setup: use that instead.
   #if grep -q pam_tid /etc/pam.d/sudo; then
@@ -43,7 +43,7 @@ sudo_init() {
       read -rsp "$MSG" SUDO_PASSWORD
       #read -rsp "--> Enter your password (for sudo access):" SUDO_PASSWORD
       echo
-      if sudo --validate --stdin 2>/dev/null <<<"$SUDO_PASSWORD"; then
+      if sudo "${ --validate --stdin 2>/dev/null}" <<<"$SUDO_PASSWORD"; then
         break
       fi
 
@@ -69,14 +69,17 @@ BASH
   #fi
 }
 
+sudo_init 
+
+
 echo BASH VERSION: $BASH_VERSION
 
 #/ Usage: installer [--debug]
 #/ Install development dependencies on macOS.
-#set -e
+#. set -e
 
 [[ "$1" = "--debug" || -o xtrace ]] && STRAP_DEBUG="1"
-STRAP_SUCCESS=""
+SUCCESS=""
 
 sudo_askpass() {
   if [ -n "$SUDO_ASKPASS" ]; then
@@ -90,13 +93,13 @@ cleanup() {
   set +e
   sudo_askpass rm -rf "$CLT_PLACEHOLDER" "$SUDO_ASKPASS" "$SUDO_ASKPASS_DIR"
   sudo --reset-timestamp
-  if [ -z "$STRAP_SUCCESS" ]; then
-    if [ -n "$STRAP_STEP" ]; then
-      echo "!!! $STRAP_STEP FAILED" >&2
+  if [ -z "$SUCCESS" ]; then
+    if [ -n "$STEP" ]; then
+      echo "!!! $STEP FAILED" >&2
     else
       echo "!!! FAILED" >&2
     fi
-    if [ -z "$STRAP_DEBUG" ]; then
+    if [ -z "$DEBUG" ]; then
       echo "!!! Run '$0 --debug' for debugging output." >&2
       echo "!!! If you're stuck: file an issue with debugging output at:" >&2
       echo "!!!   $STRAP_ISSUES_URL" >&2
@@ -105,18 +108,9 @@ cleanup() {
 }
 
 # functions for turning off debug for use when handling the user password
-clear_debug() {
-  set +x
-}
-
-sudo_refresh() {
-  clear_debug
-  if [ -n "$SUDO_ASKPASS" ]; then
-    sudo --askpass --validate
-  else
-    sudo_init
-  fi
-  reset_debug
+clear_debug() { set +x ;}
+sudo_refresh() { clear_debug; [ -n "$SUDO_ASKPASS" ] && \
+    { sudo --askpass --validate ;} || sudo_init;  reset_debug
 }
 
 #sudo_refresh
@@ -133,7 +127,6 @@ fi
 STDIN_FILE_DESCRIPTOR="0"
 [ -t "$STDIN_FILE_DESCRIPTOR" ] && STRAP_INTERACTIVE="1"
 
-
 # CUSTOM_HOMEBREW_TAP=
 # CUSTOM_BREW_COMMAND=
 
@@ -142,22 +135,15 @@ STRAP_ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
 
 # We want to always prompt for sudo password at least once rather than doing
 # root stuff unexpectedly.
-sudo --reset-timestamp
+#sudo --reset-timestamp
 
-
-reset_debug() {
-  if [ -n "$STRAP_DEBUG" ]; then
-    set -x
-  fi
-}
+reset_debug() { [ -n "$STRAP_DEBUG" ] && set -x ;} 
 
 abort() { STRAP_STEP="";   echo "!!! $*" >&2; exit 1; }
 log()   { STRAP_STEP="$*"; sudo_refresh; echo "--> $*"; }
 logn()  { STRAP_STEP="$*"; sudo_refresh; printf -- "--> %s " "$*"; }
 logk()  { STRAP_STEP="";   echo "OK"; }
-escape() {
-  printf '%s' "${1//\'/\'}"
-}
+escape() { printf '%s' "${1//\'/\'}" ;}
 
 # create symlink shortcut. 
 [[ ! -L ${HOME}/.bt ]] && ln -s ${HOME}/.bin2ools-dotfiles ${HOME}/.bt
@@ -209,8 +195,8 @@ sudo_askpass defaults write /Library/Preferences/com.apple.alf globalstate -int 
 sudo_askpass launchctl load /System/Library/LaunchDaemons/com.apple.alf.agent.plist 2>/dev/null
 
 
-if [ -n "$STRAP_NAME" ] && [ -n "$STRAP_EMAIL" ]; then
-  LOGIN_TEXT=$(escape "Found this computer? Please contact $STRAP_NAME at $STRAP_EMAIL.")
+if [ -n "$GIT_NAME" ] && [ -n "$GIT_EMAIL" ]; then
+  LOGIN_TEXT=$(escape "Found this computer? Please contact $GIT_NAME at $GIT_EMAIL.")
   echo "$LOGIN_TEXT" | grep -q '[()]' && LOGIN_TEXT="'$LOGIN_TEXT'"
   sudo_askpass defaults write /Library/Preferences/com.apple.loginwindow \
     LoginwindowText \
@@ -223,13 +209,17 @@ logk
 # Look for outdated packages. 
 # Skip if our dependencies to not need updating.
 brew outdated | tee > ${HOME}/.outdated 2>&1
-brew_inst() { 
-  if ! grep -qE "^$1" ${HOME}/.outdated; then 
-      echo "$1 is installed and up-to-date."
-  elif grep -qE "^$1" ${HOME}/.outdated; then 
-      brew upgrade "$1"; 
+
+brew_inst() {
+  last="${@:$#}" 
+  [[ -z "$last" ]] && echo "Nothing todo." && return
+  if ! grep -qE "$last" "${HOME}/.outdated"; then 
+    echo -ne "${@:1} is already installed. Skipping...\n"
+    return
+  elif grep -qE "$last" ${HOME}/.outdated; then 
+      brew upgrade "${@:1:$#}"; 
   else 
-      brew install "$1"; 
+      brew install "${@:1:$#}"; 
   fi
 }
 
@@ -285,12 +275,10 @@ logn "Updating Homebrew:"
 brew update --quiet
 logk
 
-log "Installing Homebrew taps and extensions..."
-brew bundle --quiet --file=- <<RUBY
-tap "homebrew/cask"
-tap "homebrew/core"
-tap "homebrew/services"
-RUBY
+logn "Installing Homebrew taps and extensions..."
+brew tap "homebrew/cask"
+brew tap "homebrew/core"
+brew tap "homebrew/services"
 logk
 
 echo "Installing minimal deps for github repo checkouts"
@@ -307,26 +295,44 @@ brew_inst tmux
 brew_inst python@3.10
 brew_inst pip
 brew_inst pipx
+brew_inst mysql-client
 brew_inst poetry
 
 brew tap microsoft/git
 brew_inst git-credential-manager-core
 
-
-echo "Installing ssm_plugin and awscliv2"
-brew tap "syncdk/aws-session-manager-plugin"
+#logn "Installing ssm_plugin and awscliv2\n\n"
+#brew tap syncdk/aws-session-manager-plugin
 brew_inst awscli@2 
-brew_inst aws-session-manager-plugin
+brew_inst --cask session-manager-plugin 
+sleep 0.1
+logk
+
 # clean up outdated file.
-rm ${HOME}/.outdated
+#rm ${HOME}/.outdated
 
+/usr/local/bin/bash -c $(cat <<++
 
+BT="${HOME}/.bt"
 
+# functions for turning off debug for use when handling the user password
+reset_debug() { [ -n "$STRAP_DEBUG" ] && set -x ;} 
+clear_debug() { set +x ;}
+sudo_refresh() { clear_debug; [ -n "$SUDO_ASKPASS" ] && \
+    { sudo --askpass --validate ;} || sudo_init;  reset_debug
+}
+# utils
+abort() { STEP="";   echo "!!! $*" >&2; exit 1 ;}
+log()   { STEP="$*"; sudo_refresh; echo "--> $*" ;}
+logn()  { STEP="$*"; sudo_refresh; printf -- "--> %s " "$*" ;}
+logk()  { STEP="";   echo "OK" ;}
+escape() { printf '%s' "${1//\'/\'}" ;}
 
 # Setup Git configuration.
+echo .
 
 # Set by web/app.rb
-STRAP_NAME="$(git config --list                  | \
+GIT_NAME="$(git config --list                  | \
                   grep user.name                 | \
                   perl -pe 's/.*\=([\w\ ]+)/$1/' | \
                   head -n 1)"
@@ -334,32 +340,27 @@ STRAP_NAME="$(git config --list                  | \
 GIT_EMAIL="${USER}@qventus.com"
 
 GITHUB_USER="$(git config --list | \
-                     grep user.email | perl -pe 's/.*\+([\w+_-]+)\@.*/$1/')"
+              grep user.email | perl -pe 's/.*\+([\w+_-]+)\@.*/$1/')"
 
-GITHUB_TOKEN=
+GITHUB_TOKEN=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
 
-/usr/local/bin/bash <<END_OF_SCRIPT
+# CUSTOM_HOMEBREW_TAP=
+# CUSTOM_BREW_COMMAND=
 
-abort() { STRAP_STEP="";   echo "!!! $*" >&2; exit 1; }
-log()   { STRAP_STEP="$*"; sudo_refresh; echo "--> $*"; }
-logn()  { STRAP_STEP="$*"; sudo_refresh; printf -- "--> %s " "$*"; }
-logk()  { STRAP_STEP="";   echo "OK"; }
-escape() {
-  printf '%s' "${1//\'/\'}"
-}
-
+QV_GITHUB_USER=analyticsmd
+ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
 
 logn "Configuring Git:"
 
 if [ -n "$GIT_NAME" ] && ! git config user.name >/dev/null; then
-  git config --global user.name "$STRAP_GIT_NAME"
+  git config --global user.name "$GIT_NAME"
 fi
 
 if [ -n "$GIT_EMAIL" ] && ! git config user.email >/dev/null; then
   git config --global user.email "$GIT_EMAIL"
 fi
 
-if [ -n "$GITHUB_USER" ] && [ "$(git config github.user)" != "$STRAP_GITHUB_USER" ]; then
+if [ -n "$GITHUB_USER" ] && [ "$(git config github.user)" != "$GITHUB_USER" ]; then
   git config --global github.user "$GITHUB_USER"
 fi
 
@@ -367,7 +368,7 @@ fi
 if ! git config push.default >/dev/null; then
   git config --global push.default simple
 fi
-
+echo ..
 # Setup GitHub HTTPS credentials.
 if git credential-osxkeychain 2>&1 | grep $Q "git.credential-osxkeychain"
 then
@@ -379,18 +380,18 @@ then
     git config --global --replace-all credential.helper osxkeychain 
   fi
 
-  if [ -n "$STRAP_GITHUB_USER" ] && [ -n "$STRAP_GITHUB_TOKEN" ]
+  #if [ -n "$GITHUB_USER" ] && [ -n "$GITHUB_TOKEN" ]
+  if [ -n "gangofnuns" ] && [ -n "$GITHUB_TOKEN" ]
   then
     printf "protocol=https\\nhost=github.com\\n" | git credential reject
     printf "protocol=https\\nhost=github.com\\nusername=%s\\npassword=%s\\n" \
-          "$STRAP_GITHUB_USER" "$STRAP_GITHUB_TOKEN" \
+          "$GITHUB_USER" "$GITHUB_TOKEN" \
           | git credential approve
   fi
 fi
 logk
 
-
-
+echo ...
 # Setup dotfiles
 if [ -n "$QV_GITHUB_USER" ]; then
   DOTFILES_URL="https://github.com/$QV_GITHUB_USER/bin2ools-dotfiles"
@@ -415,36 +416,36 @@ fi
 [[ ! -L "${HOME}/.bt" ]] && { 
   ln -sf "${HOME}/.bin2ools-dotfiles/bt" "${HOME}/.bt"
 }
-
+echo ....
 # source bt env
-export BT=${HOME}/.bt
+export BT="${HOME}/.bt"
 . ${BT}/settings
 
-
+echo .....
 # Setup Brewfile
 if [ -n "$QV_GITHUB_USER" ] && { 
   [ ! -f "$HOME/.Brewfile" ] || \
   [ "$HOME/.Brewfile" -ef "$HOME/.bin2ools-dotfiles/Brewfile" ]; 
 }; then
   HOMEBREW_BREWFILE_URL="https://github.com/$QV_GITHUB_USER/bin2ools-dotfiles.git"
-
+  echo V
   if git ls-remote "$HOMEBREW_BREWFILE_URL" &>/dev/null; then
     log "Fetching $QV_GITHUB_USER/bin2ools-dotfiles from GitHub:"
     if [ ! -d "$HOME/.bin2ools-dotfiles" ]; then
       log "Cloning to ~/.bin2ools-dotfiles:"
-      git clone $Q "$HOMEBREW_BREWFILE_URL" ~/.bin2ools-dotfiles
+      git clone $Q "$HOMEBREW_BREWFILE_URL" ${HOME}/.bin2ools-dotfiles
       logk
     else
       (
-        cd ~/.bin2ools-dotfiles
+        cd ${HOME}/.bin2ools-dotfiles
         git pull $Q 
       )
     fi
     ln -sf ~/.bin2ools-dotfiles/Brewfile ~/.Brewfile
     logk
   fi
+  echo VV
 fi
-
 
 
 # Install from local Brewfile
@@ -473,28 +474,29 @@ fi
 #fi
 
 
-export BT_ACCOUNT=prod BT=${HOME}/.bt 
-cd ${BT}
+export BT_ACCOUNT=prod BT="${HOME}/.bt" 
+
+cd "${BT}"
 
 
 # run pipx installer
-log "Executing 'pipx' installer. We should talk about the plan:"
+logn "Executing 'pipx' installer."
 ${BT}/inst/python-pipx
 
 
 
 echo -ne "\nALMOST DONE!  Generating AWS Profiles...\n\n"
 
-
 # Run post-install dotfiles scripts
-log "Executing 'source ${HOME}/.bt/settings':"
-/usr/local/bin/bash -c '. ${BT}/settings && autologin "prod"'
+logn "Executing 'source ${HOME}/.bt/settings':"
+${BT}/settings 
+autologin "prod"
 
 
 export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}
 log "Executing 'profile' installer. Installs user AWS config."
 ${BT}/gen/profiles.gen
-
+logk
 
 # for bash & zsh - autocomplete for pipx modules.
 eval "$(register-python-argcomplete pipx)"
@@ -504,18 +506,20 @@ eval "$(register-python-argcomplete pipx)"
   rm ${HOME}/.bin2ools-dotfiles/bt/.bt 
 }
 
-
-STRAP_SUCCESS="1"
+SUCCESS="1"
 log "Your system is now bootstrapped!"
 
 # Add quick script to launch bintools
-echo -ne '#!/usr/bin/env /usr/local/bin/bash\n\ncd \
-    ${HOME}/.bt && . settings && autologin\n' > /usr/local/bin/bt
-chmod ug+x /usr/local/bin/bt
+  echo -ne '#!/usr/bin/env /usr/local/bin/bash"\n\n
+  cd ${HOME}/.bt                  && \
+  . settings                      && \
+    autologin\n > /usr/local/bin/bt; \
+    chmod ug+x /usr/local/bin/bt'
 
 # check for github access (early on).
-#ssh git@github.com
+# ssh git@github.com
 
-END_OF_SCRIPT
+++
 
+)
 

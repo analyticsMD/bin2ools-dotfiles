@@ -21,7 +21,7 @@ echo -ne     "--------------------------\n\n"
 
 # NOTE: experimental.
 pipx install -f aws-fuzzy-finder
-pipx inject devops-sso-util  virtualenv
+#pipx inject devops-sso-util  virtualenv
 
 # local installs
 #declare -a packages 

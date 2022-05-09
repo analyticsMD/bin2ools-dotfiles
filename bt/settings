@@ -10,8 +10,13 @@
 to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
 
 # shellcheck disable=SC1090,SC1094 
-[[ "${BASH_VERSION:0:1}" -ne 5 ]] && { 
-  echo "WARNING: unsupported shell spawned: ${BASH_VERSION}" && exit 1
+
+i=${#BASH_SOURCE[@]}
+ver="$(echo "${BASH_VERSION}"             | \
+       perl -nle 'print if s/(\d+)\..*/\1/')"
+[[ "${ver}" -ne 5 ]] && { 
+  echo "WARNING: unsupported shell spawned: ${BASH_VERSION}"
+  return 1
 }
 
 #export BT_DEBUG="flow env lgin rds rdsc rdst cche util data pmpt qvdb"
