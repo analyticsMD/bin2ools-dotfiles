@@ -15,16 +15,98 @@ to_debug flow echo BT: "${BT}"
 to_debug flow sleep 0.5 && echo "utils:to_debug"
 to_debug flow echo "utils:ansi_color"
 
-rds() { 
- :   
+
+to_debug flow && echo pmpt:get_funcs
+
+get_account() {
+  this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
 }
 
-ssm() { 
- :  
-} 
+get_usr() { 
+  echo "${USER}"
+}
 
-bt_activate() {
-  PKG=${1}
+get_team() { 
+  set_team >/dev/null 2>&1 && echo "${BT_TEAM}"  
+}
+
+
+rds() { : ;}
+rds_complete() { : ;} 
+rds_generate() { : ;}
+
+ssm() { : ;} 
+ssm_complete() { : ;} 
+ssm_generate() { : ;}
+
+
+# find a toml file. 
+function locate_toml() {
+	local path
+	IFS="/" read -ra path <<<"$PWD"
+	for ((i=${#path[@]}; i > 0; i--)); do
+		local current_path=""
+		for ((j=1; j<i; j++)); do
+			current_path="$current_path/${path[j]}"
+		done
+		if [[ -e "${current_path}/$1" ]]; then
+			echo "${current_path}/"
+			return
+		fi
+	done
+	return 1
+}
+
+
+# toggle bt venv on or off. 
+#
+function bt_venv() {
+  ret="$?"
+  if [[ -v BT_MANUAL ]]; then
+    return $ret
+  fi
+  if find_in_devops pyproject.toml &> /dev/null; then
+    if [[ ! -v VIRTUAL_ENV ]]; then
+      if BASE="$(poetry env info --path)"; then
+	    . "$BASE/bin/activate"
+        PS1=""
+      else
+        BT_MANUAL=1
+      fi
+    fi
+  elif [[ -v VIRTUAL_ENV ]]; then
+    deactivate
+  fi
+  return $ret
+}
+
+
+#bt() { 
+#  BT_MANUAL=1
+#  if [[ -v VIRTUAL_ENV ]]; then
+#    deactivate
+#  else
+#    . "$(poetry env info --path)/bin/activate"
+#  fi
+#  PROMPT_COMMAND="(bt);$PROMPT_COMMAND"
+#} 
+#
+#activate() {
+#
+#  export BT="${HOME}/.bt"
+#  if [[ -v VIRTUAL_ENV ]]; then
+#    deactivate
+#  else
+#    . "$(poetry env info --path)/bin/activate"
+#  fi
+#}
+
+
+  PKG="${1}" # pass in package name (devops-sso-util).
+
+  # Determine filesystem location of devops-sso-util dir.
+  foo() { 
+
   [[ "${PKG}" =~ b2 ]] || PKG_NAME="b2${PKG}" 
   echo PKG_NAME: ${PKG_NAME}
   PTR="$(find ${HOME}/.local/pipx -name "${PKG_NAME}.pth")" 

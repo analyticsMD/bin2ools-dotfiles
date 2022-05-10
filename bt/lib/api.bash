@@ -3,12 +3,20 @@
 to_debug flow && sleep 0.5 && echo api:start
 to_debug flow && echo api:perms
 
-# prove you have perms.
+
+# Show current permissions. 
+# -------------------------
+# Parses .aws config for details.
+# Tries to aide those who have experienced loss. 
+#
 perms() {
+  # time parse our surroundigs.    
   account="$(cat "${AWS_CONFIG_FILE}"                           | \
              perl -nle "print if s/(${ARGV}\]|role_arn.*)/\1/;" | \
              grep -E -A 1 "${ARGV}\]" | tail -n 1               | \
              perl -nle 'print if s/\s*role_arn\s*\=\s*.*::([\w_\-]+)/\1/;')"
+
+  echo account: ${account}
 
   login="$(aws sts get-caller-identity 2>/dev/null  | \
            jq -r '.Arn'                             | \
@@ -27,21 +35,9 @@ get_account() {
 }
 
 
-to_debug flow && echo api:regen_qv_stubs
-
-regen_qv_stub() { 
-
-    [[ -n "${AWS_SHARED_CREDENTIALS_FILE}" ]] && {
-      CREDS="${AWS_SHARED_CREDENTIALS_FILE}"
-      perl -pe '\n\n[qventus]\n  
-              manager = awsume\n
-              region = us-west-2/\n\n/g' >> "${CREDS}"
-    }
-    #stash_creds
-} 
-
 
 to_debug flow && echo api:wipe
+
 
 # unset all sessions and settings.
 # --------------------------------
@@ -52,18 +48,21 @@ to_debug flow && echo api:wipe
 # https://github.com/99designs/aws-vault/blob/master/USAGE.md#environment-variables
 #
 wipe () { 
-  #stash_creds  # broken. copies wrong file. 
-  #cat "${BT}/cfg/bt_creds.ini" > ~/.aws/bt_creds
+
+  # logout from whatever you can find.  
   "${DEFAULT_AWSLIB}" logout  > /dev/null 2>&1
+
   # remove expired creds from cli, awsume caches
-  rm -rf "${HOME}"/.aws/sso/cache/*
-  rm -rf "${HOME}"/.aws/cli/cache/*
-  #regen_creds 
+  rm -rf "${HOME}"/.aws/{sso,cli}/cache/* 
   rm -rf "${HOME}"/.awsume/cache/*
+
+  #regen_creds 
   awsume --unset > /dev/null 2>&1
   aws_profile --unset
+
   unset AWSUME_PROFILE AWSUME_DEFAULT_PROFILE AWS_PROFILE AWS_DEFAULT_PROFILE
   # check we have no stale identities remaining.
+
   aws-whoami >/dev/null 2>&1 || echo "no identities left."
   "${DEFAULT_AWSLIB}" check >/dev/null 2>&1
   echo "all cached sessions removed."
@@ -101,10 +100,11 @@ autologin() {
   # look for expired creds.
   raw="$("${DEFAULT_AWSLIB}" check 2>&1)" 
   to_debug lgin echo raw check output: "${raw}"
+
   sso="$(echo "${raw}" | \
       perl -nle 'print if s/.*(valid until [\w\-\:\ ]+|fix|expired).*/\1/')"
+
   to_debug lgin echo sso: $sso
-  
   to_debug lgin echo "BT_ROLE: ${BT_ROLE} BT_ACCOUNT: ${BT_ACCOUNT} BT_TEAM: ${BT_TEAM}" 
 
   # refresh just the sso token (12 hour lifespan).
@@ -175,45 +175,6 @@ autologin() {
 } 
 
 
-
-# NOTE: We must use a different loader for assoc arrays.
-sourceror() {  
-  arr=${@}
-  for name in ${arr[@]}; do
-    #declare -A "$name"=()
-    . <( cat "${BT}/src/${file}.arr" )  # assoc. array
-  done
-} 
-
-
-
-# Takes either an AWS account name, or an AWS account_id.
-# Returns a name and id pair, or an empty string. 
-account_lookup() { 
-
-  acct="${1:-prod}"
-  [[ "$acct" =~ [0-9]{12} ]] && { acct_id="${acct}" && unset acct ;}
-  #acct_id="${2:-123456789012}"
-
-  JSON_OBJ="$(cat "${BT}/data/json/bt/accounts.json")"
-  #JSON_OBJ="{\"account\":{\"${acct}\":${acct_id}}"
-
-  # forward lookup
-  [[ -n "${acct}" ]] && { 
-     : # need jq. for number lookup.
-  }
-
-  # reverse lookup
-  [[ -n "${acct_id}" ]] && { 
-
-    acct="$(echo "${acct_id}" |                         \
-             jq -r  '.account |                         \
-                 to_entries[] |                         \
-        select(.key|tostring) | "\(.key)"' "${JSON_OBJ}")"
-
-    echo "${acct}" "${acct_id}"
-  } 
-}
 
 to_debug flow && echo api:autologin.end
 to_debug flow && sleep 0.5 && echo api:end

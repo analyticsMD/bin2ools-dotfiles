@@ -197,21 +197,6 @@ function prompt() {
 #   -- if yes, return true.
 
 
-to_debug flow && echo pmpt:get_funcs
-
-
-get_account() {
-  this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
-}
-
-get_usr() { 
-  echo "${USER}"
-}
-
-get_team() { 
-  set_team >/dev/null 2>&1 && echo "${BT_TEAM}"  
-}
-
 
 to_debug flow && echo pmpt:_prompt_func
 

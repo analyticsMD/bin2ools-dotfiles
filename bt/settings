@@ -168,72 +168,7 @@ role=qventus
 [[ -n "${BT_ROLE}" ]] && { role="${BT_ROLE}" ;}
 autologin $role 
 
-q() {  
- : 
-  # ----------------------------------------------------------------
-  # GENERATORS 
-  # ----------------------------------------------------------------
-  # Scripts that generate bintools automated configs.
-  # See: ${BT}/utils/gen
-  
-  # ----------------------------------------------------------------
-  # SOURCING
-  # ----------------------------------------------------------------
-  # Bintools does a lot of sourcing to create a productive environment. 
-  #
-  # Globbing
-  # --------
-  # Advanced globbing is an easy way to sort through files. 
-  # 
-  #shopt -q extglob;     extglob_set=$?
-  #((extglob_set))     && shopt -s extglob
+# Source dotfiles and scripts under ${HOME}/.bt/src
+# source_load() 
 
-  # Array of dirs where source files live.
-  # As a rule, these are sourced ONLY from here, and ONLY once.
-#  declare -a dirs
-#  dirs=(           \
-#    src            \
-#  )                
-#
-#  for d in $(printf "%s\n" "${dirs[@]}"); do
-#    # sources dirs only. 
-#    [[ "${d}" = src* ]] || continue  
-#    DIR="${BT}/${d}" && q_pushd 2>/dev/null "${DIR}"
-#    echo -ne "\n\n${BLUE}Sourcing in ${DIR}...${NC}\n\n"
-#    # shellcheck disable=SC2125
-#    glob=[!_]?*
-#    files=( "$( printf "%s\n" "${glob}")" )
-# 
-#    # longest file. 
-#    lg=0
-#    for f in $(printf '%s' "${files[@]}"); do 
-#      this=${#f}
-#      [[ "$lg" -le "$this" ]] && lg=$this 
-#    done
-# 
-#    for f in $(printf '%s' "${files[@]}"); do
-#      [[ ${f} = *.@(new|cmpl|src|gen|arr$) ]] || continue
-#      src_str="\t./${f}"
-#      # shellcheck disable=SC1090,SC1094 
-#      source ./"${f}" >/dev/null 2>&1    && \
-#      status="success!" COLOR="${GREEN}" || \
-#      status="failed."  COLOR="${RED}"  
-#      printf "%b%*.b%b${COLOR}%s${NC}%b\n"  \
-#          "$src_str" $(( lg - "${#f}" + 10 )) "."30 "" "${status}"
-#    done
-#    # shellcheck disable=SC2119
-#    q_popd && "echo thanks!"
-#  done
-#
-#  echo _____ 
-
-#  ((extglob_set))     && shopt -u extglob
-#  echo -ne "\n\n\n"
-  
-  # For fun, show a pretty tree-based display.  
-#  tree -a -C "${BT}"/src --noreport --dirsfirst -F
-}
-
-# shellcheck disable=SC2015
-#[[ "${BT_SETTINGS}" = *quiet* ]] && q > /dev/null 2>&1 || q
 

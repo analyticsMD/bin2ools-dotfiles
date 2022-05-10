@@ -418,7 +418,6 @@ function _get() {
   JQ_STR='| to_entries[] | select( "$name" )'
   CMD="$(printf '.%s %s' "${obj}" "${JQ_STR}")"
 
-
   echo cat "${OBJ}" | jq --arg name "${2}" "${CMD}"
 
   #all_accounts = (unrestricted + restricted)

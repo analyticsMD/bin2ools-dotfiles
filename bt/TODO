@@ -8,7 +8,6 @@
 ##  alias rds= 
 
 Adjust PATH util -- should NOT include ~/.bt/lib
-  -- if you need that, use the loader: ~/.bt/lib/bt
   -- can we leverage the loader for packaged consoles? 
   -- give each its own self-contained loader? 
   -- would help. 
