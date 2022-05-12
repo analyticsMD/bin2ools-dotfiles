@@ -8,7 +8,7 @@
 # ----------------
 # Uncomment this if you want to display loaded files 
 # at runtime, color coded based on success or failure. 
-#
+
 #export BT_SETTINGS="quiet alog src"
 bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;}
 
@@ -23,79 +23,76 @@ bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;}
 # ----------------------------------------------------------------
 # Bintools does a lot of sourcing to create a productive environment. 
 #
-# Globbing
-# --------
-# Advanced globbing is an easy way to sort through files. 
-# 
-
-
-
-
 # WHERE TO SEARCH.
 # --------------_-
 # Search these top-level directories under your Bin2ools home, 
 # e.g. ${HOME}/.bt/foo, ${HOME}/.bt/bar, etc., for sourceable files.
 #
-export source_these="src gen utils"
-#                   ^
-#                   | add here.
+declare -a source_these=()
+export source_these=( arr src gen arr utils )
+#                     ^
+#                     | add here.
 
 
+bt_src() {
 
-
-bt_src() { 
-
-    source_these=( rds ssm gen arr)
-    shopt -q extglob;     extglob_set=$?
-    ((extglob_set))       && shopt -s extglob
+    q="${1}"  # "quiet" or "noisy"
+     
+    source_these=( arr src gen arr utils )
   
     # Array of dirs where source files live.
     # As a rule, we source ONLY from here, and ONLY once.
-    dirs=( $source_these )                
+    dirs=( ${source_these[@]} )                
+
+    shopt -q extglob;     extglob_set=$?
+    ((extglob_set))       && shopt -s extglob
   
     for d in $(printf "%s\n" "${dirs[@]}"); do
       # sources dirs only. 
-      [[ "${d}" = *.@(src|gen|util$) ]] || continue  
+      to_debug src && echo dir: $d
+      [[ "${d}" = @(src|gen|utils) ]] || continue  
       DIR="${BT}/${d}" && q_pushd 2>/dev/null "${DIR}"
-      echo -ne "\n\nSourcing in ${CYAN}${DIR}...${NC}\n\n"
+      [[ "$q" == "noisy" ]] && echo -ne "Sourcing in ${DIR}...\n\n"
       # shellcheck disable=SC2125
-      glob=[!_]?*
+      glob=[!_!.]?*
       files=( "$( printf "%s\n" "${glob}")" )
-   
-      # longest file. 
-      lg=0
-      for f in $(printf '%s' "${files[@]}"); do 
-        this=${#f}
-        [[ "$lg" -le "$this" ]] && lg=$this 
-      done
-   
+      to_debug src && echo ${files[@]}
+      # longest file (for pretty-printing). 
+      lg="$(printf '%s\n' ${files[@]} | awk '{ print length }' | sort -rn | head -n 1)" 
       for f in $(printf '%s' "${files[@]}"); do
-        [[ ${f} = *.@(new|cmpl|src|gen|arr$) ]] || continue
+        [[ ${f} = *.@(new|cmpl|src|gen|arr) ]] || continue
         src_str="\t./${f}"
         # shellcheck disable=SC1090,SC1094 
-        source ./"${f}" >/dev/null 2>&1    && \
-        status="success!" COLOR="${GREEN}" || \
-        status="failed."  COLOR="${RED}"  
-        printf "%b%*.b%b${COLOR}%s${NC}%b\n"  \
-            "$src_str" $(( lg - "${#f}" + 10 )) "."30 "" "${status}"
+        COLOR=${BLUE}
+        [[ "$q" == "noisy" ]] && { 
+            src_str="\t./${f}"
+            # shellcheck disable=SC1090,SC1094 
+            source ./"${f}" >/dev/null 2>&1 &&    \
+            status="success!" COLOR="${GREEN}" || \
+            status="failed." COLOR="${RED}"
+            printf "%b%*.b%b${COLOR}%s${NC}%b\n"  \
+              "$src_str" $(( lg - "${#f}" + 4 )) "."30 "" "${status}"
+
+        } || {  
+            source ./"${f}" >/dev/null 2>&1 
+        } 
       done
       # shellcheck disable=SC2119
-      q_popd && "echo thanks!"
+      q_popd && echo "done."
+      echo -ne "\n\n\n"
     done
-  
-    echo -e ${GRAY}_____${NC} 
-  
+
+    [[ "${NOISE}" == "noisy" ]] && { 
+        tree -a -C "${BT}/src" --noreport --dirsfirst -F
+        echo -e "${GRAY}_____${NC}" 
+    }  
     # toggle off globbing, but only if it was off before.
     ((extglob_set))     && shopt -u extglob
-    echo -ne "\n\n\n"
 }
 
 # For fun, show a pretty tree-based display.  
 #( NOTE: BT_SETTINGS=quiet suppresses this.) 
 # 
 # shellcheck disable=SC2015
-bt_settings quiet && bt_src  >/dev/null 2>&1 || {  \
-    bt_src && \
-    tree -a -C "${BT}/src" --noreport --dirsfirst -F
-}
+bt_settings src && bt_src "${NOISE}" && return
 

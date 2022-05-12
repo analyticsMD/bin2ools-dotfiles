@@ -34,7 +34,7 @@ to_debug flow && sleep 0.5 && echo "stgs:settings"
 # additional config settings for BT. 
 export BT="${HOME}/.bt"
 
-export BT_SETTINGS="quiet alog src"
+export BT_SETTINGS=" alog "
 # Add 'quiet' if you want to silence status reporting of each 
 # config file when loaded. Add 'src' if you want to load BT's 
 # preconfigured dotfiles (from ~/.bin2ools-dotfiles) or add your own.
@@ -43,6 +43,8 @@ export BT_SETTINGS="quiet alog src"
 #export BT_DEBUG="env lgin rds rdsl rdsc rdst cche util data prmt qv"
 #export BT_DEBUG="rds rdsl rdsc rdst"
 
+export NOISE="quiet"
+export SOURCE_FILES="yes"
 export DEFAULT_ROLE="qventus"
 export DEFAULT_ACCOUNT="prod"
 
@@ -71,17 +73,9 @@ account="${1:-"prod"}"
 
 # For loading associative arrays from files or variables.
 
-. ${BT}/lib/bt.bash && bt_load
-
-if "${LOADER_ACTIVE}" ; then 
-  echo LDR ON: |"${LOADER_ACTIVE}"|
-fi
-
-if ! "${LOADER_ACTIVE}"; then  
-  echo LDR OFF: |"${LOADER_ACTIVE}"|
-fi
-
-echo "LDR: |${LOADER_ACTIVE}|"
+export BT="${HOME}/.bt"
+. ${BT}/lib/bt.bash 
+bt_load
 
 to_debug stgs  echo LOADER_ACTIVE: "${LOADER_ACTIVE}"
 
@@ -97,8 +91,12 @@ to_debug stgs  echo LOADER_ACTIVE: "${LOADER_ACTIVE}"
 # their homedir. With this command, you can add them all to 
 # Bintool and manage them through github. 
 
-bt_settings src && . ${BT}/lib/bt_sourcer.bash 
-
+source ${BT}/lib/bt_sourcer.bash 
+[[ -n ${SOURCE_FILES} ]] && { 
+  echo -ne "sourcing... " 
+  #bt_src ${NOISE}
+  echo -e "${BLUE}disabled.${NC}"
+}
 # NOTE: this feature is controlled by adding the string 
 # 'src' to the variable: BT_SETTINGS. See: the settings section. 
 
@@ -182,8 +180,4 @@ bt_settings alog && autologin $role
 # ------------------------------------------------------------------
 
 to_debug flow && sleep 0.5 && echo "stgs:sources"
-
-# Source dotfiles and scripts under ${HOME}/.bt/src
-# source_load() 
-
 

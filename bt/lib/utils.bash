@@ -31,16 +31,6 @@ get_team() {
   set_team >/dev/null 2>&1 && echo "${BT_TEAM}"  
 }
 
-
-rds() { : ;}
-rds_complete() { : ;} 
-rds_generate() { : ;}
-
-ssm() { : ;} 
-ssm_complete() { : ;} 
-ssm_generate() { : ;}
-
-
 # find a toml file. 
 function locate_toml() {
 	local path
