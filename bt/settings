@@ -7,7 +7,9 @@
 # -----------------------------------------------------------------
 
 # global debug function.
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;}
+
+bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;}
 
 # shellcheck disable=SC1090,SC1094 
 
@@ -30,9 +32,12 @@ to_debug flow && sleep 0.5 && echo "stgs:debug"
 to_debug flow && sleep 0.5 && echo "stgs:settings"
 
 # additional config settings for BT. 
-export BT=${HOME}/.bt
-export BT_SETTINGS=quiet 
-#export BT_SETTINGS=
+export BT="${HOME}/.bt"
+
+export BT_SETTINGS="quiet alog src"
+# Add 'quiet' if you want to silence status reporting of each 
+# config file when loaded. Add 'src' if you want to load BT's 
+# preconfigured dotfiles (from ~/.bin2ools-dotfiles) or add your own.
 
 # uncomment while debugging.
 #export BT_DEBUG="env lgin rds rdsl rdsc rdst cche util data prmt qv"
@@ -59,18 +64,43 @@ to_debug flow && sleep 0.5 && echo "stgs:arg_parsing"
 account="${1:-"prod"}"
 
 
+
 # -----------------------------------------------------------------
 # SHELL LOADER 
 # -----------------------------------------------------------------
 
 # For loading associative arrays from files or variables.
 
+. ${BT}/lib/bt.bash && bt_load
+
+if "${LOADER_ACTIVE}" ; then 
+  echo LDR ON: |"${LOADER_ACTIVE}"|
+fi
+
+if ! "${LOADER_ACTIVE}"; then  
+  echo LDR OFF: |"${LOADER_ACTIVE}"|
+fi
+
+echo "LDR: |${LOADER_ACTIVE}|"
 
 to_debug stgs  echo LOADER_ACTIVE: "${LOADER_ACTIVE}"
 
-. ${BT}/lib/utils.bash
-bt_loader
+#if ${LOADER_ACTIVE}; then
+#  loader_finish  #load again when needed.
+#fi
 
+# -----------------------------------------------------------------
+# SHELL SOURCER 
+# -----------------------------------------------------------------
+
+# Lots of people love putting dotfile and other scripts into 
+# their homedir. With this command, you can add them all to 
+# Bintool and manage them through github. 
+
+bt_settings src && . ${BT}/lib/bt_sourcer.bash 
+
+# NOTE: this feature is controlled by adding the string 
+# 'src' to the variable: BT_SETTINGS. See: the settings section. 
 
 
 # -----------------------------------------------------------------
@@ -102,20 +132,6 @@ source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 to_debug flow && sleep 0.5 && echo "stgs:aliases"
 
 #poetry="$(which poetry)"
-
-# ssm tool.
-#alias ssm_cmpl=". ${BT}/src/ssm.cmpl"
-#alias ssm="ssm_cmpl; poetry run poe ssm ${@}"
-
-# rds tool.
-#alias rds_cmpl=". ${BT}/src/rds.cmpl"
-#alias rds="rds_cmpl; poetry run poe rds ${@}"
-
-# other.
-#alias rds_term="poetry run poe rds_cmpl && poetry run poe rds ${@}"
-#alias dg="poetry run poe rds_cmpl && poetry run poe dg ${@}"
-
-
 
 # -----------------------------------------------------------------
 # ENV SETTINGS
@@ -150,10 +166,13 @@ to_debug flow && sleep 0.5 && echo "stgs:bootstrap_funcs"
 
 to_debug flow && sleep 0.5 && echo "stgs:autologin"
 
-# Uncomment this if you want logins to happen 
-# through settings.  Team account defaults to prod, for now.
-# autologin "${account}" 
+# Team account defaults to prod, for now.
 
+role=qventus 
+[[ -n "${BT_ROLE}" ]] && { role="${BT_ROLE}" ;}
+
+to_debug stgs && echo settings+=autologin 
+bt_settings alog && autologin $role 
 
 
 
@@ -163,10 +182,6 @@ to_debug flow && sleep 0.5 && echo "stgs:autologin"
 # ------------------------------------------------------------------
 
 to_debug flow && sleep 0.5 && echo "stgs:sources"
-
-role=qventus 
-[[ -n "${BT_ROLE}" ]] && { role="${BT_ROLE}" ;}
-autologin $role 
 
 # Source dotfiles and scripts under ${HOME}/.bt/src
 # source_load() 

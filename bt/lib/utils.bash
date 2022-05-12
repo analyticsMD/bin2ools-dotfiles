@@ -2,21 +2,22 @@
 # shellcheck shell=bash disable=SC2148
 
 # debugging func
+#
+export BT_DEBUG=''  # temporary until global settings are sourced.
 to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+
+export BT_SETTINGS=''  # temporary until global settings are sourced.
+bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;}
 
 # Uncomment for debugging output across all libs.
 # Define specific tags in BT_DEBUG for less noise.
 #export BT_DEBUG="stng flow lgin util data rds rdsc cche qv dg prmt"
 
-# important global vars.
-export BT="${HOME}/.bt" BT_SETTINGS=quiet
-
 to_debug flow echo BT: "${BT}"
 to_debug flow sleep 0.5 && echo "utils:to_debug"
 to_debug flow echo "utils:ansi_color"
-
-
 to_debug flow && echo pmpt:get_funcs
+
 
 get_account() {
   this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
@@ -138,28 +139,36 @@ function bt_venv() {
 
 }
 
+bt_activate() { 
+  : 
+} 
 
-bt_loader() { 
+bt_load() { 
   [[ ! "${LOADER_ACTIVE}" = true ]] && {
   
     to_debug flow && sleep 0.5 && echo "stgs:loader"
   
     # script loader (runs exactly once)
-    . "${BT}/lib/_loader.bash" #>/dev/null 2>&1
+    . "${BT}/lib/bt_loader.bash" #>/dev/null 2>&1
   
     to_debug flow && sleep 0.5 && echo "stgs:addpath"
     loader_addpath "${BT}/lib"
     loader_addpath "${BT}/src"
   
     to_debug flow && sleep 0.5 && echo "stgs:includex"
-    includex -name '[^_]*.bash' >/dev/null 2>&1
+    includex -name '!(bt_)*.bash' >/dev/null 2>&1
+    includex -name 'utils.bash' >/dev/null 2>&1
+    includex -name 'env.bash' >/dev/null 2>&1
+    includex -name 'rdslib.bash' >/dev/null 2>&1
+    includex -name 'data.bash' >/dev/null 2>&1
+    includex -name 'api.bash' >/dev/null 2>&1
   
     {
       funcs="$(declare -F | wc -l)"
       echo -en "${GREEN}Success${NC} - "
       echo -e  "Loaded ${CYAN}$(declare -F | wc -l)${NC} functions."
       if ! $(declare -F | grep bt_activate >/dev/null 2>&1); then
-        echo -e "Loader ${RED}failed${NC}." && exit.
+        echo -e "Loader ${RED}failed${NC}." && return 1.
       fi
     }
   }

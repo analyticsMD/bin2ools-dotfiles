@@ -4,15 +4,17 @@ rg() {
   grep --exclude-dir src --exclude-dir bak -r "${@}"
 }
 
+. ${BT}/lib/utils.bash
+
 # For quick navigation. 
-alias  bt="   cd ${BT}"
-alias  ss="   cd ${BT}/sources"
-alias  lib="  cd ${BT}/lib"
-alias  cmd="  cd ${BT}/cmd"
-alias  sec="  cd ${BT}/sec"
-alias  log="  cd ${BT}/log"
-alias  utils="cd ${BT}/utils"
-alias  gen="  cd ${BT}/utils/gen"
+#alias  bt="   q_pushd ${BT}"
+alias  ss="   q_pushd ${BT}/sources"
+alias  lib="  q_pushd ${BT}/lib"
+alias  cmd="  q_pushd ${BT}/cmd"
+alias  sec="  q_pushd ${BT}/sec"
+alias  log="  q_pushd ${BT}/log"
+alias  utils="q_pushd ${BT}/utils"
+alias  gen="  q_pushd ${BT}/utils/gen"
 
 #export G_UTILS=${BT}/utils/gen
 export S_PATH=${BT}/sources

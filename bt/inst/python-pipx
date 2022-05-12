@@ -1,3 +1,6 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+. ${BT}/settings
 
 source <( echo "$("${BT}"/cmd/_path -s 2>/dev/null)" )
 
@@ -21,7 +24,6 @@ echo -ne     "--------------------------\n\n"
 
 # NOTE: experimental.
 pipx install -f aws-fuzzy-finder
-#pipx inject devops-sso-util  virtualenv
 
 # local installs
 #declare -a packages 
@@ -37,14 +39,16 @@ u="git+https://github.com/analyticsmd"
 p="devops-sso-util"
 g="@master#subdirectory"
 opts="-f --include-deps"
+
+# echo installing the main package: ${CYAN}devops-sso-util${NC}.
+
 pipx install $opts "devops-sso-util @ $u/$p$g=cli&devops-sso-util"
 
 opts="-f --include-apps --include-deps"
 pipx inject $opts devops-sso-util "b2ssm @ $u/$p$g=b2ssm&ssm_cmpl&ssm_gen&ssm_local"
 pipx inject $opts devops-sso-util "b2rds @ $u/$p$g=b2rds&rds_cmpl&rds_gen&rds_local&dg&rds_refresh"
 
-#virtualenv --help
-
 pipx list
 echo "LAST pipx command!"
 pipx completions
+

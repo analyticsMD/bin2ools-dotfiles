@@ -1,7 +1,8 @@
 
 
 
-alias prod-arch="new_session prod-arch"
+alias prod="autologin prod-arch"
+alias qaplatform="autologin qaplatform-arch"
 
 alias get_path="source ${BT}/cache/path_info"
 
@@ -54,7 +55,7 @@ alias _r="assert_next 2>/dev/null; assert_next"
 # Takes an array of terms to be used as the keys 
 # a hash. Input: <type> <param1> <param2> <param3>
 
-generate() { 
+gen() { 
     printf "function bt_$(gdate +%s) {\n" 
     for key in "${@:1}"; do
       printf '    BT_%s="$(get_%s)"\n' $key $key

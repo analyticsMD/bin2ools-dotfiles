@@ -22,29 +22,30 @@ export LESS='-R'
 
 alias tree_source="tree -a -C ${BT}/sources --noreport --dirsfirst -F"
 
-alias who="aws-whoami             | \
-           grep Arn              | \
-           awk '{print $2}'      | \
-           perl -pe 's/.*\///'    | \
-           awk -F'@' '{print $1}'"
+alias w="aws-whoami             | \
+         grep Arn              | \
+         awk '{print $2}'      | \
+         perl -pe 's/.*\///'    | \
+         awk -F'@' '{print $1}'"
 
 alias gcal="echo Google calendar.  Post to chat. "
 
-alias  lib="cd ${BT}/lib"
-alias  ss="cd ${BT}/sources"
-alias  cmd="cd ${BT}/cmd"
-alias  gen="cd ${BT}/utils/gen"
-alias  utils="cd ${BT}/utils"
-alias  sec="cd ${BT}/sec"
-alias  log="cd ${BT}/log"
-alias  in="cd ${BT}/inst"
-
-alias _x="cd ${BT}/examples"
-alias _s="cd ${BT}/sources"
-alias _l="cd ${BT}/lib"
-alias _c="cd ${BT}/cmc"
-alias _i="cd ${BT}/inst"
-alias _sec="cd ${BT}/sec"
+alias  lib="q_popd >/dev/null 2>&1; q_pushd ${BT}/lib; "
+alias  ss="q_popd >/dev/null 2>&1; q_pushd ${BT}/sources;"
+#alias  cmd="qpopd >/dev/null 2>&1; q_pushd ${BT}/cmd"
+#alias  gen="qpopd >/dev/null 2>&1; q_pushd ${BT}/gen"
+#alias  _bt="qpopd >/dev/null 2>&1; q_pushd ${BT}/bt"
+#alias  util="qpopd >/dev/null 2>&1; q_pushd ${BT}/utils"
+#alias  ss="qpopd >/dev/null 2>&1; q_pushd ${BT}/sec"
+#alias  log="qpopd ${BT}/log"
+#alias  in="qpopd ${BT}/inst"
+#
+#alias _x="qpopd ${BT}/examples"
+#alias _s="qpopd ${BT}/src"
+#alias _l="qpopd ${BT}/lib"
+#alias _c="qpopd ${BT}/cmc"
+#alias _i="qpopd ${BT}/inst"
+#alias _sec="qpopd ${BT}/sec"
 
 # edit aliases
 

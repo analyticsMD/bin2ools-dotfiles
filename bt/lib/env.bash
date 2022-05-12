@@ -64,7 +64,6 @@ env_state()  {
          QV_URL=https://qventus.awsapps.com/start
 
   # settings
-  export BT_SETTINGS="quiet,autologin"
   export AWS_CONFIG_FILE="${HOME}/.aws/bt_config"
   export AWS_SHARED_CREDENTIALS_FILE="${HOME}/.aws/bt_creds"
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env /usr/local/bin/bash
 
-# _init.bash
+# init.bash
 # ----------
 # Loads libraries for a one-shot
 # script, passed in as an arg. 

@@ -67,4 +67,5 @@ complete -W "
   unitypoint-amd \
   uvahealth-amd \
   wellspan-amd \
-" rds
+" rds rds_local rds_tunnel rds_connect
+

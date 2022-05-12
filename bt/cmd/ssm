@@ -3,7 +3,6 @@
 # shellcheck shell=bash disable=SC1083 format=SC1083
 export BT=${HOME}/.bt
 . ${BT}/settings
-autologin
 
 # Test ssm connectivity to a single host.
 # ---------------------------------------
