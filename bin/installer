@@ -517,10 +517,8 @@ log "Your system is now bootstrapped!"
     autologin\n > /usr/local/bin/bt; \
     chmod ug+x /usr/local/bin/bt'
 
+#${HOME}/.local/pipx/venvs/devops-sso-util/lib/python3.10/site-packages/b2*
+
 # check for github access (early on).
 # ssh git@github.com
-
-#'++'
-
-#)
 

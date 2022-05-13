@@ -22,6 +22,8 @@ needs_arg() { \
 }
 
 
+
+
 usage () {
     echo " usage "
     echo " -----"
@@ -89,18 +91,20 @@ shift $((OPTIND-1)) # remove parsed options and args from $@ list
 # Bin2ools defines a series of "path spaces" based on the host OS.
 # Paths are dynamic, and based on rules.
 
-declare -A spaces=( ["PIPX_SPACE"]=""      \
-                    ["MODE_SPACE"]=""      \
-                    ["USR_SPACE"]=""       \
-                    ["UTILS_SPACE"]=""     \
-                    ["BIN_SPACE"]=""       )
+declare -A spaces=( ["PIPX_SPACE"]=""           \
+                    ["CONSOLE_SPACE"]=""       \
+                    ["MODE_SPACE"]=""           \
+                    ["USR_SPACE"]=""            \
+                    ["UTILS_SPACE"]=""          \
+                    ["BIN_SPACE"]=""             )
 
 
-declare -a order=( "PIPX_SPACE"      \
-                   "MODE_SPACE"      \
-                   "USR_SPACE"       \
-                   "UTILS_SPACE"     \ 
-                   "BIN_SPACE"       ) 
+declare -a order=( "PIPX_SPACE"            \
+                   "CONSOLE_SPACE"        \
+                   "MODE_SPACE"            \
+                   "USR_SPACE"             \
+                   "UTILS_SPACE"           \ 
+                   "BIN_SPACE"             ) 
 
 
   # -----------------------------------------------------------
@@ -114,6 +118,28 @@ declare -a order=( "PIPX_SPACE"      \
   pipx_space+=( "${HOME}/Library/Python/3.10/bin" )   # poetry
   pipx_space+=( "${HOME}/.poetry/bin"   )
 
+  
+  # --------------------------------------
+  # PIPX CONSOLE SPACE
+  # --------------------------------------
+  [[ -z "${core}"   ]] && core='devops-sso-util'
+  [[ -z "${python}" ]] && python='python3.10'
+  
+  export h='${HOME}'     v=".local/pipx/venvs" c=${core}   l=lib \
+         p='python3.10'  s=site-packages       b=b2        tool='ssm'
+  
+  # this array becomes the path. 
+  declare -a local_path=( $h $v $c $l $p $s ) 
+  
+  for tool in "${tools}"; do 
+      BT_PATH="$( join_by '/' ${local_path[@]} )"
+      TOOL_PATH="$(join_by : ${BT_PATH[@]} ${b}${tool} ${tool})" 
+      NEW_PATH="$(join_by : ${TOOL_PATH} ${PATH})"
+  done
+  
+  export spaces["CONSOLE_SPACE"]="$(printf %s "$(printf :%s "${NEW_PATH[@]}" | sort | uniq)")"
+  
+  -----------------------------------------------------------------------------------
   spaces["PIPX_SPACE"]="$(printf %s "$(printf :%s "${pipx_space[@]}" | sort | uniq)")"
 
   export BT=${HOME}/.bt

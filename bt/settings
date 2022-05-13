@@ -57,6 +57,18 @@ export AWSLIB="devops"
     export DEFAULT_AWSLIB="${HOME}/.local/bin/${AWSLIB}-sso-util" 
 } || true
 
+function prompt_off() { unset PROMPT_COMMAND ;}
+function prompt_on() { export PROMPT_COMMAND="prompt" ;}
+
+function prompt() {
+  # generate the next cache peek,
+  # and hence, the next prompt.
+
+  PS1="$(_prompt)"
+  export PS1
+}
+
+
 
 # -----------------------------------------------------------------
 # ARG PARSING
@@ -78,12 +90,6 @@ export BT="${HOME}/.bt"
 . ${BT}/lib/bt.bash || true
 bt_load || true
 
-to_debug stgs  echo LOADER_ACTIVE: "${LOADER_ACTIVE}"
-
-#if ${LOADER_ACTIVE}; then
-#  loader_finish  #load again when needed.
-#fi
-
 # -----------------------------------------------------------------
 # SHELL SOURCER 
 # -----------------------------------------------------------------
@@ -99,7 +105,6 @@ source ${BT}/lib/bt_sourcer.bash || true
 }
 # NOTE: this feature is controlled by adding the string 
 # 'src' to the variable: BT_SETTINGS. See: the settings section. 
-
 
 # -----------------------------------------------------------------
 # CACHE SETTINGS
@@ -122,6 +127,8 @@ to_debug flow && sleep 0.5 && echo "stgs:path" || true
 
 to_debug stgs && sleep 1 && echo stgs:source_path
 source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )  || true
+
+
 
 # -----------------------------------------------------------------
 # ESSENTIAL ALIASES
@@ -169,9 +176,7 @@ to_debug flow && sleep 0.5 && echo "stgs:autologin"
 
 role=qventus 
 [[ -n "${BT_ROLE}" ]] && { role="${BT_ROLE}" ;} || true
-
-to_debug stgs && echo settings+=autologin  || true
-bt_settings alog && autologin $role  || true
+autologin $role  || true
 
 
 

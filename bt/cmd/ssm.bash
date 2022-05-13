@@ -28,7 +28,7 @@ id=NONE cmd=NONE ip=NONE
  
   for rec in ${inst_map[@]}; do 
     [[ "${rec}" =~ ${srch} ]] && { 
-      mapfile tmp -t < <(echo ${rec} | tr , '\n')  
+      mapfile tmp -t < <(echo ${rec} | tr '|' '\n')  
       id="${tmp[1]}" hn="${tmp[0]}" ip="${tmp[2]}" && break 
     }
   done || echo "host: ${hn} not recognized."
@@ -41,7 +41,7 @@ id=NONE cmd=NONE ip=NONE
 srch="${hn}"
 for rec in ${inst_map[@]}; do 
   [[ "${rec}" =~ ${srch} ]] && { 
-    mapfile tmp -t < <(echo ${rec} | tr , '\n')  
+    mapfile tmp -t < <(echo ${rec} | tr '|' '\n')  
     id="${tmp[1]}" hn="${tmp[0]}" ip="${tmp[2]}" && break 
   }
 done || echo "host: ${hn} not recognized."

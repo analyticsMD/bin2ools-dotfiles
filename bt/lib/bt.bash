@@ -22,25 +22,47 @@ bt_load() {
     # Static libs.  No globbing.  Anything else was too brittle. 
       
     . "${BT}/lib/bt.bash" >/dev/null 2>&1
+    bt_local
+    . "${BT}/lib/bridge_rds.bash" >/dev/null 2>&1
+    . "${BT}/lib/bridge_ssm.bash" >/dev/null 2>&1
     . "${BT}/lib/utils.bash" >/dev/null 2>&1
     . "${BT}/lib/api.bash" >/dev/null 2>&1
     . "${BT}/lib/env.bash" >/dev/null 2>&1
     . "${BT}/lib/rdslib.bash" >/dev/null 2>&1
     . "${BT}/lib/bt_sourcer.bash" >/dev/null 2>&1
-    . "${BT}/lib/bridge_rds.bash" >/dev/null 2>&1
-    . "${BT}/lib/bridge_ssm.bash" >/dev/null 2>&1
 
     {
       funcs="$(declare -F | wc -l)"
-      echo -en "${GREEN}Success${NC} - "
-      echo -e  "Loaded ${CYAN}$(declare -F | wc -l)${NC} functions."
+      echo -en "${GREEN}success${NC} - "
+
+
       if ! $(declare -F | grep bt_src >/dev/null 2>&1); then
-        echo -e "Loader ${RED}failed${NC}." && return 1 
+        echo -e "Loaded ${CYAN}$(declare -F | wc -l)${NC} functions."
+        return  
       fi
+
+} || true
+
+autologin
+
+function prompt_off() { unset PROMPT_COMMAND ;}
+function prompt_on() { export PROMPT_COMMAND="prompt" ;}
+
+function prompt() {
+    # generate the next cache peek,
+    # and hence, the next prompt.
+
+    PS1="$(_prompt)"
+      export PS1
     }
 
- fi
-} || true
+}
+
+function _prompt() { 
+    LOGO="$(printf '%b' "\(${GREEN}BT${NC}\)")"
+    echo="${LOGO}"
+}
+
 
 
 function join_by { local IFS="$1"; shift; echo "$*"; }
@@ -56,7 +78,7 @@ function bt_toggle() {
     if [[ ! -v VIRTUAL_ENV ]]; then
       if BASE="$(poetry env info --path)"; then
         # alter prompt
-        PROMPT_COMMAND='(bt)';"$PROMPT_COMMAND"
+        PROMPT_COMMAND='\(\b\t\)';"$PROMPT_COMMAND"
         PS1=""
       else
         BT_MANUAL=1
@@ -67,16 +89,6 @@ function bt_toggle() {
   fi
   return $ret
 } || true
-
-#bt() { 
-#  BT_MANUAL=1
-#  if [[ -v VIRTUAL_ENV ]]; then
-#    deactivate
-#  else
-#    . "$(poetry env info --path)/bin/activate"
-#  fi
-#  PROMPT_COMMAND="(bt);$PROMPT_COMMAND"
-#} 
 
 #activate() {
 #
@@ -93,7 +105,6 @@ function bt_toggle() {
 
 # locate devops-sso-util dir.
 # in: nothing (default)
-# out: assumes venv 
 bt_local() { 
   #export BT_DEBUG="bt_"
 
@@ -120,8 +131,6 @@ bt_local() {
       for pkg_dir in $( ${ls_pkg_dirs} ); do
         to_debug bt_ && echo pkg_dir: $pkg_dir
         tool="$(echo "${pkg_dir}" | perl -pe 's/.*\.dist-info//g;')"
-        to_debug bt_ && echo pkg: $pkg
-        b2+=( $tool )
       done
       to_debug bt_ && echo got "${#b2[@]}" elements.
       to_debug bt_ && echo Adding ${GREEN}${#b2[@]}${NC} tools to path. 
@@ -135,7 +144,7 @@ bt_local() {
   source "${BT}/cache/path_info"
  
   [[ ! "${PATH}" =~ "${core}" ]] && { 
-    echo "${RED}"FATAL"${NC}": Path not updated.
+    echo -e "${RED}"FATAL"${NC}": Path not updated.
     exit 1
   }
 
@@ -145,9 +154,8 @@ bt_local() {
   for pkg in ${b2[@]}; do 
       pkg_path="$(dirname ${pkg})"
       toolshed="$(basename ${pkg})"
-      debug_to bt_ && echo toolshed: "${toolshed}"
-      debug_to bt_ && echo pkg_path: "${pkg_path}"
-      #to_debug bt_ && echo toolshed: "${toolshed}"
+      #debug_to bt_ && echo pkg_path: "${pkg_path}"
+      #debug_to bt_ && echo toolshed: "${toolshed}"
       toolsheds+=( ${toolshed} )
   done
 
@@ -172,17 +180,17 @@ bt_local() {
     funcs="$(declare -F                                                  | \
       perl -lne "print if 'm/.*bt_([\w\-]+)_(complete|local|generate)/'" | \
       wc -l)"
-    echo -e "loaded ${CYAN}${funcs}${NC} functions for tools: ${tools[@]}"  
-    PROMPT_COMMAND='(bt);'$PROMPT_COMMAND
     return  
   
 } || true
 
+
+
 function bt_() { 
     export BT="${HOME}/.bt" 
     source ${BT}/settings
-    #bt_local
-    #autologin
+    bt_local &
+    autologin
     echo -e "${GREEN}bt${NC} is ready! "
 } | true 
 
@@ -234,8 +242,12 @@ generate_bridge_functions() {
     echo "bt_${tool}_complete" 
   } > ${BT}/lib/bridge_"${tool}".bash 
 
+  echo -e "loaded ${CYAN}${funcs}${NC} functions for bin2ools: ${tools[@]}"  
+  PROMPT_COMMAND='(bt);'$PROMPT_COMMAND
 
 } || true
+
+
 
 bt_activate() { 
 
