@@ -6,8 +6,36 @@
 ## Qventus has a lot of infrastructure in AWS. This library
 ## contains streamlined functions to make that environment
 ## is easy to work with. 
+
+# -----------------------------------------------------------------
+# SHELL LOADER
+# -----------------------------------------------------------------
+
+# For loading associative arrays from files or variables.
+
 export BT="${HOME}/.bt"
-. ${BT}/settings
+
+# Static libs.  No globbing.  Anything else was too brittle.
+
+. "${BT}/lib/bt.bash"             >/dev/null 2>&1
+. "${BT}/lib/utils.bash"          >/dev/null 2>&1
+. "${BT}/lib/env.bash"            >/dev/null 2>&1
+. "${BT}/lib/api.bash"            >/dev/null 2>&1
+. "${BT}/lib/rdslib.bash"         >/dev/null 2>&1
+source <( "${BT}/lib/bridge.bash" 2>/dev/null )
+
+{
+    funcs="$(declare -F | grep -v '\-f _' | wc -l )" && {
+        echo -e "Loaded ${CYAN}${funcs}${NC} functions."
+    }
+
+} || true
+
+
+
+
+
+
 
 echo -ne '\n\n'
 env | sort | grep AWS 
@@ -43,7 +71,7 @@ aws_profile () {
   else
     profile="${1:-"qventus"}" 
     # needed because of https://github.com/aws/aws-cli/issues/5546
-    if ! aws configure list-profiles | grep -q $profile; then
+    if ! aws configure list-profiles | grep -q "$profile"; then
       echo "$profile is not a valid profile"
       return 2
     else
@@ -149,7 +177,7 @@ get_account_number () {
 tpl='role_arn=arn:aws:iam::%s:role/%s'
 
 # commands
-cmd="${DEFAULT_AWSLIB}" roles -r aws_team_ --no-header" 
+cmd="${DEFAULT_AWSLIB} roles -r aws_team_ --no-header "
 prd="get_account prod"
 
 # identity 490475191208 aws_team_arch arch
@@ -192,9 +220,9 @@ aws_profile qventus
 
 # Run a quick profile login, for prod.
 aws-whoami && echo -ne "\n\n" \
-                       "---------------------------------------\n" \
-                       "  SUCCESS! Happy clouding...    :0)    \n" \
-                       "---------------------------------------\n" \
+           "---------------------------------------\n" \
+           "  SUCCESS! Happy clouding...    :0]    \n" \
+           "---------------------------------------\n" \
 
 
 
@@ -217,12 +245,12 @@ aws-whoami && echo -ne "\n\n" \
 # NOTE: These are all assumable roles in the 'role' step of the 
 #       qventus standard role chain, e.g. sso->team->role->guild
 # 
-#declare -a rpf=(qa cnc)  # role profiles
-#for p in ${rpf[@]}; do 
-#  aws-sso-util configure profile --existing-config-action keep \
-#               -c role_arn="$(printf "$tpl" "${rpf[1]}" "${rpf[2]}")" \
-#                       -a "${v[1]}" -r "${rpf[2]}" "qv-gbl-${rpf[2]}" 
-#done
+declare -a rpf=(cnc qaplatform)  # role profiles
+for p in "${rpf[@]}"; do 
+  aws-sso-util configure profile --existing-config-action keep \
+        -c role_arn="$(printf "$tpl" "${rpf[1]}" "${rpf[2]}")" \
+                -a "${v[1]}" -r "${rpf[2]}" "qv-gbl-${rpf[2]}" 
+done
 
 # Generate guild profiles.
 # ------------------------

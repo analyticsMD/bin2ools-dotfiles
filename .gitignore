@@ -13,7 +13,7 @@ Thumbs.db
 .Spotlight-V100
 .Trashes
 
-/cache/*
+/**/cache/*
 
 /**/.*.sw[a-z]*
 /**/gcm-diagnose.log
