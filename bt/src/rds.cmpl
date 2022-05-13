@@ -69,3 +69,56 @@ complete -W "
   wellspan-amd \
 " rds rds_local rds_tunnel rds_connect
 
+
+
+complete -W "
+  airflowcommonvpc-cluster \
+  allinahealth-amd \
+  bmc-amd \
+  bsmhealth-amd \
+  conehealth-amd \
+  demo-a-amd \
+  demo-b-amd \
+  demo-c-amd \
+  demo-d-amd \
+  demo-e-amd \
+  demo-f-amd \
+  dignity-amd \
+  dignity-mirthdb-rds \
+  emory-amd \
+  emory-mirthdb-for-nginx2 \
+  fairview \
+  fairview-amd \
+  fairview-analyticsmd \
+  honorhealth-amd \
+  kaiser-amd \
+  keckmedicine-amd \
+  mama-mirth-cluster \
+  marshfield-amd \
+  medstar2-amd \
+  medstar-mirthdb \
+  mercynet-amd \
+  mercynet-mirth2-bk-db-cluster \
+  natividad3-amd \
+  natividad3-serverless-rds \
+  natividad-mirthdb \
+  non-prod-emr \
+  nyp-amd \
+  nyp-mirthdb2 \
+  nyp-mirthdb-cluster \
+  prod-emr \
+  qa-app-01-amd \
+  qa-app-02-amd \
+  qa-app-03-amd \
+  qa-app-04-amd \
+  qa-app-05-amd \
+  qa-devops-r6g \
+  saintlukes-amd \
+  sutter-amd \
+  sutter-mirthdb-cluster \
+  thedacare-amd \
+  uams-amd \
+  unitypoint-amd \
+  uvahealth-amd \
+  wellspan-amd \
+" rds

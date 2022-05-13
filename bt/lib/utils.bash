@@ -18,19 +18,6 @@ to_debug flow sleep 0.5 && echo "utils:to_debug" || true
 to_debug flow echo "utils:ansi_color" || true 
 #to_debug flow && echo pmpt:get_funcs  || true
 
-
-get_account() {
-  this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
-} || true
-
-get_usr() { 
-  echo "${USER}"
-} || true
-
-get_team() { 
-  set_team >/dev/null 2>&1 && echo "${BT_TEAM}"  
-} || true
-
 # find a toml file. 
 function locate_toml() {
 	local path
@@ -70,6 +57,19 @@ function bt_venv() {
   fi
   return $ret
 } || true
+
+
+
+
+this_peek () { 
+  [ -z "${BT_PEEK}" ] && { 
+    : #echo "No BT_PEEK var was found."
+      #return 1
+  }
+  echo "${BT_PEEK}" | gbase64 -d | zcat | jq 
+}
+
+
 
 
 #bt() { 
@@ -202,7 +202,10 @@ to_debug flow && echo "utils:die" || true
 die() { NUM="${1:-2}"; echo "$*" >&2; return "$NUM"; "exit $NUM"; } || true
 
 get_account() {
-  this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
+  cat ${BT}/data/json/bt/accounts.json | \
+                  jq -r      '.account | \
+                          to_entries[] | \
+                 select(.key|tostring) | "\(.key)"'
 } || true
 
 get_usr() { 

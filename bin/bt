@@ -1,0 +1,15 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+export BT="${HOME}/.bt"
+. "${BT}/settings"
+source <(path -s 2>/dev/null)
+#echo PATH: ${PATH}
+alias rds_complete=". rds_complete";  
+alias ssm_complete=". ssm_complete"; 
+alias rds="rds_local"
+alias ssm="ssm_local"
+
+
+#rds_generate; ssm_generate; ssm_src
+prompt
+

@@ -13,14 +13,15 @@ join_by() { local IFS="$1"; shift; echo "$*" ;}
 this_load() {
 
     # Static libs.  No globbing.  Anything else was too brittle.
-    . "${BT}/lib/bt.bash" >/dev/null 2>&1
-    . "${BT}/lib/utils.bash" >/dev/null 2>&1
-    . "${BT}/lib/api.bash" >/dev/null 2>&1
-    . "${BT}/lib/env.bash" >/dev/null 2>&1
-    . "${BT}/lib/rdslib.bash" >/dev/null 2>&1
+    . "${BT}/settings"            >/dev/null 2>&1
+    . "${BT}/lib/bt.bash"         >/dev/null 2>&1
+    . "${BT}/lib/utils.bash"      >/dev/null 2>&1
+    . "${BT}/lib/api.bash"        >/dev/null 2>&1
+    . "${BT}/lib/env.bash"        >/dev/null 2>&1
+    . "${BT}/lib/rdslib.bash"     >/dev/null 2>&1
     . "${BT}/lib/bt_sourcer.bash" >/dev/null 2>&1
-#    . "${BT}/lib/bridge.bash" >/dev/null 2>&1
-#    . "${BT}/lib/bridge_ssm.bash" >/dev/null 2>&1
+    #. "${BT}/lib/bridge.bash" >/dev/null 2>&1
+
 
     funcs="$(declare -F | wc -l)"
     echo -en "${GREEN}success${NC} - "
@@ -35,30 +36,53 @@ this_load() {
 
 this_load
 
+source <(echo -e "$("${HOME}/utils/path" -s 2>/dev/null)")
 
+IFS=':' read -r -a THIS_PATH <<< "${PATH}"
 
-export h='${HOME}'     v=".local/pipx/venvs" c='${core}' l=lib \
-       p='python3.10'  s=site-packages       b=b2        pkg='ssm'
+declare -a tools=()
+for path in ${THIS_PATH[@]}; do 
+    [[ "${path}" =~ \/b2 ]] && { 
+       tool="$( basename "${path}" )" 
+       tools+=( $tool ) 
+       pkg="$( basename "$(dirname "${path}" )")" 
+       pkgs+=( $pkg )
+    } 
+done
 
+# --------------------------------------
+# PIPX CONSOLE SPACE
+# --------------------------------------
+[[ -z "${core}"   ]] && c='devops-sso-util'
+[[ -z "${python}" ]] && p='python3.10'
+
+declare -a tools=( rds ssm ) 
+export h="${HOME}"     v=".local/pipx/venvs" c="devops-sso-util"   l=lib \
+       p='python3.10'  s=site-packages       b=b2                  tool=$t
+ 
+declare -a TMP_PATH=() 
+declare -a NEW_PATH=() 
 # this array becomes the path. 
-declare -a local_path=( $h $v $c $l $p $s $b$pkg ) 
+for t in ${tools[@]}; do
+      declare -a local_path=() 
+      local_path+=( $h $v $c $l $p $s $b$t ) 
+      TMP_PATH="$( join_by '/' ${local_path[@]} )"
+      echo TMP_PATH="$( join_by '/' ${local_path[@]} )"
+      NEW_PATH+=( "$TMP_PATH" ) 
+  done 
+     
+  BT_PATHS="$( join_by : ${NEW_PATH[@]} )"
 
-BT_PATH="$( join_by '/' ${local_path[@]} )"
 
-
-
-EXIT
 
 # sanity check.  Generates bash code. 
 
 cat  <<-'HERE_BE_DOCS' 
 
-echo BT_PATH: ${BT_PATH}
-
-[[ ! "${BT_PATH}" =~ "${PATH}" ]] && { 
-   echo -e "${RED}FATAL${NC}: path not present."
-   return 1
-} 
+  [[ "${#BT_PATHS[@]}" -lt 1 ]] && { 
+      echo -e "${RED}FATAL${NC}: pipx paths not present."
+      return 1
+  } 
 
 HERE_BE_DOCS
 
@@ -71,11 +95,11 @@ HERE_BE_DOCS
 
 
 lines=$(cat <<HERE_BE_FUNCS
-    pkg=foo tool=bar 
+    pkg=b2rds tool=rds 
     bt_${pkg}_${tool}() { 
-      source \"${BT_PATH}/${b}${pkg}/${pkg}_${tool}\"
+      source "${BT_PATH}/${b}${pkg}/${pkg}_${tool}"
     } 
-    alias ${pkg}_${tool}=\"bt_${pkg}_${tool}\" 
+    alias ${pkg}_${tool}="bt_${pkg}_${tool}" 
 
 HERE_BE_FUNCS
 )

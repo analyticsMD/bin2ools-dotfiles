@@ -1,0 +1,32 @@
+echo BT_PATH: ${BT_PATH}
+
+[[ ! "${BT_PATH}" =~ "${PATH}" ]] && { 
+   echo -e "${RED}FATAL${NC}: path not present."
+   return 1
+} 
+
+      bt_ssm_complete() { 
+        source \"/ssm/ssm_complete\"
+      } 
+      alias ssm_complete=\"bt_ssm_complete\" 
+      bt_ssm_complete() { 
+        source \"/ssm/ssm_complete\"
+      } 
+      alias ssm_complete=\"bt_ssm_complete\" 
+      bt_ssm_complete() { 
+        source \"/ssm/ssm_complete\"
+      } 
+      alias ssm_complete=\"bt_ssm_complete\" 
+      bt_ssm_complete() { 
+        source \"/ssm/ssm_complete\"
+      } 
+      alias ssm_complete=\"bt_ssm_complete\" 
+      bt_ssm_complete() { 
+        source \"/ssm/ssm_complete\"
+      } 
+      alias ssm_complete=\"bt_ssm_complete\" 
+      bt_ssm_complete() { 
+        source \"/ssm/ssm_complete\"
+      } 
+      alias ssm_complete=\"bt_ssm_complete\" 
+

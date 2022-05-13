@@ -95,4 +95,5 @@ bt_src() {
 # 
 # shellcheck disable=SC2015
 bt_settings src && bt_src "${NOISE}" || true
-
+#
+q_popd 

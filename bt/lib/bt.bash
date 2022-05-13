@@ -22,19 +22,16 @@ bt_load() {
     # Static libs.  No globbing.  Anything else was too brittle. 
       
     . "${BT}/lib/bt.bash" >/dev/null 2>&1
-    bt_local
-    . "${BT}/lib/bridge_rds.bash" >/dev/null 2>&1
-    . "${BT}/lib/bridge_ssm.bash" >/dev/null 2>&1
     . "${BT}/lib/utils.bash" >/dev/null 2>&1
-    . "${BT}/lib/api.bash" >/dev/null 2>&1
     . "${BT}/lib/env.bash" >/dev/null 2>&1
+    . "${BT}/lib/api.bash" >/dev/null 2>&1
+    . "${BT}/lib/bridge.bash" >/dev/null 2>&1
     . "${BT}/lib/rdslib.bash" >/dev/null 2>&1
     . "${BT}/lib/bt_sourcer.bash" >/dev/null 2>&1
 
     {
       funcs="$(declare -F | wc -l)"
       echo -en "${GREEN}success${NC} - "
-
 
       if ! $(declare -F | grep bt_src >/dev/null 2>&1); then
         echo -e "Loaded ${CYAN}$(declare -F | wc -l)${NC} functions."

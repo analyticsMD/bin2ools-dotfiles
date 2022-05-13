@@ -1,8 +1,8 @@
 #!/usr/bin/env /usr/local/bin/bash
 # shellcheck shell=bash 
 
-#BT="${HOME}/.bt"
-#export BT="${BT}"
+BT="${HOME}/.bt"
+export BT="${BT}"
 
 #to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
 to_debug flow && sleep 0.5 && echo env:start

@@ -149,8 +149,8 @@ get_account_number () {
 tpl='role_arn=arn:aws:iam::%s:role/%s'
 
 # commands
-cmd='aws-sso-util roles -r aws_team_ --no-header' 
-prd='get_account_number'
+cmd="${DEFAULT_AWSLIB}" roles -r aws_team_ --no-header" 
+prd="get_account prod"
 
 # identity 490475191208 aws_team_arch arch
 v=( $(${cmd} | grep -v master) $(${cmd} | grep -v master | cut -d'_' -f 3) )

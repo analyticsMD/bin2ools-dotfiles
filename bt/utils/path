@@ -122,25 +122,28 @@ declare -a order=( "PIPX_SPACE"            \
   # --------------------------------------
   # PIPX CONSOLE SPACE
   # --------------------------------------
-  [[ -z "${core}"   ]] && core='devops-sso-util'
-  [[ -z "${python}" ]] && python='python3.10'
-  
-  export h='${HOME}'     v=".local/pipx/venvs" c=${core}   l=lib \
-         p='python3.10'  s=site-packages       b=b2        tool='ssm'
-  
+  [[ -z "${core}"   ]] && c='devops-sso-util'
+  [[ -z "${python}" ]] && p='python3.10'
+  declare -a tools=( rds ssm ) 
+  export h="${HOME}"     v=".local/pipx/venvs" c="devops-sso-util"   l=lib \
+         p='python3.10'  s=site-packages       b=b2                  tool=$t
+ 
+  declare -a TMP_PATH=() 
+  declare -a NEW_PATH=() 
   # this array becomes the path. 
-  declare -a local_path=( $h $v $c $l $p $s ) 
-  
-  for tool in "${tools}"; do 
-      BT_PATH="$( join_by '/' ${local_path[@]} )"
-      TOOL_PATH="$(join_by : ${BT_PATH[@]} ${b}${tool} ${tool})" 
-      NEW_PATH="$(join_by : ${TOOL_PATH} ${PATH})"
-  done
-  
-  export spaces["CONSOLE_SPACE"]="$(printf %s "$(printf :%s "${NEW_PATH[@]}" | sort | uniq)")"
-  
-  -----------------------------------------------------------------------------------
-  spaces["PIPX_SPACE"]="$(printf %s "$(printf :%s "${pipx_space[@]}" | sort | uniq)")"
+  i=0
+  for t in ${tools[@]}; do
+      (( i++ ))
+      declare -a local_path=() 
+      local_path+=( $h $v $c $l $p $s $b$t ) 
+      TMP_PATH="$( join_by '/' ${local_path[@]} )"
+      echo TMP_PATH="$( join_by '/' ${local_path[@]} )"
+      NEW_PATH+=( "$TMP_PATH" ) 
+  done 
+     
+  FOO="$( join_by : ${NEW_PATH[@]} )"
+  # -----------------------------------------------------------------------------------
+  spaces["CONSOLE_SPACE"]="${FOO}"   # ha. ha.
 
   export BT=${HOME}/.bt
   # vars
@@ -153,6 +156,7 @@ declare -a order=( "PIPX_SPACE"            \
   user+=( "${BT}/bin"   )
   user+=( "${BT}/lib"   )
 
+  TRY="$( join_by : ${NEW_PATH[@]} )"
   declare -a mode_space=( "${user[@]}" )
   spaces["MODE_SPACE"]="$(printf %s "$(printf :%s "${mode_space[@]}" | sort | uniq)")"
 
