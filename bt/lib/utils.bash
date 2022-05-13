@@ -4,32 +4,32 @@
 # debugging func
 #
 export BT_DEBUG=''  # temporary until global settings are sourced.
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
 export BT_SETTINGS=''  # temporary until global settings are sourced.
-bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;}
+bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
 # Uncomment for debugging output across all libs.
 # Define specific tags in BT_DEBUG for less noise.
 #export BT_DEBUG="stng flow lgin util data rds rdsc cche qv dg prmt"
 
-to_debug flow echo BT: "${BT}"
-to_debug flow sleep 0.5 && echo "utils:to_debug"
-to_debug flow echo "utils:ansi_color"
-to_debug flow && echo pmpt:get_funcs
+to_debug flow echo BT: "${BT}" || true
+to_debug flow sleep 0.5 && echo "utils:to_debug" || true 
+to_debug flow echo "utils:ansi_color" || true 
+#to_debug flow && echo pmpt:get_funcs  || true
 
 
 get_account() {
   this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
-}
+} || true
 
 get_usr() { 
   echo "${USER}"
-}
+} || true
 
 get_team() { 
   set_team >/dev/null 2>&1 && echo "${BT_TEAM}"  
-}
+} || true
 
 # find a toml file. 
 function locate_toml() {
@@ -46,7 +46,7 @@ function locate_toml() {
 		fi
 	done
 	return 1
-}
+} || true
 
 
 # toggle bt venv on or off. 
@@ -69,7 +69,7 @@ function bt_venv() {
     deactivate
   fi
   return $ret
-}
+} || true
 
 
 #bt() { 
@@ -93,10 +93,10 @@ function bt_venv() {
 #}
 
 
-  PKG="${1}" # pass in package name (devops-sso-util).
+# PKG="${1}" # pass in package name (devops-sso-util).
 
   # Determine filesystem location of devops-sso-util dir.
-  foo() { 
+bt_twain() { 
 
   [[ "${PKG}" =~ b2 ]] || PKG_NAME="b2${PKG}" 
   echo PKG_NAME: ${PKG_NAME}
@@ -113,6 +113,7 @@ function bt_venv() {
   echo "PKG_PATH: ${PKG_PATH}"
   alias ssm="poe --root \"${PKG_PATH}\" ssm "
   #TOOLS=( ssm rds )
+} || true
 
   #for TOOL in ${TOOLS[*]}; do
   #  echo completes...
@@ -127,11 +128,10 @@ function bt_venv() {
 #  ${THIS_TOOL[*]}
 #done
 
-}
 
 bt_activate() { 
   : 
-} 
+} || true
 
 bt_load() { 
   [[ ! "${LOADER_ACTIVE}" = true ]] && {
@@ -141,17 +141,17 @@ bt_load() {
     # script loader (runs exactly once)
     . "${BT}/lib/bt_loader.bash" #>/dev/null 2>&1
   
-    to_debug flow && sleep 0.5 && echo "stgs:addpath"
-    loader_addpath "${BT}/lib"
-    loader_addpath "${BT}/src"
+    to_debug flow && sleep 0.5 && echo "stgs:addpath" || true
+    loader_addpath "${BT}/lib" || echo ${RED}FAILED!${NC} && true
+    loader_addpath "${BT}/src" || echo ${RED}FAILED!${NC} && true
   
     to_debug flow && sleep 0.5 && echo "stgs:includex"
-    includex -name '!(bt_)*.bash' >/dev/null 2>&1
-    includex -name 'utils.bash' >/dev/null 2>&1
-    includex -name 'env.bash' >/dev/null 2>&1
-    includex -name 'rdslib.bash' >/dev/null 2>&1
-    includex -name 'data.bash' >/dev/null 2>&1
-    includex -name 'api.bash' >/dev/null 2>&1
+    includex -name 'utils.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
+    includex -name 'bt.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true 
+    includex -name 'env.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
+    includex -name 'rdslib.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
+    includex -name 'data.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
+    includex -name 'api.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
   
     {
       funcs="$(declare -F | wc -l)"
@@ -162,7 +162,7 @@ bt_load() {
       fi
     }
   }
-}
+} || true
 
 
 
@@ -186,52 +186,52 @@ YELLOW='\033[0;33m'     #
  GREEN='\033[0;32m'     #
    RED='\033[0;31m'     #
     NC='\033[0;m'       # No Color
-}
+} || true
 
 ## -----------------------------------------------------------------
 ## Utility functions (various, useful across all libs.)
 ## -----------------------------------------------------------------
 
-to_debug flow && echo "utils:q_pushd"
-q_pushd () { command pushd "$@" > /dev/null 2>&1 || return ;}
+to_debug flow && echo "utils:q_pushd" || true
+q_pushd() { command pushd "$@" > /dev/null 2>&1 || return ;} || true
 
-to_debug flow && echo "utils:q_popd"
-q_popd () { command popd "$@" > /dev/null 2>&1 || return;}
+to_debug flow && echo "utils:q_popd" || true
+q_popd() { command popd "$@" > /dev/null 2>&1 || return;} || true
 
-to_debug flow && echo "utils:die"
-die() { NUM="${1:-2}"; echo "$*" >&2; return "$NUM"; "exit $NUM"; }
+to_debug flow && echo "utils:die" || true
+die() { NUM="${1:-2}"; echo "$*" >&2; return "$NUM"; "exit $NUM"; } || true
 
 get_account() {
   this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
-}
+} || true
 
 get_usr() { 
   echo "${USER}"
-}
+} || true
 
 get_team() { 
   set_team && echo "${BT_TEAM}"  
-}
+} || true
 
 # -----------------------------------------------------------------
 # PATH SETTINGS
 # -----------------------------------------------------------------
 
 # Warn to stderr, but continue.
-to_debug flow && echo "utils:warn"
-warn() { >&2 echo "${@}"; }
+to_debug flow && echo "utils:warn" || true
+warn() { >&2 echo "${@}"; } || true
 
 # send to stderr.
 to_debug flow && echo "utils:to_err"
-to_err() { >&2 echo "${@}"; }
+to_err() { >&2 echo "${@}"; } || true
 
 # send to bintools log.
-to_debug flow && echo "utils:to_log"
+to_debug flow && echo "utils:to_log" || true
 to_log() { 
   echo -e "${@}" | \
   xargs -L 1 echo "$(date +"[%Y-%m-%d %H:%M:%S]")" | \
   tee -a "${bt_log:-"${BT}"/log/bt_log}"; 
-}
+} || true
 
 
 # return 'true' of running on mac.  
@@ -240,15 +240,15 @@ to_log() {
 #to_debug flow && echo "utils:on_mac"
 
 # complain about missing a specific arg.
-to_debug flow && echo "utils:needs_arg"
-needs_arg() { [ -z "$OPTARG" ] && warn "No arg for --$OPT option" && usage ;}
+to_debug flow && echo "utils:needs_arg" || true
+needs_arg() { [ -z "$OPTARG" ] && warn "No arg for --$OPT option" && usage ;} || true
 
 
-to_debug flow && echo "utils:usage"
-usage() { echo "Usage: <more instructions here...>"; } 
+to_debug flow && echo "utils:usage" || true
+usage() { echo "Usage: <more instructions here...>"; } || true
 
 
-to_debug flow && echo "utils:stash"
+to_debug flow && echo "utils:stash" || true
 stash() { 
 
   this="${1:-"${AWS_SHARED_CREDENTIALS_FILE}"}"
@@ -260,7 +260,7 @@ stash() {
     return 1
   } 
   cp "${this}" "${BT_STASH}/${base}.${dt}" 
-}
+} || true 
 
 
 to_debug flow && echo "utils:expired"
@@ -270,7 +270,7 @@ expired() {
   aws sts get-caller-identity > /dev/null to_err
   [ $? -eq 254 ] && echo "expired" 
   date
-} 
+} || true 
 
 
 # ---------------------------------------
@@ -278,7 +278,7 @@ expired() {
 # encode it first. Helps with processing.
 # ---------------------------------------
 #
-to_debug flow && echo "utils:decode_sql"
+to_debug flow && echo "utils:decode_sql" || true
 
 decode_sql() {
   local SQLenc="${1}"
@@ -289,18 +289,18 @@ decode_sql() {
   gbase64 -d                    | \
   zcat 
   }
-}
+} || true
 
-to_debug flow && echo "utils:encode_sql"
+to_debug flow && echo "utils:encode_sql" || true
 
 encode_sql() {
   SQLraw="${1}"
   [[ -z "${SQLraw}" ]] && read -r SQLraw
   echo -ne "QV_SQL_ENC" && \
   echo "${SQLraw}" | gzip | gbase64 
-}
+} || true
 
-to_debug flow && echo "utils:arg_split"
+to_debug flow && echo "utils:arg_split" || true
 
 # return the index number of a particular string
 # in an array.
@@ -311,9 +311,9 @@ arg_split() {
   for n in $(seq ${#args[@]}); do
     [[ "${args[$n]}" == "--" ]] && echo "$n"
   done
-}
+} || true
 
-to_debug flow && echo "utils:find_in_rds"
+to_debug flow && echo "utils:find_in_rds" || true
 
 find_in_rds() {
   this=${1}
@@ -322,9 +322,9 @@ find_in_rds() {
   for l in $(printf '%s\n' "${rds_map[@]}"); do 
     echo "$l" | perl -nle "print \"$l\" if /${this}/" 
   done
-}
+} || true
 
-to_debug flow && echo "utils:script_info"
+to_debug flow && echo "utils:script_info" || true 
 
 # Get info about the running script. 
 script_info() {
@@ -333,7 +333,7 @@ script_info() {
   BT_LAUNCH_DIR="$(dirname "${THIS_SCRIPT}")"
   BT_PKG_DIR="$(dirname "${BT_LAUNCH_DIR}")"
   export BT_LAUNCH_DIR="${BT_LAUNCH_DIR}" BT_PKG_DIR="${BT_PKG_DIR}"
-} 
+} || true
 
 cluster_info() { 
 
@@ -373,14 +373,14 @@ cluster_info() {
   bt_endpoint|${bt_endpoint}\n          \
   bt_cluster|${bt_cluster}\n"         >&3
 
-}
+} || true
 
 instance_info() { 
 
     :   # ssm target
 
-} 
+} || true
 
 
-to_debug flow && sleep 0.5 && echo "utils:end"
+to_debug flow && sleep 0.5 && echo "utils:end" || true
 

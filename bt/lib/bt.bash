@@ -2,59 +2,46 @@
 # shellcheck shell=bash disable=SC2148
 
 # debugging func
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;} || true
 to_debug flow sleep 0.5 && echo "bt:to_debug"
 
-bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;}
+bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
 stat() { 
     aws sts get-caller-identity                | \
     jq .Arn                                    | \
     perl -pe 's/.*:://; s/qv-gbl//; s/\/boto.*//;'
-}
+} || true
 
 export BT="${HOME}/.bt"
-to_debug flow echo BT: "${BT}"
+to_debug flow echo BT: "${BT}" || true
 
 
 bt_load() { 
 
-  
-  [[ -z ${LOADER_ACTIVE} ]] && { 
-    export LOADER_ACTIVE=false 
-  }
-  #echo LDR: "|${LOADER_ACTIVE}|"    
-  if ! ${LOADER_ACTIVE}; then 
+    # Static libs.  No globbing.  Anything else was too brittle. 
+      
+    . "${BT}/lib/bt.bash" >/dev/null 2>&1
+    . "${BT}/lib/utils.bash" >/dev/null 2>&1
+    . "${BT}/lib/api.bash" >/dev/null 2>&1
+    . "${BT}/lib/env.bash" >/dev/null 2>&1
+    . "${BT}/lib/rdslib.bash" >/dev/null 2>&1
+    . "${BT}/lib/bt_sourcer.bash" >/dev/null 2>&1
+    . "${BT}/lib/bridge_rds.bash" >/dev/null 2>&1
+    . "${BT}/lib/bridge_ssm.bash" >/dev/null 2>&1
 
-    to_debug flow && sleep 0.5 && echo "stgs:loader"
-  
-    # script loader (runs exactly once)
-    . "${BT}/lib/bt_loader.bash" #>/dev/null 2>&1
-  
-    to_debug flow && sleep 0.5 && echo "stgs:addpath"
-    loader_addpath "${BT}/lib"
-  
-    to_debug flow && sleep 0.5 && echo "stgs:includex"
-    shopt -s extglob
-    includex 'bt.bash' >/dev/null 2>&1
-    includex 'utils.bash' >/dev/null 2>&1
-    includex 'env.bash' >/dev/null 2>&1
-    includex 'rdslib.bash' >/dev/null 2>&1
-    includex 'data.bash' >/dev/null 2>&1
-    includex 'api.bash' >/dev/null 2>&1
-    includex -name 'bridge_*.bash' >/dev/null 2>&1
-  
     {
       funcs="$(declare -F | wc -l)"
       echo -en "${GREEN}Success${NC} - "
       echo -e  "Loaded ${CYAN}$(declare -F | wc -l)${NC} functions."
-      if ! $(declare -F | grep bt_activate >/dev/null 2>&1); then
-        echo -e "Loader ${RED}failed${NC}." && return 1
+      if ! $(declare -F | grep bt_src >/dev/null 2>&1); then
+        echo -e "Loader ${RED}failed${NC}." && return 1 
       fi
     }
 
  fi
-}
+} || true
+
 
 function join_by { local IFS="$1"; shift; echo "$*"; }
 
@@ -69,7 +56,7 @@ function bt_toggle() {
     if [[ ! -v VIRTUAL_ENV ]]; then
       if BASE="$(poetry env info --path)"; then
         # alter prompt
-        PROMPT_COMMAND="(${GREEN}bt${NC});$PROMPT_COMMAND"
+        PROMPT_COMMAND='(bt)';"$PROMPT_COMMAND"
         PS1=""
       else
         BT_MANUAL=1
@@ -79,7 +66,7 @@ function bt_toggle() {
     deactivate
   fi
   return $ret
-}
+} || true
 
 #bt() { 
 #  BT_MANUAL=1
@@ -144,7 +131,7 @@ bt_local() {
   source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
   to_debug bt_ && echo PATH: "$(join_by : ${b2[@]} ${PATH})"
   #echo export PATH="$(join_by : ${b2[@]} ${PATH})"
-  #echo "export PATH=$(join_by : ${b2[@]} ${PATH})" > "${BT}/cache/path_info"
+  echo "export PATH=$(join_by : ${b2[@]} ${PATH})" > "${BT}/cache/path_info"
   source "${BT}/cache/path_info"
  
   [[ ! "${PATH}" =~ "${core}" ]] && { 
@@ -179,31 +166,25 @@ bt_local() {
   done
 
     for tool in ${tools[@]}; do  
-      generate_bridge_functions "${toolshed}" "${pkg_path}" 
+      generate_bridge_functions "${toolshed}" "${pkg_path}" || return
     done
-
-    venv_path="${HOME}/.local/pipx/venvs/${core}/bin/activate" >/dev/null 2>&1
-    echo -e  "${GREEN}activating${NC} BT space..."
-    source ${venv_path}
-    echo -ne "${GREEN} done${NC}."
-    PROMPT_COMMAND="(bt);$PROMPT_COMMAND"
-
     # TODO: check that path is present for each.
     funcs="$(declare -F                                                  | \
       perl -lne "print if 'm/.*bt_([\w\-]+)_(complete|local|generate)/'" | \
       wc -l)"
     echo -e "loaded ${CYAN}${funcs}${NC} functions for tools: ${tools[@]}"  
+    PROMPT_COMMAND='(bt);'$PROMPT_COMMAND
+    return  
   
-}
+} || true
 
-function bt() { 
+function bt_() { 
     export BT="${HOME}/.bt" 
-    bt_load 
-    #source ${BT}/settings
+    source ${BT}/settings
     #bt_local
     #autologin
-    echo -e ${GREEN}bt${NC} is ready! 
-} 
+    echo -e "${GREEN}bt${NC} is ready! "
+} | true 
 
 # function generator
 # -------------------
@@ -224,7 +205,7 @@ generate_bridge_functions() {
 
   [[ -z "${toolshed}" || -z "${pkg_path}" ]] && { 
     echo -e "${RED}FATAL${NC}: Failed to write bridge function."
-    exit
+    return
   }
 
   echo -e "# declare bridge functions: ${tool}"
@@ -232,24 +213,37 @@ generate_bridge_functions() {
   #echo ${f=##*/} 
  
   { 
-    echo -ne "\nbt_${tool}_complete\(\) \{ \n"
+    echo -ne "\nbt_${tool}_complete() { \n"
     echo -ne "    source ${pkg_path}/${toolshed}/${tool}_complete\n"
-    echo -ne "\} \n\n"    
+    echo -ne "} \n\n"    
     
-    echo -ne "\nbt_${tool}_generate\(\) \{ \n"
+    echo -ne "\nbt_${tool}_generate() { \n"
     echo -ne "    ${pkg_path}/${toolshed}/${tool}_generate\n"
-    echo -ne "\} \n\n"    
+    echo -ne "} \n\n"    
    
-    echo -ne "\nbt_${tool}_local\(\) \{ \n"
+    echo -ne "\nbt_${tool}_local() { \n"
     echo -ne "    ${pkg_path}/${toolshed}/${tool}_local \$\{1\}\n"
-    echo -ne "\} \n\n"   
+    echo -ne "} \n\n"   
 
     echo alias "${tool}=\"bt_${tool}_local \""
     echo alias "${tool}_complete=\"bt_${tool}_complete \""
     echo alias "${tool}_generate=\"bt_${tool}_generate \""
-  } > ${BT}/lib/bridge_"${tool}".bash
 
-} 
+    echo alias "${tool}=\"${tool}_local\""
+ 
+    echo "bt_${tool}_complete" 
+  } > ${BT}/lib/bridge_"${tool}".bash 
+
+
+} || true
+
+bt_activate() { 
+
+    venv_path="${HOME}/.local/pipx/venvs/${core}/bin/activate" >/dev/null 2>&1
+    echo -e  "${GREEN}activating${NC} BT space..."
+    source ${venv_path}
+    echo -ne "${GREEN} done${NC}."
+}
 
 # TODOs:
 #  verify source path
@@ -274,14 +268,14 @@ generate_bridge_functions() {
 # 
 get_tool_list() { 
     env=${1:-"devops-sso-util"}
-}
+} || true
 
 
 # -----------------------------------------------------------------
 # PATH SETTINGS
 # -----------------------------------------------------------------
 
-to_debug flow && echo "utils:script_info"
+to_debug flow && echo "utils:script_info" || true
 
 # Get info about the running script. 
 script_info() {
@@ -290,7 +284,7 @@ script_info() {
   BT_LAUNCH_DIR="$(dirname "${THIS_SCRIPT}")"
   BT_PKG_DIR="$(dirname "${BT_LAUNCH_DIR}")"
   export BT_LAUNCH_DIR="${BT_LAUNCH_DIR}" BT_PKG_DIR="${BT_PKG_DIR}"
-} 
+}  || true
 
 cluster_info() { 
 
@@ -299,20 +293,20 @@ cluster_info() {
     echo "FATAL: No BT_CLUSTER set." && exit
   }
 
-} 
+}  || true
 
 instance_info() { 
     :   # ssm target
-} 
+} || true
 
 function join_by {
   local d=${1-} f=${2-}
   if shift 2; then
     printf %s "$f" "${@/#/$d}"
   fi
-}
+} || true
 
-function join { local IFS="$1"; shift; echo "$*"; }
+function join { local IFS="$1"; shift; echo "$*"; } || true
 
-to_debug flow && sleep 0.5 && echo "utils:end"
+to_debug flow && sleep 0.5 && echo "utils:end" || true
 

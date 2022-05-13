@@ -630,6 +630,7 @@ close_socket() {
 
 }
 
-to_debug flow && echo rds:close_socket
-to_debug flow && sleep 0.5 && echo rds:end
+to_debug flow && echo rds:close_socket || true
+to_debug flow && sleep 0.5 && echo rds:end || true
+
 

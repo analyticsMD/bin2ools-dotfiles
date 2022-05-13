@@ -176,6 +176,6 @@ autologin() {
 
 
 
-to_debug flow && echo api:autologin.end
-to_debug flow && sleep 0.5 && echo api:end
+to_debug flow && echo api:autologin.end || true
+to_debug flow && sleep 0.5 && echo api:end || true
 

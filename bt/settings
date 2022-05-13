@@ -7,9 +7,9 @@
 # -----------------------------------------------------------------
 
 # global debug function.
-to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;}
+to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
 
-bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;}
+bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
 # shellcheck disable=SC1090,SC1094 
 
@@ -19,20 +19,21 @@ ver="$(echo "${BASH_VERSION}"             | \
 [[ "${ver}" -ne 5 ]] && { 
   echo "WARNING: unsupported shell spawned: ${BASH_VERSION}"
   return 1
-}
+} || true
 
 #export BT_DEBUG="flow env lgin rds rdsc rdst cche util data pmpt qvdb"
-to_debug flow && sleep 0.5 && echo "stgs:debug"
+to_debug flow && sleep 0.5 && echo "stgs:debug" || true
 
 
 # ------------------------------------------------------------------
 # SETTINGS
 # ------------------------------------------------------------------
 
-to_debug flow && sleep 0.5 && echo "stgs:settings"
+to_debug flow && sleep 0.5 && echo "stgs:settings" || true
+    
 
 # additional config settings for BT. 
-export BT="${HOME}/.bt"
+export BT="${HOME}/.bt"  
 
 export BT_SETTINGS=" alog "
 # Add 'quiet' if you want to silence status reporting of each 
@@ -54,14 +55,14 @@ export AWSLIB="devops"
 [[ ! -e "${DEFAULT_AWSLIB}" ]] && { 
     export AWSLIB="aws" 
     export DEFAULT_AWSLIB="${HOME}/.local/bin/${AWSLIB}-sso-util" 
-} 
+} || true
 
 
 # -----------------------------------------------------------------
 # ARG PARSING
 # -----------------------------------------------------------------
 
-to_debug flow && sleep 0.5 && echo "stgs:arg_parsing"
+to_debug flow && sleep 0.5 && echo "stgs:arg_parsing"  || true
 
 account="${1:-"prod"}"
 
@@ -74,8 +75,8 @@ account="${1:-"prod"}"
 # For loading associative arrays from files or variables.
 
 export BT="${HOME}/.bt"
-. ${BT}/lib/bt.bash 
-bt_load
+. ${BT}/lib/bt.bash || true
+bt_load || true
 
 to_debug stgs  echo LOADER_ACTIVE: "${LOADER_ACTIVE}"
 
@@ -86,16 +87,15 @@ to_debug stgs  echo LOADER_ACTIVE: "${LOADER_ACTIVE}"
 # -----------------------------------------------------------------
 # SHELL SOURCER 
 # -----------------------------------------------------------------
-
+# 
 # Lots of people love putting dotfile and other scripts into 
 # their homedir. With this command, you can add them all to 
 # Bintool and manage them through github. 
 
-source ${BT}/lib/bt_sourcer.bash 
+source ${BT}/lib/bt_sourcer.bash || true
 [[ -n ${SOURCE_FILES} ]] && { 
-  echo -ne "sourcing... " 
-  #bt_src ${NOISE}
-  echo -e "${BLUE}disabled.${NC}"
+    bt_src ${NOISE}
+    echo -e Sourcing "${BLUE}enabled${NC}."
 }
 # NOTE: this feature is controlled by adding the string 
 # 'src' to the variable: BT_SETTINGS. See: the settings section. 
@@ -105,29 +105,29 @@ source ${BT}/lib/bt_sourcer.bash
 # CACHE SETTINGS
 # -----------------------------------------------------------------
 
-to_debug flow && sleep 0.5 && echo "stgs:cache"
-set_team
+to_debug flow && sleep 0.5 && echo "stgs:cache" || true
+set_team || true
 
 
 # -----------------------------------------------------------------
 # PATH SETTINGS
 # -----------------------------------------------------------------
 
-to_debug flow && sleep 0.5 && echo "stgs:path"
+to_debug flow && sleep 0.5 && echo "stgs:path" || true
 
 [[ ! -f "${BT}"/cache/path_info ]] && {
   to_debug stgs && sleep 1 && echo stgs:path_info
   "${BT}"/utils/path -s 2>/dev/null | tee ${BT}/cache/path_info 
-}
+} || true
 
 to_debug stgs && sleep 1 && echo stgs:source_path
-source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )  || true
 
 # -----------------------------------------------------------------
 # ESSENTIAL ALIASES
 # -----------------------------------------------------------------
 
-to_debug flow && sleep 0.5 && echo "stgs:aliases"
+to_debug flow && sleep 0.5 && echo "stgs:aliases"  || true
 
 #poetry="$(which poetry)"
 
@@ -135,7 +135,7 @@ to_debug flow && sleep 0.5 && echo "stgs:aliases"
 # ENV SETTINGS
 # -----------------------------------------------------------------
 
-to_debug flow && sleep 0.5 && echo "stgs:env"
+to_debug flow && sleep 0.5 && echo "stgs:env" || true
 
 # scripted shell activation (experimental).
 #[[ -e "${HOME}/.bt/.iterm2_shell_integration.bash" ]] && { 
@@ -153,7 +153,8 @@ to_debug stgs && echo stgs:env BT_ROLE:    ${BT_ROLE}
 # Bootstrap functions.
 # -----------------------------------------------------------------
 
-to_debug flow && sleep 0.5 && echo "stgs:bootstrap_funcs"
+to_debug flow && sleep 0.5 && echo "stgs:bootstrap_funcs" || true
+
 
 
 
@@ -167,10 +168,10 @@ to_debug flow && sleep 0.5 && echo "stgs:autologin"
 # Team account defaults to prod, for now.
 
 role=qventus 
-[[ -n "${BT_ROLE}" ]] && { role="${BT_ROLE}" ;}
+[[ -n "${BT_ROLE}" ]] && { role="${BT_ROLE}" ;} || true
 
-to_debug stgs && echo settings+=autologin 
-bt_settings alog && autologin $role 
+to_debug stgs && echo settings+=autologin  || true
+bt_settings alog && autologin $role  || true
 
 
 
@@ -179,5 +180,5 @@ bt_settings alog && autologin $role
 # load bintools functions, customizations, completions.
 # ------------------------------------------------------------------
 
-to_debug flow && sleep 0.5 && echo "stgs:sources"
+to_debug flow && sleep 0.5 && echo "stgs:sources" || true
 

@@ -88,11 +88,11 @@ bt_src() {
     }  
     # toggle off globbing, but only if it was off before.
     ((extglob_set))     && shopt -u extglob
-}
+} || true
 
 # For fun, show a pretty tree-based display.  
 #( NOTE: BT_SETTINGS=quiet suppresses this.) 
 # 
 # shellcheck disable=SC2015
-bt_settings src && bt_src "${NOISE}" && return
+bt_settings src && bt_src "${NOISE}" || true
 

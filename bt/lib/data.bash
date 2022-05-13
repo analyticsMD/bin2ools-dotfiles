@@ -564,5 +564,5 @@ declare -a guild=(         guild                     \
 #shopt -s dotglob
 #shopt -s nocasematch
 
-to_debug flow && sleep 1 && echo data:end
+to_debug flow && sleep 1 && echo data:end || true
 

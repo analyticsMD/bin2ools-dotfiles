@@ -639,9 +639,9 @@ aws_defaults() {
 
 }
 
-aws_defaults
+aws_defaults || true
 
-to_debug flow && echo env:aws_profile
-aws_profile qventus
+to_debug flow && echo env:aws_profile  || true
+aws_profile qventus || true
 
-to_debug flow && sleep 0.5 && echo env:end
+to_debug flow && sleep 0.5 && echo env:end || true

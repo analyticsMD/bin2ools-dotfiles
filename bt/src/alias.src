@@ -2,7 +2,7 @@ alias sso="devops-sso-util login && aws_profile qventus"
 
 params["region"]="${AWS_DEFAULT_SSO_REGION}"
 # test the imported profile (the fast way).
-if [[ -n "${profile[*]}" ]]; then
+if [[ -n "${profile[@]}" ]]; then
   debug echo "Found profile: ${profile}"
   # shellcheck disable=SC2236,SC2015
   if [[ ! -z "${profile[expiration]+_}" ]]; then
@@ -28,24 +28,20 @@ alias w="aws-whoami             | \
          perl -pe 's/.*\///'    | \
          awk -F'@' '{print $1}'"
 
+export BT="${HOME}/.bt"
+
 alias gcal="echo Google calendar.  Post to chat. "
 
-alias  lib="q_popd >/dev/null 2>&1; q_pushd ${BT}/lib; "
-alias  ss="q_popd >/dev/null 2>&1; q_pushd ${BT}/sources;"
-#alias  cmd="qpopd >/dev/null 2>&1; q_pushd ${BT}/cmd"
-#alias  gen="qpopd >/dev/null 2>&1; q_pushd ${BT}/gen"
-#alias  _bt="qpopd >/dev/null 2>&1; q_pushd ${BT}/bt"
-#alias  util="qpopd >/dev/null 2>&1; q_pushd ${BT}/utils"
-#alias  ss="qpopd >/dev/null 2>&1; q_pushd ${BT}/sec"
-#alias  log="qpopd ${BT}/log"
-#alias  in="qpopd ${BT}/inst"
-#
-#alias _x="qpopd ${BT}/examples"
-#alias _s="qpopd ${BT}/src"
-#alias _l="qpopd ${BT}/lib"
-#alias _c="qpopd ${BT}/cmc"
-#alias _i="qpopd ${BT}/inst"
-#alias _sec="qpopd ${BT}/sec"
+alias  lib="q_popd; q_pushd ${BT}/lib "
+alias  ss="q_popd; q_pushd ${BT}/src "
+alias  cmd="qpopd; q_pushd ${BT}/cmd "
+alias  gen="qpopd; q_pushd ${BT}/gen "
+alias  _bt="qpopd; q_pushd ${BT}/bt "
+alias  util="qpopd; q_pushd ${BT}/utils "
+alias  ss="qpopd; q_pushd ${BT}/sec "
+alias  log="qpopd; q_pushd ${BT}/cache "
+alias  log="qpopd; q_pushd ${BT}/log "
+alias  in="qpopd; q_pushd ${BT}/inst "
 
 # edit aliases
 
@@ -54,7 +50,7 @@ alias turds='find . -name "\.*\.sw[a-z]" | xargs rm'
 
 # edit 
 alias re_source='source ~/.bash_profile'
-alias re_='vim ~/.bash_profile && source ~/.bash_profile'
+alias re_='vi ~/.bash_profile && source ~/.bash_profile'
 alias re_prof="vi ~/.bash_profile && source ~/.bash_profile"
 alias re_al="vi ~/.bash_aliases && source ~/.bash_aliases"
 alias re_func="vi ~/.bash_functions && source ~/.bash_functions"
@@ -63,9 +59,6 @@ alias c_gov='CHAMBER_KMS_KEY_ALIAS=alias/prod-netccndemo-secret-key aws-vault ex
 
 # fast
 alias py_37="source ~/pythons/3.7.7/bin/activate"
-
-# scripted 
-alias gen_="generate"
 
 # colorize
 #alias less="less -R"
