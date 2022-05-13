@@ -249,7 +249,7 @@ declare -a rpf=(cnc qaplatform)  # role profiles
 for p in "${rpf[@]}"; do 
   aws-sso-util configure profile --existing-config-action keep \
         -c role_arn="$(printf "$tpl" "${rpf[1]}" "${rpf[2]}")" \
-                -a "${v[1]}" -r "${rpf[2]}" "qv-gbl-${rpf[2]}" 
+      -a "${v[1]}" -r "${rpf[2]}" "qv-gbl-${rpf[2]}" "${rpf[3]}" 
 done
 
 # Generate guild profiles.

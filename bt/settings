@@ -192,9 +192,8 @@ to_debug flow && sleep 0.5 && echo "stgs:autologin"
 
 # Team account defaults to prod, for now.
 
-role=qventus 
-[[ -n "${BT_ROLE}" ]] && { role="${BT_ROLE}" ;} || true
-autologin "${role}"  || true
+BT_ROLE=qventus 
+[[ -n "${BT_ROLE}" && role="${BT_ROLE}" ]] { autologin "${BT_ROLE}" ;} || true
 
 
 

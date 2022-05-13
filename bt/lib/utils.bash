@@ -202,10 +202,10 @@ to_debug flow && echo "utils:die" || true
 die() { NUM="${1:-2}"; echo "$*" >&2; return "$NUM"; "exit $NUM"; } || true
 
 get_account() {
-  cat ${BT}/data/json/bt/accounts.json | \
-                  jq -r      '.account | \
-                          to_entries[] | \
-                 select(.key|tostring) | "\(.key)"'
+  cat "${BT}/data/json/bt/accounts.json" | \
+                    jq -r      '.account | \
+                            to_entries[] | \
+                   select(.key|tostring) | "\(.key)"'
 } || true
 
 get_usr() { 
