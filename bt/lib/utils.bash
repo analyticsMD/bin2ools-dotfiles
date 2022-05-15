@@ -31,7 +31,6 @@ loader() (
     }
 
     # pass directives from a multiline var, or a heredoc. 
-    #[[ $# -gt 0 ]] && exec <<< $*
     xargs -0 <<< $*
 
     {
@@ -39,14 +38,12 @@ loader() (
         echo -en "${GREEN}Success${NC} - "
         funcs="$(declare -F | grep -v '\-f _' | wc -l)"
         echo -e  "Loaded ${CYAN}${funcs}${NC} functions."
-        if [[ ! "${funcs}" -lt 50 ]]; then
+        if [[ "${funcs}" -lt 60 ]]; then
             echo -e "WARNING: Loader ${YELLOW}failed${NC}." 
             echo -en "Retrying with legacy_loader .... " 
-            coproc CAT { cat; } & 
-            legacy_loader >&${CAT[1]}; 
-            echo -e "${GREEN}succeeded{$NC}".
-            echo <&${CAT[0]} 
-            [[ -n "$output" ]] && { echo -e "${output}" ;}
+            coproc (echo $(legacy_loader)) && echo -e "${GREEN}succeeded${NC}".
+            echo  <&"${COPROC[1]}"
+            echo -ne "\n"
         fi
     }
 ) || true
@@ -61,7 +58,7 @@ cmds() {
         ls -1d ${HOME}/.bt/@(lib|gen|src|cache)                     | \
             perl -pe "s/([\w_\-]+)/loader_addpath \1/;"               \
         ls -1 ${HOME}/.bt/lib/@(utils|bt|env|rdslib|data|api)\.bash | \
-            perl -pe "s/([\w_\-]+)/includex \1/;"                     \
+            perl -pe "s/([\w_\-]+)/includex \1/;" | sort -r           \
         loader_flag "$(which aws)"                                    \
     )"    
     shopt -u extglob 
@@ -74,17 +71,16 @@ cmds() {
 legacy_loader() { 
     # Static libs. No globbing. A bit too brittle.
 
+    #. "${BT}/lib/utils.bash"         >/dev/null 2>&1
     . "${BT}/lib/bt.bash"             >/dev/null 2>&1
-    . "${BT}/lib/utils.bash"          >/dev/null 2>&1
     . "${BT}/lib/env.bash"            >/dev/null 2>&1
     . "${BT}/lib/api.bash"            >/dev/null 2>&1
     . "${BT}/lib/rdslib.bash"         >/dev/null 2>&1
 
-    {
-        funcs="$(declare -F | grep -v "\-f _" | wc -l )" && {
-            echo -e "Loaded ${CYAN}${funcs}${NC} functions."
-            return
-        } 
+    
+    funcs="$(declare -F | grep -v "\-f _" | wc -l )" && {
+        echo -e "Loaded ${CYAN}${funcs}${NC} functions."
+        return 0
     } 
 
 } || true
@@ -128,6 +124,9 @@ q_pushd() { command pushd "$@" > /dev/null 2>&1 || return ;} || true
 
 to_debug flow && echo "utils:q_popd" || true
 q_popd() { command popd "$@" > /dev/null 2>&1 || return;} || true
+
+# walk back through a pop stack
+q_mpopd() { n=$1; while [[ $n > 0 ]]; do q_popd; n=$((n-1)); done ;}
 
 to_debug flow && echo "utils:die" || true
 die() { NUM="${1:-2}"; echo "$*" >&2; return "$NUM"; "exit $NUM"; } || true
@@ -180,6 +179,8 @@ needs_arg() { [ -z "$OPTARG" ] && warn "No arg for --$OPT option" && usage ;} ||
 
 to_debug flow && echo "utils:usage" || true
 usage() { echo "Usage: <more instructions here...>"; } || true
+
+
 
 
 to_debug flow && echo "utils:stash" || true

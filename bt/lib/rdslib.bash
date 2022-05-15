@@ -1,7 +1,9 @@
-#!/usr/bin/env /usr/local/bin/bash
 # shellcheck shell=bash
 
-to_debug flow && sleep 0.5 && echo rds:start
+# global debug function.
+to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
+
+to_debug flow && sleep 0.5 && echo rds:start || true
 
 # RDS usage message
 rds_usage () {
@@ -20,16 +22,16 @@ rds_usage () {
     echo -ne "================================================================\n\n\n"
     mysql_help
     exit 1
-}
+} || true
 
-to_debug flow && echo rds:rds_usage
+to_debug flow && echo rds:rds_usage || true
 
 mysql_help() { 
 
   echo "mysql client help here."
-} 
+} || true
 
-to_debug flow && echo rds:mysql_help
+to_debug flow && echo rds:mysql_help || true
 
 # expects a login.
 get_forwarder() { 
@@ -65,7 +67,7 @@ get_forwarder() {
   fwdr+=( [endpoint]="${e}" [cluster]="$this" )
   echo "${fwdr[@]@A}"
 
-}
+} || true
 
 to_debug flow && echo rds:get_forwarder
 
@@ -90,9 +92,9 @@ parse_rds_args() {
  
   echo "$(get_rds_args ${rds_args[@]})" 
   echo "$(get_mysql_args ${mysql_args[@]})" 
-}
+} || true
 
-to_debug flow && echo rds:split_rds_args
+to_debug flow && echo rds:split_rds_args || true
 
 
 # Returns the common name of the 
@@ -103,9 +105,9 @@ get_db_target() {
   } || { 
     echo "NONE"
   } 
-} 
+} || true
 
-to_debug flow && echo rds:get_db_target
+to_debug flow && echo rds:get_db_target || true
 
 
 # shellcheck disable=SC2120
@@ -139,9 +141,9 @@ get_rds_args() {
 
   echo "${rds_args[@]@A}" 
 
-}
+} || true
 
-to_debug flow && echo rds:get_rds_args
+to_debug flow && echo rds:get_rds_args || true
 
 
 # shellcheck disable=SC2120
@@ -280,11 +282,11 @@ get_mysql_args() {
   done
 
   echo "${mysql_args[@]@A}"
-}  
+}  || true
 
 set_iam_user() { 
   echo "dba_guild"
-}
+} || true
 
 # Select a default iam_user. 
 # Not called if the user specifically designates.
@@ -318,7 +320,7 @@ iam_user() {
 
   export BT_iam_user="restricted"    # default
   echo "${BT_iam_user}"
-}
+} || true
 
 
 set_tunnel_user() { 
@@ -332,7 +334,7 @@ set_tunnel_user() {
   } 
 
   echo "${BT_tunnel_user}"
-} 
+} || true
 
 
 # Connection method: Pure ssm.
@@ -346,7 +348,7 @@ pure_ssm() {
  true  
  #mkdir -p ~/.ssh/sockets && chmod 0700 ~/.ssh/sockets
 
-}  
+} || true 
 
 
 # Connection method: ssh tunnel - VPN style.
@@ -355,13 +357,13 @@ ssh_vpn() {
 
   : # will add soon.  
 
-} 
+}  || true
 
 ssh_master_socket() { 
 
   : # will add soon. 
 
-}
+} || true
 
 # create a temporary path for use with 
 # session data of various sorts. 
@@ -371,7 +373,7 @@ get_tmppath() {
   tmppath="$(gmktemp -p "${HOME}"/tmp rds.XXXXXXXXXXXX)"
 
   echo "${tmppath}"
-} 
+}  || true
 
 # ----------------------------------------------------
 # get an RDS IAM login token
@@ -419,7 +421,7 @@ get_iam_token() {
   
   to_debug rds echo TOKEN:
   echo "${TOKEN}"
-}
+} || true
  
 # -------------------
 # reprocess mysql args.
@@ -471,7 +473,7 @@ reprocess_mysql_args() {
   
   to_debug rds echo cfg_args: "${cfg_args[@]@A}" 
   echo "${cfg_args[@]@A}" 
-}  
+} || true
 
 # Try to connect.
 # ---------------
@@ -505,7 +507,7 @@ repoll() {
       continue
   }
   done  
-} 
+} || true
 
 # BACKOFF POLLER
 # --------------
@@ -526,7 +528,7 @@ backoff_poll() {
 
   echo response: $response  >&3
 
-} 
+} || true
 
 
 
@@ -556,7 +558,7 @@ show_all_ports() {
               ' | sort                   #    so cool it tingles. 
     echo "--------------------------------"
     netstat -an | grep -i listen | grep -E '\.33\d\d' 
-}  
+} || true 
 
 
 wipe_ssm_ports() { 
@@ -568,7 +570,7 @@ wipe_ssm_ports() {
         grep "${port}"        | \
         awk '{print $1}'     | \
         perl -pe 's/\n/ /')
-}
+} || true
    
 wipe_mysql_listeners() { 
   port=${1:-"33"} 
@@ -579,21 +581,21 @@ wipe_mysql_listeners() {
         grep "${port}"        | \
         awk '{print $2}'     | \
         perl -pe 's/\n/ /'    )
-}
+} || true
 
 #netstat -an | grep -i listen | grep -E '\.33\d\d'
 
 autoclean() { 
   echo "Current socket state: "
   show_all_ports
-}
+} | true
 
 socket_peek() { 
   while read -ra sock; do 
     set '__' $sock 
     name="${1:-""}" pid="${2:-""}" port="${3:-""}" st="${4:-""}"
   done< <(show_all_ports)
-} 
+} || true
 
 
 
@@ -628,7 +630,7 @@ close_socket() {
   done
   reset
 
-}
+} || true
 
 to_debug flow && echo rds:close_socket || true
 to_debug flow && sleep 0.5 && echo rds:end || true

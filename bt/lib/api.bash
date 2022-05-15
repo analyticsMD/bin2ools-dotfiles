@@ -1,7 +1,8 @@
-#!/usr/bin/env /usr/local/bin/bash
 
-to_debug flow && sleep 0.5 && echo api:start
-to_debug flow && echo api:perms
+to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;} || true
+
+to_debug flow && sleep 0.5 && echo api:start || true
+to_debug flow && echo api:perms || true
 
 
 # Show current permissions. 
@@ -27,13 +28,52 @@ perms() {
   } || { 
     echo -e "${login}"
   }
-}
+} || true
 
 
 get_account() {
   this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
-}
+} || true
 
+
+set_team() { 
+
+  # team var not proper.  check team cache.
+  [ -f "${BT}/cache/team_info" ] && { 
+    team="$(cat "${BT}/cache/team_info")"
+    [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
+      # cache worked.
+      BT_TEAM="${team}" 
+      export BT_TEAM="${BT_TEAM}" 
+      return 
+    }  
+  }
+
+  # cache did not work. Try aws config...
+  team="$(cat "${AWS_CONFIG_FILE}"                                  | \
+      perl -nle "print if s/.*aws_team_([\w_\-]+).*/\1/;" | tail -n 1)"
+
+    # aws config worked.
+  [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
+    BT_TEAM="${team}" 
+    export BT_TEAM="${BT_TEAM}" 
+    # cache not present. Populate.    
+    echo "${BT_TEAM}" > "${BT}/cache/team_info"
+    return 
+  }  
+
+  to_debug env && echo "env:set_team succeeded - team is: ${BT_TEAM}"
+  
+  # Otherwise, fail loudly. 
+  # Warn the user to fix the problem.
+  rm -rf "${BT}/cache/team_info"
+  echo "----------------------------" 
+  echo "FATAL: team not set." 
+  echo "Please run 'profiles' again."
+  echo "From the command line."
+  echo "----------------------------" 
+
+} || true
 
 
 to_debug flow && echo api:wipe
@@ -66,19 +106,19 @@ wipe () {
   aws-whoami >/dev/null 2>&1 || echo "no identities left."
   "${DEFAULT_AWSLIB}" check >/dev/null 2>&1
   echo "all cached sessions removed."
-}
+} || true
 
 
-to_debug flow && echo api:unset_profile
+to_debug flow && echo api:unset_profile || true
 
 unset_profile() { 
   ${BT}/cmd/assume --unset >/dev/null 2>&1
   aws_profile --unset
   unset AWSUME_PROFILE AWSUME_DEFAULT_PROFILE AWS_PROFILE AWS_DEFAULT_PROFILE
-}
+} || true
 
 
-to_debug flow && echo api:autologin
+to_debug flow && echo api:autologin || true
 
 # unattended login
 autologin() { 
@@ -172,7 +212,7 @@ autologin() {
   fi
   return
   
-} 
+} || true 
 
 
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env /usr/local/bin/bash
 # shellcheck shell=bash 
 
+
 BT="${HOME}/.bt"
 export BT="${BT}"
 
-#to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
+to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
 to_debug flow && sleep 0.5 && echo env:start
 
 to_debug flow echo BT: "${BT}"
@@ -71,7 +72,7 @@ env_state()  {
 
 env_state
 
-to_debug flow && echo env:cache
+to_debug flow && echo env:cache || true
 
 env_cache() { 
 
@@ -80,7 +81,7 @@ env_cache() {
   
   umask 0077
 
-  [[ ! -d "${BT_CACHE}" ]] && { 
+  [[ ! -d "${BT}/cache" ]] && { 
   export BT_CACHE="${BT}/cache"
   mkdir -p ${BT_CACHE} && export BT_CACHE=${BT_CACHE}
   to_debug cche echo "cache dir: ${BT}/cache"
@@ -90,7 +91,7 @@ env_cache() {
     to_debug cche echo copying "${FILE##*/} to ${BT_CACHE}"
     [[ -f "${FILE}" ]] && { 
         caching ${FILE} 
-        cp "${FILE}" "${BT_CACHE}/${FILE##*/}"
+        cp "${FILE}" "${BT}/cache/${FILE##*/}"
     } || { 
       echo "${FILE##*/} is not a file, or could not be copied."
     }
@@ -99,54 +100,13 @@ env_cache() {
   umask 0022
 
   }
-}  
+} || true 
 
-env_cache 
+env_cache || true
 
-to_debug flow && echo env:set_team
+to_debug flow && echo env:set_team || true 
 
-set_team() { 
-
-  # team var not proper.  check team cache.
-  [ -f "${BT_CACHE}/team_info" ] && { 
-    team="$(cat "${BT_CACHE}/team_info")"
-    [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
-      # cache worked.
-      BT_TEAM="${team}" 
-      export BT_TEAM="${BT_TEAM}" 
-      return 
-    }  
-  }
-
-  # cache did not work. Try aws config...
-  team="$(cat "${AWS_CONFIG_FILE}"                                  | \
-      perl -nle "print if s/.*aws_team_([\w_\-]+).*/\1/;" | tail -n 1)"
-
-    # aws config worked.
-  [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
-    BT_TEAM="${team}" 
-    export BT_TEAM="${BT_TEAM}" 
-    # cache not present. Populate.    
-    echo "${BT_TEAM}" > "${BT_CACHE}/team_info"
-    return 
-  }  
-
-  to_debug env && echo "env:set_team succeeded - team is: ${BT_TEAM}"
-  
-  # Otherwise, fail loudly. 
-  # Warn the user to fix the problem.
-  rm -rf "${BT_CACHE}/team_info"
-  echo "----------------------------" 
-  echo "FATAL: team not set." 
-  echo "Please run 'profiles' again."
-  echo "From the command line."
-  echo "----------------------------" 
-
-}
-
-set_team
-
-to_debug flow && echo env:init
+to_debug flow && echo env:init || true
 
 env_init() { 
 
@@ -186,15 +146,15 @@ env_init() {
       export BT_TEAM="${BT_TEAM}"
     } || { 
       # team var not proper.  check team cache.
-      [ -f "${BT_CACHE}/team_info" ] && { 
-        team="$(cat "${BT_CACHE}/team_info")"
+      [ -f "${BT}/cache/team_info" ] && { 
+        team="$(cat "${BT}/cache/team_info")"
         [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
           # cache worked.
           BT_TEAM="${team}" 
           export BT_TEAM="${BT_TEAM}"
         } || { 
           # cache did not work. Warn the user to fix the problem.
-          rm -rf "${BT_CACHE}/team_info"
+          rm -rf "${BT}/cache/team_info"
           echo "----------------------------" 
           echo "FATAL: team not set." 
           echo "Please run 'profiles' again."
@@ -203,7 +163,7 @@ env_init() {
         }
       } || { 
         # cache not present. Populate.    
-        echo "${BT_TEAM}" > "${BT_CACHE}/team_info"
+        echo "${BT_TEAM}" > "${BT}/cache/team_info"
       }
     }
 
@@ -232,7 +192,8 @@ env_init() {
   to_debug env && echo env_init:BT_ROLE: "${BT_ROLE}"
   to_debug flow && echo env_init:end 
   
-}
+} || true
+
     #[[ -z "${BT_ACCOUNT}" || -z "${BT_TEAM}" ]] && { 
     #[[ "${BT_ROLE}" = *NONE* ]] || \
     #[[ "${BT_ACCOUNT}"  = *NONE*    ]] || \
@@ -246,7 +207,7 @@ env_init() {
   #      perl -nle 'print if s/.*qv\-gbl\-([\w_\-]+)/\1/'")"
   #}
 
-env_init
+env_init || true
 
 
 
@@ -259,10 +220,10 @@ env_fuzz() {
          AWS_FUZZ_SSH_COMMAND_TEMPLATE="ssm {host}" \
          AWS_FUZZ_REGIONS="${AWS_REGION}" 
 
-} 
+} || true
 
-env_fuzz
-to_debug flow && echo env:fuzz 
+env_fuzz || true 
+to_debug flow && echo env:fuzz  || true
 
 # ---------------------------------------------------------
 # dirs, vars, & libs.
@@ -272,7 +233,7 @@ to_debug flow && echo env:fuzz
 
 get_sso() { 
   echo "${USER}"
-}
+} || true
 
 
 
@@ -309,11 +270,11 @@ env_sanity() {
 
   #debug BINTOOLS: ${BT}\nTEAM:     ${BT_TEAM}\nAWS_ENV:    \n"$(env | grep AWS_)"
 
-} 
+} || true
 
-env_sanity
+env_sanity || true
 
-to_debug flow && echo env:sanity
+to_debug flow && echo env:sanity || true
 
 
 # ---------------------------------------------------------------
@@ -344,7 +305,7 @@ function _all() {
       inst)        ;;
     esac
     # echo space delimited list of words
-}
+} || true
 
 
 
@@ -377,7 +338,7 @@ function _is() {
     esac
         
     return 0 
-}
+} || true
 
 
 
@@ -422,7 +383,7 @@ function _get() {
   #all_accounts = (unrestricted + restricted)
   #accounts = unrestricted
   # ${all_accounts[*]}
-}
+} || true
 
 # other vars
 #CREDENTIAL_CMD="aws-sso-credential-process"
@@ -495,9 +456,9 @@ env_aws() {
   export AWS_DEFAULT_SSO_REGION=${qv_gbl} 
   export AWS_DEFAULT_REGION=${qv_gbl} 
   export AWS_REGION=${qv_gbl}
-}
+} || true
 
-env_aws
+env_aws || true
 
 
 # Spawn new session cleanly with refreshed credentials. 
@@ -520,7 +481,7 @@ new_session() {
       NC='\033[0;m'        # No Color
       echo "${RED}Failed!${NC}"
     } 
-} 
+} || true
 
 ## ----------------------------------------------------------------
 ## AWS SETTINGS
@@ -576,7 +537,8 @@ aws_profile () {
   else
     echo "${ARGV} is not currently a valid profile."
   fi
-}
+} || true
+    
 
 
 
@@ -594,7 +556,7 @@ aws_profile () {
 # Truth be told, it's best if you do not monkey with 
 #                        --- The QV Security Team 
 
-to_debug flow && echo env:aws_defaults
+to_debug flow && echo env:aws_defaults || true
 
 aws_defaults() { 
 
@@ -637,7 +599,7 @@ aws_defaults() {
   export AWS_DEFAULT_REGION=${qv_gbl} 
   export AWS_REGION=${qv_gbl}
 
-}
+} || true
 
 aws_defaults || true
 

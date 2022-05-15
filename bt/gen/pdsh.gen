@@ -1,6 +1,6 @@
 #!/usr/bin/env /usr/local/bin/bash
 
-source ${BT}/lib/bt_env
+source ${BT}/lib/env.bash
 
 #BT_DEBUG=yes
 

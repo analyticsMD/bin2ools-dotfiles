@@ -1,16 +1,12 @@
-#!/usr/bin/env /usr/local/bin/bash
-
-# BT_LOADER
-# ---------
-# Small mini-loader for dotfiles in your shell. 
 
 # DISPLAY SOURCES.
 # ----------------
 # Uncomment this if you want to display loaded files 
 # at runtime, color coded based on success or failure. 
+to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
 #export BT_SETTINGS="quiet alog src"
-bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;}
+bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
 # ----------------------------------------------------------------
 # GENERATORS 
@@ -28,14 +24,14 @@ bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;}
 # Search these top-level directories under your Bin2ools home, 
 # e.g. ${HOME}/.bt/foo, ${HOME}/.bt/bar, etc., for sourceable files.
 #
-declare -a source_these=()
-export source_these=( arr src gen arr utils )
-#                     ^
-#                     | add here.
 
 
 bt_src() {
 
+    declare -a source_these=()
+    export source_these=( arr src gen arr utils )
+    #                     ^
+    #                     | add here.
     q="${1}"  # "quiet" or "noisy"
      
     source_these=( arr src gen arr utils )
@@ -46,12 +42,12 @@ bt_src() {
 
     shopt -q extglob;     extglob_set=$?
     ((extglob_set))       && shopt -s extglob
-  
-    for d in $(printf "%s\n" "${dirs[@]}"); do
-      # sources dirs only. 
+    rgx="$( join_by \| ${source_these[@]} )"
+    echo rgx: "$rgx"
+    return
+    for d in $(ls @($rgx)); do 
       to_debug src && echo dir: $d
-      [[ "${d}" = @(src|gen|utils) ]] || continue  
-      DIR="${BT}/${d}" && q_pushd 2>/dev/null "${DIR}"
+      q_pushd "${BT}/${DIR}"
       [[ "$q" == "noisy" ]] && echo -ne "Sourcing in ${DIR}...\n\n"
       # shellcheck disable=SC2125
       glob=[!_!.]?*
@@ -78,8 +74,7 @@ bt_src() {
         } 
       done
       # shellcheck disable=SC2119
-      q_popd && echo "done."
-      echo -ne "\n\n\n"
+      echo -ne "OK.\n\n\n"
     done
 
     [[ "${NOISE}" == "noisy" ]] && { 
@@ -94,6 +89,5 @@ bt_src() {
 #( NOTE: BT_SETTINGS=quiet suppresses this.) 
 # 
 # shellcheck disable=SC2015
+popd -1 >/dev/null 2>&1 || true
 bt_settings src && bt_src "${NOISE}" || true
-#
-q_popd 

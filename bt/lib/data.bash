@@ -1,6 +1,8 @@
 #!/usr/bin/env /usr/local/bin/bash
-
 # shellcheck shell=bash disable=SC2148
+
+# global debug function.
+to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
 
 to_debug flow && sleep 1 && echo data:start
 

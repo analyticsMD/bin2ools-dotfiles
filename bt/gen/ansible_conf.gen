@@ -1,6 +1,6 @@
 #!/usr/bin/env /usr/local/bin/bash
 
-source bt_env   # Whole environment. Separate from bootstrapping.
+source env.bash   # Whole environment. Separate from bootstrapping.
                 # --  includes BT vars, BT state vars, 
                 # --  includes shared PATH vars.
                 # --  includes AWS defaults. 

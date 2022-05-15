@@ -1,7 +1,7 @@
 #!/usr/bin/env /usr/local/bin/bash
 # shellcheck shell=bash
 
-source "${BT}"/lib/bt_env > /dev/null 2>&1
+source "${BT}"/lib/env..bash > /dev/null 2>&1
 #BT_DEBUG=yes
 
 # Script: chain-generator
