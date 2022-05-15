@@ -7,7 +7,82 @@ to_debug flow sleep 0.5 && echo "bt:to_debug"
 
 bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
-stat() { 
+export BT="${HOME}/.bt"
+. ${BT}/settings
+
+# Creates bridge functions such that components
+# installed as python packages work interchangeably
+# with dotfiles components, and with Geodesic on Linux.
+# 
+make_funcs() { 
+
+    #export BT_DEBUG="bt_"
+    
+    # -----------------------------------------------------
+    # make sure we have the pipx paths installed.
+    # -----------------------------------------------------
+    source <(${HOME}/.bt/utils/path -s 2>/dev/null)
+    #echo PATH: ${PATH}
+    export T="$(echo ${PATH}                            | \
+                tr ':' '\n'                             | \
+                perl -lne 'print if s/(.*\/b2).*/\1/g;' | \
+                head -n 1)"
+    to_debug bt_ && echo ${PATH}| tr ':' '\n' | \
+        perl -lne 'print if s/(.*\/b2).*/\1/g;'
+
+
+    # -----------------------------------------------------
+    # scan pipx for installed toolsets.
+    # -----------------------------------------------------
+    declare -a tools=( complete generate local )
+    declare -a toolsets=()
+    shopt -s extglob
+    for t in $(ls -1d ${T}!(*-*) ); do 
+        to_debug bt_ && echo found toolset: ${t}
+        toolsets+=( "${t#*${T}}" )
+    done
+    echo "toolsets: ${toolsets[@]}"
+    shopt -u extglob
+
+
+    # -----------------------------------------------------
+    # export toolset "bridge" functions 
+    # -----------------------------------------------------
+    umask 0077
+    tmpf=$(mktemp) && echo "" > ${tmpf}
+    for ts in ${toolsets[@]}; do
+        for t in ${tools[@]}; do
+            f="${ts}_${t}"
+            [[ "$f" =~ "complete" ]] && s="source " || s=""
+            echo -ne "${f}"'() {'"\n" "${s}${T}${ts}/${f}\n" '};'"\n\n" >> ${tmpf}
+            echo -ne "export -f ${f}\n\n" >> ${tmpf}
+        done
+    done 
+    source <( cat ${tmpf} ) 
+    #declare -F | grep fx
+    
+    rm -f ${tmpf}
+    umask 0022
+
+
+    # -----------------------------------------------------
+    # create toolset 'aliases'
+    # -----------------------------------------------------
+
+    for ts in "${toolsets[@]}"; do
+        bash -c "${ts} () { "${ts}_local" ;};" 
+    done
+    
+    echo running completions.
+    for ts in ${toolsets[@]}; do "${ts}_complete"; done
+} 
+
+
+make_funcs
+
+
+
+sts() { 
     aws sts get-caller-identity                | \
     jq .Arn                                    | \
     perl -pe 's/.*:://; s/qv-gbl//; s/\/boto.*//;'
@@ -16,8 +91,26 @@ stat() {
 export BT="${HOME}/.bt"
 to_debug flow echo BT: "${BT}" || true
 
+loadx() { 
+    
+    # The new multi-threaded loader. 
+    # FEATURES: 
+    #  * Fast (multithreaded)
+    #  * Loads based on globbing, or regex.
+    #  * comes with execution threads (callx, loadx)
+    loader_addpath -name "${BT}/@(lib|src|utils|gen)"
+    loader_flag "aws"
 
-bt_load() { 
+    . "${BT}/lib/bt.bash" >/dev/null 2>&1
+    . "${BT}/lib/utils.bash" >/dev/null 2>&1
+    . "${BT}/lib/env.bash" >/dev/null 2>&1
+    . "${BT}/lib/api.bash" >/dev/null 2>&1
+    . "${BT}/lib/rdslib.bash" >/dev/null 2>&1
+    . "${BT}/lib/bt_sourcer.bash" >/dev/null 2>&1
+
+} 
+
+legacy() { 
 
     # Static libs.  No globbing.  Anything else was too brittle. 
       
@@ -28,6 +121,12 @@ bt_load() {
     . "${BT}/lib/bridge.bash" >/dev/null 2>&1
     . "${BT}/lib/rdslib.bash" >/dev/null 2>&1
     . "${BT}/lib/bt_sourcer.bash" >/dev/null 2>&1
+ 
+}
+
+bt_load() { 
+
+    [[ "${LOADER}" == "legacy" ]] && { legacy ;} || { loadx ;} 
 
     {
       funcs="$(declare -F | wc -l)"
@@ -318,4 +417,20 @@ function join_by {
 function join { local IFS="$1"; shift; echo "$*"; } || true
 
 to_debug flow && sleep 0.5 && echo "utils:end" || true
+
+# ----------------
+# helper functions. 
+# -----------------
+
+join_by() { local IFS="$1"; shift; echo "$*" ;}
+
+# sanity check.  Generates bash code. 
+cat  <<-'HERE_BE_DOCS' 
+
+  [[ "${#BT_PATHS[@]}" -lt 1 ]] && { 
+      echo -e "${RED}FATAL${NC}: pipx paths not present."
+      return 1
+  } 
+
+HERE_BE_DOCS
 

@@ -1,11 +1,17 @@
 #!/usr/bin/env /usr/local/bin/bash
 # shellcheck shell=bash disable=SC2148
 
+bt() { export BT="${HOME}/.bt" ;} || true
+
 # debugging func
 #
 export BT_DEBUG=''  # temporary until global settings are sourced.
 to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;} || true
+to_debug flow echo BT: "${BT}" || true
 
+# settings func
+# 
+# Handles many of BT's settings.
 export BT_SETTINGS=''  # temporary until global settings are sourced.
 bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
@@ -13,156 +19,81 @@ bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 # Define specific tags in BT_DEBUG for less noise.
 #export BT_DEBUG="stng flow lgin util data rds rdsc cche qv dg prmt"
 
-to_debug flow echo BT: "${BT}" || true
-to_debug flow sleep 0.5 && echo "utils:to_debug" || true 
-to_debug flow echo "utils:ansi_color" || true 
+#to_debug flow sleep 0.5 && echo "utils:to_debug" || true 
+#to_debug flow echo "utils:ansi_color" || true 
 #to_debug flow && echo pmpt:get_funcs  || true
 
-# find a toml file. 
-function locate_toml() {
-	local path
-	IFS="/" read -ra path <<<"$PWD"
-	for ((i=${#path[@]}; i > 0; i--)); do
-		local current_path=""
-		for ((j=1; j<i; j++)); do
-			current_path="$current_path/${path[j]}"
-		done
-		if [[ -e "${current_path}/$1" ]]; then
-			echo "${current_path}/"
-			return
-		fi
-	done
-	return 1
-} || true
 
-
-# toggle bt venv on or off. 
-#
-function bt_venv() {
-  ret="$?"
-  if [[ -v BT_MANUAL ]]; then
-    return $ret
-  fi
-  if find_in_devops pyproject.toml &> /dev/null; then
-    if [[ ! -v VIRTUAL_ENV ]]; then
-      if BASE="$(poetry env info --path)"; then
-	    . "$BASE/bin/activate"
-        PS1=""
-      else
-        BT_MANUAL=1
-      fi
-    fi
-  elif [[ -v VIRTUAL_ENV ]]; then
-    deactivate
-  fi
-  return $ret
-} || true
-
-
-
-
-this_peek () { 
-  [ -z "${BT_PEEK}" ] && { 
-    : #echo "No BT_PEEK var was found."
-      #return 1
-  }
-  echo "${BT_PEEK}" | gbase64 -d | zcat | jq 
-}
-
-
-
-
-#bt() { 
-#  BT_MANUAL=1
-#  if [[ -v VIRTUAL_ENV ]]; then
-#    deactivate
-#  else
-#    . "$(poetry env info --path)/bin/activate"
-#  fi
-#  PROMPT_COMMAND="(bt);$PROMPT_COMMAND"
-#} 
-#
-#activate() {
-#
-#  export BT="${HOME}/.bt"
-#  if [[ -v VIRTUAL_ENV ]]; then
-#    deactivate
-#  else
-#    . "$(poetry env info --path)/bin/activate"
-#  fi
-#}
-
-
-# PKG="${1}" # pass in package name (devops-sso-util).
-
-  # Determine filesystem location of devops-sso-util dir.
-bt_twain() { 
-
-  [[ "${PKG}" =~ b2 ]] || PKG_NAME="b2${PKG}" 
-  echo PKG_NAME: ${PKG_NAME}
-  PTR="$(find ${HOME}/.local/pipx -name "${PKG_NAME}.pth")" 
-  SANITY="$(cat ${PTR} | wc -l)"
-  [[ "${SANITY}" -ne 1 ]] && { 
-      echo "FATAL: ${SANITY} pkgs matched."
-      return 1
-  } 
-  PKG_PATH="$(cat ${PTR} | head -n 1)"
-  echo -e "${GREEN}activating${NC} bt venv."
-  venv="${PKG_PATH}/.venv/bin/activate"
-  source ${venv} 
-  echo "PKG_PATH: ${PKG_PATH}"
-  alias ssm="poe --root \"${PKG_PATH}\" ssm "
-  #TOOLS=( ssm rds )
-} || true
-
-  #for TOOL in ${TOOLS[*]}; do
-  #  echo completes...
-#  CMPL=( alias "${TOOL}_cmpl=\"source ${PKG_PATH}/${PKG_NAME}/${TOOL}.cmpl\"" )
-#  echo CMPL: "${CMPL[*]}"
-#  cmpl="${CMPL[*]}"
-#  ${TOOL}_cmpl
-#
-#  echo tools...
-#  THIS_TOOL=( alias "${TOOL}=\"${PKG_PATH}/${PKG_NAME}/${TOOL}\"" )
-#  echo TOOL: "${THIS_TOOL[*]}"
-#  ${THIS_TOOL[*]}
-#done
-
-
-bt_activate() { 
-  : 
-} || true
-
-bt_load() { 
-  [[ ! "${LOADER_ACTIVE}" = true ]] && {
-  
-    to_debug flow && sleep 0.5 && echo "stgs:loader"
-  
+loader() ( 
     # script loader (runs exactly once)
-    . "${BT}/lib/bt_loader.bash" #>/dev/null 2>&1
-  
-    to_debug flow && sleep 0.5 && echo "stgs:addpath" || true
-    loader_addpath "${BT}/lib" || echo ${RED}FAILED!${NC} && true
-    loader_addpath "${BT}/src" || echo ${RED}FAILED!${NC} && true
-  
-    to_debug flow && sleep 0.5 && echo "stgs:includex"
-    includex -name 'utils.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
-    includex -name 'bt.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true 
-    includex -name 'env.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
-    includex -name 'rdslib.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
-    includex -name 'data.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
-    includex -name 'api.bash' >/dev/null 2>&1 || echo ${RED}FAILED!${NC} && true
-  
-    {
-      funcs="$(declare -F | wc -l)"
-      echo -en "${GREEN}Success${NC} - "
-      echo -e  "Loaded ${CYAN}$(declare -F | wc -l)${NC} functions."
-      if ! $(declare -F | grep bt_activate >/dev/null 2>&1); then
-        echo -e "Loader ${RED}failed${NC}." && return 1.
-      fi
+    [[ ! "${LOADER_ACTIVE}" = true ]] && {
+        . "${BT}/lib/bt_loader.bash" >/dev/null 2>&1
     }
-  }
+
+    # pass directives from a multiline var, or a heredoc. 
+    #[[ $# -gt 0 ]] && exec <<< $*
+    xargs -0 <<< $*
+
+    {
+        funcs="$(declare -F | wc -l)"
+        echo -en "${GREEN}Success${NC} - "
+        funcs="$(declare -F | grep -v '\-f _' | wc -l)"
+        echo -e  "Loaded ${CYAN}${funcs}${NC} functions."
+        if [[ ! "${funcs}" -lt 50 ]]; then
+            echo -e "WARNING: Loader ${YELLOW}failed${NC}." 
+            echo -en "Retrying with legacy_loader .... " 
+            coproc CAT { cat; } & 
+            legacy_loader >&${CAT[1]}; 
+            echo -e "${GREEN}succeeded{$NC}".
+            echo <&${CAT[0]} 
+            [[ -n "$output" ]] && { echo -e "${output}" ;}
+        fi
+    }
+) || true
+
+
+
+# Commands for the loader to exec, passed in as a variable.
+cmds() { 
+
+    shopt -s extglob
+    cmds="$(                                                          \
+        ls -1d ${HOME}/.bt/@(lib|gen|src|cache)                     | \
+            perl -pe "s/([\w_\-]+)/loader_addpath \1/;"               \
+        ls -1 ${HOME}/.bt/lib/@(utils|bt|env|rdslib|data|api)\.bash | \
+            perl -pe "s/([\w_\-]+)/includex \1/;"                     \
+        loader_flag "$(which aws)"                                    \
+    )"    
+    shopt -u extglob 
+    echo ${cmds}
 } || true
+
+
+
+
+legacy_loader() { 
+    # Static libs. No globbing. A bit too brittle.
+
+    . "${BT}/lib/bt.bash"             >/dev/null 2>&1
+    . "${BT}/lib/utils.bash"          >/dev/null 2>&1
+    . "${BT}/lib/env.bash"            >/dev/null 2>&1
+    . "${BT}/lib/api.bash"            >/dev/null 2>&1
+    . "${BT}/lib/rdslib.bash"         >/dev/null 2>&1
+
+    {
+        funcs="$(declare -F | grep -v "\-f _" | wc -l )" && {
+            echo -e "Loaded ${CYAN}${funcs}${NC} functions."
+            return
+        } 
+    } 
+
+} || true
+
+
+
+#to_debug flow && sleep 0.5 && echo "stgs:loader"
+#to_debug flow && sleep 0.5 && echo "stgs:includex"
+#to_debug flow && sleep 0.5 && echo "stgs:addpath" || true
 
 
 
@@ -386,4 +317,83 @@ instance_info() {
 
 
 to_debug flow && sleep 0.5 && echo "utils:end" || true
+
+
+
+# find a toml file. 
+function locate_toml() {
+	local path
+	IFS="/" read -ra path <<<"$PWD"
+	for ((i=${#path[@]}; i > 0; i--)); do
+		local current_path=""
+		for ((j=1; j<i; j++)); do
+			current_path="$current_path/${path[j]}"
+		done
+		if [[ -e "${current_path}/$1" ]]; then
+			echo "${current_path}/"
+			return
+		fi
+	done
+	return 1
+} || true
+
+
+# toggle bt venv on or off. 
+#
+function bt_venv() {
+  ret="$?"
+  if [[ -v BT_MANUAL ]]; then
+    return $ret
+  fi
+  if find_in_devops pyproject.toml &> /dev/null; then
+    if [[ ! -v VIRTUAL_ENV ]]; then
+      if BASE="$(poetry env info --path)"; then
+	    . "$BASE/bin/activate"
+        PS1=""
+      else
+        BT_MANUAL=1
+      fi
+    fi
+  elif [[ -v VIRTUAL_ENV ]]; then
+    deactivate
+  fi
+  return $ret
+} || true
+
+
+
+this_peek () { 
+  [ -z "${BT_PEEK}" ] && { 
+    : #echo "No BT_PEEK var was found."
+      #return 1
+  }
+  echo "${BT_PEEK}" | gbase64 -d | zcat | jq 
+}
+
+
+
+
+#bt() { 
+#  BT_MANUAL=1
+#  if [[ -v VIRTUAL_ENV ]]; then
+#    deactivate
+#  else
+#    . "$(poetry env info --path)/bin/activate"
+#  fi
+#  PROMPT_COMMAND="(bt);$PROMPT_COMMAND"
+#} 
+
+#activate() {
+#
+#  export BT="${HOME}/.bt"
+#  if [[ -v VIRTUAL_ENV ]]; then
+#    deactivate
+#  else
+#    . "$(poetry env info --path)/bin/activate"
+#  fi
+#}
+
+
+# PKG="${1}" # pass in package name (devops-sso-util).
+
 

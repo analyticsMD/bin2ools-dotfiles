@@ -2,12 +2,14 @@
 # shellcheck disable=SC2148,SC2034
 # -----------------------------------------------------------------
 
+#LOADER=legacy
+. ./lib/utils.bash && loader <<< cmds
+
 # -----------------------------------------------------------------
 # DEBUGGING
 # -----------------------------------------------------------------
 
-BT="${HOME}/.bt"
-
+bt
 # global debug function.
 to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
 
@@ -35,9 +37,17 @@ to_debug flow && sleep 0.5 && echo "stgs:settings" || true
     
 
 # additional config settings for BT. 
-export BT="${HOME}/.bt"  
+bt() { export BT="${HOME}/.bt" ;}
+
 
 export BT_SETTINGS=" alog "
+
+# Determines whether function libraries are loaded 
+# via flat files (legacy) or a newer parallel loader. 
+# Default is legacy. The loader has proven problematic
+# at times. 
+export BT_LOADER="legacy"
+
 # Add 'quiet' if you want to silence status reporting of each 
 # config file when loaded. Add 'src' if you want to load BT's 
 # preconfigured dotfiles (from ~/.bin2ools-dotfiles) or add your own.
@@ -87,25 +97,6 @@ account="${1:-"prod"}"
 # -----------------------------------------------------------------
 
 # For loading associative arrays from files or variables.
-
-export BT="${HOME}/.bt"
-
-# Static libs.  No globbing.  Anything else was too brittle.
-
-. "${BT}/lib/bt.bash"             >/dev/null 2>&1
-. "${BT}/lib/utils.bash"          >/dev/null 2>&1
-. "${BT}/lib/env.bash"            >/dev/null 2>&1
-. "${BT}/lib/api.bash"            >/dev/null 2>&1
-. "${BT}/lib/rdslib.bash"         >/dev/null 2>&1
-#source <( "${BT}/lib/bridge.bash" 2>/dev/null ) 
-
-{
-    funcs="$(declare -F | grep -v '\-f _' | wc -l )" && {
-        echo -e "Loaded ${CYAN}${funcs}${NC} functions."
-        return
-    } 
- 
-} || true
 
 
 # -----------------------------------------------------------------
@@ -193,7 +184,7 @@ to_debug flow && sleep 0.5 && echo "stgs:autologin"
 # Team account defaults to prod, for now.
 
 BT_ROLE=qventus 
-[[ -n "${BT_ROLE}" && role="${BT_ROLE}" ]] { autologin "${BT_ROLE}" ;} || true
+autologin "${BT_ROLE}" || true
 
 
 

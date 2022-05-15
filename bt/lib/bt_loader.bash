@@ -68,7 +68,7 @@
 
 if [ "$LOADER_ACTIVE" = true ]; then
 	echo 'loader: Loader cannot be loaded twice.' >&2
-	exit 1
+	return 1
 fi
 
 if [ -z "$BASH_VERSION" ]; then
@@ -763,8 +763,8 @@ if [[ BASH_VERSINFO -ge 4 ]]; then
 		[[ -r $1 ]] || loader_fail "Directory not readable or searchable: $1" loader_list "$@"
 		pushd "$1" >/dev/null || loader_fail "Failed to access directory: $1" loader_list "$@"
 		local r=1
-    } 
-	if readarray -t LOADER_LIST < <(exec find -maxdepth 1 -xtype f "$LOADER_TEST_OPT" "$LOADER_REGEX_PREFIX$LOADER_FILE_EXPR" -printf %f\\n); then
+
+		if readarray -t LOADER_LIST < <(exec find -maxdepth 1 -xtype f "$LOADER_TEST_OPT" "$LOADER_REGEX_PREFIX$LOADER_FILE_EXPR" -printf %f\\n); then
 			LOADER_ABS_PREFIX=${PWD%/}/
 			r=0
 		fi
@@ -774,10 +774,8 @@ if [[ BASH_VERSINFO -ge 4 ]]; then
 	}
 else
 	function loader_list {
-		[[ -r $1 ]] || loader_fail && { 
-            echo "Directory not readable or searchable: $1 loader_list $@"
-        } 
-		pushd "$1" >/dev/null || loader_fail "Failed to access directory: $1 loader_list $@"
+		[[ -r $1 ]] || loader_fail "Directory not readable or searchable: $1" loader_list "$@"
+		pushd "$1" >/dev/null || loader_fail "Failed to access directory: $1" loader_list "$@"
 		local r=1 i=1
 
 		if read -r __; then

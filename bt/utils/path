@@ -141,9 +141,9 @@ declare -a order=( "PIPX_SPACE"            \
       NEW_PATH+=( "$TMP_PATH" ) 
   done 
      
-  FOO="$( join_by : ${NEW_PATH[@]} )"
+  TMP="$( join_by : ${NEW_PATH[@]} )"
   # -----------------------------------------------------------------------------------
-  spaces["CONSOLE_SPACE"]="${FOO}"   # ha. ha.
+  spaces["CONSOLE_SPACE"]="${TMP}"   # ha. ha.
 
   export BT=${HOME}/.bt
   # vars

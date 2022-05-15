@@ -1,15 +1,70 @@
-#!/usr/bin/env /usr/local/bin/bash
 
 export BT="${HOME}/.bt"
-. "${BT}/settings"
-source <(path -s 2>/dev/null)
-#echo PATH: ${PATH}
-alias rds_complete=". rds_complete";  
-alias ssm_complete=". ssm_complete"; 
-alias rds="rds_local"
-alias ssm="ssm_local"
+. ${BT}/settings
+
+make_funcs() { 
+
+    #export BT_DEBUG="bt_"
+    
+    # -----------------------------------------------------
+    # make sure we have the pipx paths installed.
+    # -----------------------------------------------------
+    source <(${HOME}/.bt/utils/path -s 2>/dev/null)
+    #echo PATH: ${PATH}
+    export T="$(echo ${PATH}                            | \
+                tr ':' '\n'                             | \
+                perl -lne 'print if s/(.*\/b2).*/\1/g;' | \
+                head -n 1)"
+    to_debug bt_ && echo ${PATH}| tr ':' '\n' | \
+        perl -lne 'print if s/(.*\/b2).*/\1/g;'
 
 
-#rds_generate; ssm_generate; ssm_src
-prompt
+    # -----------------------------------------------------
+    # scan pipx for installed toolsets.
+    # -----------------------------------------------------
+    declare -a tools=( complete generate local )
+    declare -a toolsets=()
+    shopt -s extglob
+    for t in $(ls -1d ${T}!(*-*) ); do 
+        to_debug bt_ && echo found toolset: ${t}
+        toolsets+=( "${t#*${T}}" )
+    done
+    echo "toolsets: ${toolsets[@]}"
+    shopt -u extglob
+
+
+    # -----------------------------------------------------
+    # export toolset "bridge" functions 
+    # -----------------------------------------------------
+    umask 0077
+    tmpf=$(mktemp) && echo "" > ${tmpf}
+    for ts in ${toolsets[@]}; do
+        for t in ${tools[@]}; do
+            f="${ts}_${t}"
+            [[ "$f" =~ "complete" ]] && s="source " || s=""
+            echo -ne "${f}"'() {'"\n" "${s}${T}${ts}/${f}\n" '};'"\n\n" >> ${tmpf}
+            echo -ne "export -f ${f}\n\n" >> ${tmpf}
+        done
+    done 
+    source <( cat ${tmpf} ) 
+    #declare -F | grep fx
+    
+    rm -f ${tmpf}
+    umask 0022
+
+
+    # -----------------------------------------------------
+    # create toolset 'aliases'
+    # -----------------------------------------------------
+
+    for ts in "${toolsets[@]}"; do
+        bash -c "${ts} () { "${ts}_local" ;};" 
+    done
+    
+    echo running completions.
+    for ts in ${toolsets[@]}; do "${ts}_complete"; done
+} 
+
+
+make_funcs
 
