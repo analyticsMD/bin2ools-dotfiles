@@ -522,3 +522,6 @@ log "Your system is now bootstrapped!"
 # check for github access (early on).
 # ssh git@github.com
 
+echo Adding bt installer.  ${GREEN}done${NC}.
+cp ${HOME}/.bintools-dotfiles/bin/bt /usr/local/bin
+
