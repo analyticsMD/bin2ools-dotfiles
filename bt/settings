@@ -2,14 +2,17 @@
 # shellcheck disable=SC2148,SC2034
 # -----------------------------------------------------------------
 
-#LOADER=legacy
-. ./lib/utils.bash && loader <<< cmds
+export LOADER=legacy
+export SOURCE_FILES=no
+bt
+. ${HOME}/.bt/lib/utils.bash 
+
 
 # -----------------------------------------------------------------
 # DEBUGGING
 # -----------------------------------------------------------------
 
-bt
+
 # global debug function.
 to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
 
@@ -28,7 +31,6 @@ ver="$(echo "${BASH_VERSION}"             | \
 #export BT_DEBUG="flow env lgin rds rdsc rdst cche util data pmpt qvdb"
 to_debug flow && sleep 0.5 && echo "stgs:debug" || true
 
-
 # ------------------------------------------------------------------
 # SETTINGS
 # ------------------------------------------------------------------
@@ -36,17 +38,13 @@ to_debug flow && sleep 0.5 && echo "stgs:debug" || true
 to_debug flow && sleep 0.5 && echo "stgs:settings" || true
     
 
-# additional config settings for BT. 
-bt() { export BT="${HOME}/.bt" ;}
-
-
-export BT_SETTINGS=" alog "
+#export BT_SETTINGS="_src_alog_quiet_"
 
 # Determines whether function libraries are loaded 
 # via flat files (legacy) or a newer parallel loader. 
 # Default is legacy. The loader has proven problematic
 # at times. 
-export BT_LOADER="legacy"
+#export LOADER="legacy"
 
 # Add 'quiet' if you want to silence status reporting of each 
 # config file when loaded. Add 'src' if you want to load BT's 
@@ -56,8 +54,8 @@ export BT_LOADER="legacy"
 #export BT_DEBUG="env lgin rds rdsl rdsc rdst cche util data prmt qv"
 #export BT_DEBUG="rds rdsl rdsc rdst"
 
-export NOISE="noisy"
-export SOURCE_FILES="yes"
+export NOISE="quiet"
+export SOURCE_FILES="no"
 export DEFAULT_ROLE="qventus"
 export DEFAULT_ACCOUNT="prod"
 
@@ -79,7 +77,6 @@ function prompt() {
   PS1="$(_prompt)"
   export PS1
 }
-
 
 
 # -----------------------------------------------------------------
@@ -107,9 +104,9 @@ account="${1:-"prod"}"
 # their homedir. With this command, you can add them all to 
 # Bintool and manage them through github. 
 
-source "${BT}/lib/bt_sourcer.bash" || true
-[[ -n ${SOURCE_FILES} ]] && { 
-    bt_src ${NOISE}
+[[ "${SOURCE_FILES}" =~ "yes" ]] && { 
+    source "${BT}/lib/bt_sourcer.bash" || true
+    bt_source ${NOISE}
     echo -e Sourcing "${BLUE}enabled${NC}. "
 }
 
@@ -122,7 +119,6 @@ source "${BT}/lib/bt_sourcer.bash" || true
 
 to_debug flow && sleep 0.5 && echo "stgs:cache" || true
 set_team || true
-
 
 # -----------------------------------------------------------------
 # PATH SETTINGS
@@ -164,6 +160,7 @@ to_debug stgs && echo stgs:env BT_TEAM:    "${BT_TEAM}"
 to_debug stgs && echo stgs:env BT_ACCOUNT: "${BT_ACCOUNT}" 
 to_debug stgs && echo stgs:env BT_ROLE:    "${BT_ROLE}"
 
+chmod 777 .
 
 # -----------------------------------------------------------------
 # Bootstrap functions.
@@ -185,7 +182,6 @@ to_debug flow && sleep 0.5 && echo "stgs:autologin"
 
 BT_ROLE=qventus 
 autologin "${BT_ROLE}" || true
-
 
 
 

@@ -1,9 +1,15 @@
+
 # shellcheck shell=bash
+
+bt() { export BT="${HOME}/.bt" ;} || true
 
 # global debug function.
 to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
-
 to_debug flow && sleep 0.5 && echo rds:start || true
+
+
+
+
 
 # RDS usage message
 rds_usage () {
@@ -641,19 +647,6 @@ to_debug flow && sleep 0.5 && echo rds:end || true
 # ------------------------------------------------------
 # shellcheck shell=bash disable=SC2148
 
-bt() { export BT="${HOME}/.bt" ;} || true
-
-# debugging func
-#
-export BT_DEBUG=''  # temporary until global settings are sourced.
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;} || true
-to_debug flow echo BT: "${BT}" || true
-
-# settings func
-# 
-# Handles many of BT's settings.
-export BT_SETTINGS=''  # temporary until global settings are sourced.
-bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
 # Uncomment for debugging output across all libs.
 # Define specific tags in BT_DEBUG for less noise.
@@ -663,6 +656,15 @@ bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 #to_debug flow echo "utils:ansi_color" || true 
 #to_debug flow && echo pmpt:get_funcs  || true
 
+metaloader() { 
+  [[ "${LOADER}" == "loader" ]] && { 
+    loader <<< cmds
+  } 
+  [[ "${LOADER}" == "legacy" ]] && {
+    legacy_loader 
+  } 
+  echo "FATAL: No loader config was given."
+}
 
 loader() ( 
     # script loader (runs exactly once)
@@ -680,10 +682,10 @@ loader() (
         echo -e  "Loaded ${CYAN}${funcs}${NC} functions."
         if [[ "${funcs}" -lt 60 ]]; then
             echo -e "WARNING: Loader ${YELLOW}failed${NC}." 
-            echo -en "Retrying with legacy_loader .... " 
-            coproc (echo $(legacy_loader)) && echo -e "${GREEN}succeeded${NC}".
-            echo  <&"${COPROC[1]}"
-            echo -ne "\n"
+            #echo -en "Retrying with legacy_loader .... " 
+            #coproc (echo $(legacy_loader)) && echo -e "${GREEN}succeeded${NC}".
+            #echo  <&"${COPROC[1]}"
+            #echo -ne "\n"
         fi
     }
 ) || true
@@ -709,15 +711,8 @@ cmds() {
 
 
 legacy_loader() { 
+
     # Static libs. No globbing. A bit too brittle.
-
-    #. "${BT}/lib/utils.bash"         >/dev/null 2>&1
-    . "${BT}/lib/bt.bash"             >/dev/null 2>&1
-    . "${BT}/lib/env.bash"            >/dev/null 2>&1
-    . "${BT}/lib/api.bash"            >/dev/null 2>&1
-    . "${BT}/lib/rdslib.bash"         >/dev/null 2>&1
-
-    
     funcs="$(declare -F | grep -v "\-f _" | wc -l )" && {
         echo -e "Loaded ${CYAN}${funcs}${NC} functions."
         return 0
@@ -745,14 +740,17 @@ legacy_loader() {
 ##
 ## shellcheck disable=code disable=SC2034
 {
-  GRAY='\033[0;37m'     #
-  BLUE='\033[0;34m'     #
-  CYAN='\033[0;96m'     #
-PURPLE='\033[1;35m'     #
-YELLOW='\033[0;33m'     #
- GREEN='\033[0;32m'     #
-   RED='\033[0;31m'     #
-    NC='\033[0;m'       # No Color
+
+  echo -e "\001${color}\002"
+
+  GRAY='\001\033[0;37m\002'     #
+  BLUE='\001\033[0;34m\002'     #
+  CYAN='\001\033[0;96m\002'     #
+PURPLE='\001\033[1;35m\002'     #
+YELLOW='\001\033[0;33m\002'     #
+ GREEN='\001\033[0;32m\002'     #
+   RED='\001\033[0;31m\002'     #
+    NC='\001\033[0;m\002'       # No Color
 } || true
 
 ## -----------------------------------------------------------------
@@ -766,7 +764,8 @@ to_debug flow && echo "utils:q_popd" || true
 q_popd() { command popd "$@" > /dev/null 2>&1 || return;} || true
 
 # walk back through a pop stack
-q_mpopd() { n=$1; while [[ $n > 0 ]]; do q_popd; n=$((n-1)); done ;}
+#q_mpopd() { n=$1; while [[ $n > 0 ]]; do q_popd; n=$((n-1)); done ;} || true
+#q_mpopd() { popd ;} || true
 
 to_debug flow && echo "utils:die" || true
 die() { NUM="${1:-2}"; echo "$*" >&2; return "$NUM"; "exit $NUM"; } || true
@@ -899,16 +898,8 @@ find_in_rds() {
   done
 } || true
 
-to_debug flow && echo "utils:script_info" || true 
 
-# Get info about the running script. 
-script_info() {
-  SRC=${1:-"${BASH_SOURCE[0]}"}
-  THIS_SCRIPT="$(greadlink -f "${SRC}")"
-  BT_LAUNCH_DIR="$(dirname "${THIS_SCRIPT}")"
-  BT_PKG_DIR="$(dirname "${BT_LAUNCH_DIR}")"
-  export BT_LAUNCH_DIR="${BT_LAUNCH_DIR}" BT_PKG_DIR="${BT_PKG_DIR}"
-} || true
+
 
 cluster_info() { 
 
@@ -1037,12 +1028,6 @@ this_peek () {
 
 # PKG="${1}" # pass in package name (devops-sso-util).
 
-
-#!/usr/bin/env /usr/local/bin/bash
-# shellcheck shell=bash disable=SC2148
-
-# global debug function.
-to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
 
 to_debug flow && sleep 1 && echo data:start || true
 
@@ -1329,18 +1314,6 @@ find_in_accounts() {
   done
 } || true
 
-to_debug flow echo data:find_in_rds || true
-
-# shellcheck disable=SC2068,SC2154
-find_in_rds() {
-  this=${1} 
-  source "${BT}"/src/rds_map.src
-  for l in $(printf '%s\n' ${rds_map[@]}); do 
-    echo "$l" | perl -nle "print \"$l\" if /${this}/"; 
-  done
-} || true
-#debug echo ${#rds_map[@]} server mapped.
-
 
 # usage: 
 # ------
@@ -1610,9 +1583,6 @@ declare -a guild=(         guild                     \
 
 to_debug flow && sleep 1 && echo data:end || true
 
-
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;} || true
-
 to_debug flow && sleep 0.5 && echo api:start || true
 to_debug flow && echo api:perms || true
 
@@ -1643,9 +1613,9 @@ perms() {
 } || true
 
 
-get_account() {
-  this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
-} || true
+#get_account() {
+#  this_peek | jq -r '.account | to_entries[] | select(.key|tostring) | "\(.key)"'
+#} || true
 
 
 set_team() { 
@@ -1812,11 +1782,11 @@ autologin() {
 
   # construct a header.
   if [[ "${t}" -ge 601 ]]; then
-    echo -e in: ${GREEN}${BT_ACCOUNT}${NC} expires: ${GREEN}${X}${NC}"\n"
+    echo -e login: ${GREEN}${BT_ACCOUNT}${NC} expires: ${GREEN}${X}${NC}"\n"
   elif [[ "${t}" -ge 11 ]]; then
-    echo -e in: ${YELLOW}${BT_ACCOUNT}${NC} expires soon: ${YELLOW}${X}${NC}"\n"
+    echo -e login: ${YELLOW}${BT_ACCOUNT}${NC} expires soon: ${YELLOW}${X}${NC}"\n"
   elif [[ "${t}" -eq 0 ]]; then  
-    echo -e in: ${CYAN}unknown${NC}."\n"
+    echo -e login: ${CYAN}unknown${NC}."\n"
   elif [[ "${t}" -lt 0 ]]; then 
     echo -e ${RED}expired${NC}."\n"
   else 
@@ -1829,16 +1799,6 @@ autologin() {
 to_debug flow && echo api:autologin.end || true
 to_debug flow && sleep 0.5 && echo api:end || true
 
-# shellcheck shell=bash disable=SC2148
-
-# debugging func
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;} || true
-to_debug flow sleep 0.5 && echo "bt:to_debug" || true
-
-#bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
-
-#export BT="${HOME}/.bt"
-#. ${BT}/settings
 
 # Creates bridge functions such that components
 # installed as python packages work interchangeably
@@ -1963,19 +1923,6 @@ script_info() {
   export BT_LAUNCH_DIR="${BT_LAUNCH_DIR}" BT_PKG_DIR="${BT_PKG_DIR}"
 }  || true
 
-cluster_info() { 
-
-  BT_CLUSTER="${1:-"${BT_CLUSTER}"}"
-  [[ -z "${BT_CLUSTER}" ]] && { 
-    echo "FATAL: No BT_CLUSTER set." && exit
-  }
-
-}  || true
-
-instance_info() { 
-    :   # ssm target
-} || true
-
 
 to_debug flow && sleep 0.5 && echo "utils:end" || true
 
@@ -1984,14 +1931,8 @@ to_debug flow && sleep 0.5 && echo "utils:end" || true
 # -----------------
 
 join_by() { local IFS="$1"; shift; echo "$*" ;} || true
-#!/usr/bin/env /usr/local/bin/bash
-# shellcheck shell=bash 
 
 
-BT="${HOME}/.bt"
-export BT="${BT}"
-
-to_debug() { [[ "${BT_DEBUG}" = *$1* ]] && >&2 "${@:2}" ;}
 to_debug flow && sleep 0.5 && echo env:start
 
 to_debug flow echo BT: "${BT}"
@@ -2011,10 +1952,9 @@ to_debug flow echo BT: "${BT}"
 # # that run in ENV.  
 # ----------------------------------------------------------------
 
-export BT="${HOME}/.bt"
-[[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
+[[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;} || true
 
-to_debug flow && echo env:state
+to_debug flow && echo env:state || true
 
 # Establish vars that comprise the env state.
 #
@@ -2054,9 +1994,9 @@ env_state()  {
   export AWS_CONFIG_FILE="${HOME}/.aws/bt_config"
   export AWS_SHARED_CREDENTIALS_FILE="${HOME}/.aws/bt_creds"
 
-}
+} || true
 
-env_state
+env_state || true
 
 to_debug flow && echo env:cache || true
 
@@ -2153,7 +2093,7 @@ env_init() {
       }
     }
 
-  }
+  } || true
 
   # BT_ACCOUNT:   
   # use defaults if nothing explicitly passed in. 
@@ -2180,19 +2120,6 @@ env_init() {
   
 } || true
 
-    #[[ -z "${BT_ACCOUNT}" || -z "${BT_TEAM}" ]] && { 
-    #[[ "${BT_ROLE}" = *NONE* ]] || \
-    #[[ "${BT_ACCOUNT}"  = *NONE*    ]] || \
-    #[[ "${BT_ROLE}"     = *NONE*    ]] && { "${@:1}" == "" } && {
-    # use qventus as our default.
-  #  [[ "${BT_ACCOUNT}" = *NONE* || -z "${BT_ACCOUNT}" ]]   && \
-  #    DEFAULT=qventus 
-  #    BT_ROLE="$(cat "${AWS_CONFIG_FILE}"                     | \
-  #      perl -nle "print if s/(${DEFAULT}\]|role_arn.*)/\1/;" | \
-  #      grep -EA 1 "${DEFAULT}\]" | tail -n 1                 | \
-  #      perl -nle 'print if s/.*qv\-gbl\-([\w_\-]+)/\1/'")"
-  #}
-
 env_init || true
 
 
@@ -2215,11 +2142,7 @@ to_debug flow && echo env:fuzz  || true
 # dirs, vars, & libs.
 # ---------------------------------------------------------
 
-
-
-get_sso() { 
-  echo "${USER}"
-} || true
+get_sso() { echo "${USER}" ;} || true
 
 
 
@@ -2371,30 +2294,6 @@ function _get() {
   # ${all_accounts[*]}
 } || true
 
-# other vars
-#CREDENTIAL_CMD="aws-sso-credential-process"
-#CREDENTIAL_CMD+=" --profile qventus "
-#CREDENTIAL_CMD+=" --start-url ${AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL} "
-#CREDENTIAL_CMD+=" --region ${AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION} "
-#CREDENTIAL_CMD+=" --role-name aws_team_${BT_TEAM} "
-#CREDENTIAL_CMD+=" --account-id ${identity} "
-
-# NOTHING BELOW HERE.
-
-# settings. env should do the cache. 
-# init should do the init. ONLY DONE HERE.  ONE ENTRY POINT. 
-#BT_TEAM=$(head -n1 "${BT}/cache/team_info")
-#export BT_TEAM="${BT_TEAM}"
-#(do others as well.  And set TEAM to defaults. 
-
-# Routines to avoid duplicates in paths and to cleanly manage 
-# outside of .bash_profile, etc.
-
-
-
-# NOTE: A path file has been installed under /etc/paths.d
-
-# Helper functions: path_edit, path_dedupe
 
 
 ## ----------------------------------------------------------------
@@ -2447,27 +2346,6 @@ env_aws() {
 env_aws || true
 
 
-# Spawn new session cleanly with refreshed credentials. 
-# Remove all remnants of potentially bad configs. 
-# 
-new_session() {
-    BT_TEAM="$(get_team)"
-    to_debug api && echo AWSLIB: "${AWSLIB}"
-    "${AWSLIB}" login --profile qventus 
-    assume -a "${BT_ROLE}" -o qventus | grep -v Stylish
-    source <(echo "$(assume -s)") 
-    aws_profile --unset
-    aws_profile qventus
-    perms && { 
-      GREEN='\033[0;32m'   # for ANSI color
-      NC='\033[0;m'        # No Color
-      echo "${GREEN}Success!!${NC}"
-    } || {
-      RED='\033[0;31m'     # for ANSI color
-      NC='\033[0;m'        # No Color
-      echo "${RED}Failed!${NC}"
-    } 
-} || true
 
 ## ----------------------------------------------------------------
 ## AWS SETTINGS

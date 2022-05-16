@@ -31,8 +31,8 @@ pipx install -f aws-fuzzy-finder
 
 
 pipx uninstall devops-sso-util || true
-pipx uninstall bin2ools-ssm || true
-pipx uninstall bin2ools-rds || true
+#pipx uninstall bin2ools-ssm || true
+#pipx uninstall bin2ools-rds || true
 
 # install devops and b2 namespace packages.
 u="git+https://github.com/analyticsmd"

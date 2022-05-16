@@ -91,20 +91,20 @@ shift $((OPTIND-1)) # remove parsed options and args from $@ list
 # Bin2ools defines a series of "path spaces" based on the host OS.
 # Paths are dynamic, and based on rules.
 
-declare -A spaces=( ["PIPX_SPACE"]=""           \
+declare -A spaces=( ["PIPX_SPACE"]=""          \
                     ["CONSOLE_SPACE"]=""       \
-                    ["MODE_SPACE"]=""           \
-                    ["USR_SPACE"]=""            \
-                    ["UTILS_SPACE"]=""          \
-                    ["BIN_SPACE"]=""             )
+                    ["MODE_SPACE"]=""          \
+                    ["USR_SPACE"]=""           \
+                    ["UTILS_SPACE"]=""         \
+                    ["BIN_SPACE"]=""           )
 
 
-declare -a order=( "PIPX_SPACE"            \
+declare -a order=( "PIPX_SPACE"           \
                    "CONSOLE_SPACE"        \
-                   "MODE_SPACE"            \
-                   "USR_SPACE"             \
-                   "UTILS_SPACE"           \ 
-                   "BIN_SPACE"             ) 
+                   "MODE_SPACE"           \
+                   "USR_SPACE"            \
+                   "UTILS_SPACE"          \ 
+                   "BIN_SPACE"            ) 
 
 
   # -----------------------------------------------------------
@@ -118,6 +118,9 @@ declare -a order=( "PIPX_SPACE"            \
   pipx_space+=( "${HOME}/Library/Python/3.10/bin" )   # poetry
   pipx_space+=( "${HOME}/.poetry/bin"   )
 
+  TRY="$( join_by : ${NEW_PATH[@]} )"
+  declare -a mode_space=( "${user[@]}" )
+  spaces["PIPX_SPACE"]="$(join_by : ${pipx_space[@]})"
   
   # --------------------------------------
   # PIPX CONSOLE SPACE
@@ -127,7 +130,7 @@ declare -a order=( "PIPX_SPACE"            \
   declare -a tools=( rds ssm ) 
   export h="${HOME}"     v=".local/pipx/venvs" c="devops-sso-util"   l=lib \
          p='python3.10'  s=site-packages       b=b2                  tool=$t
- 
+
   declare -a TMP_PATH=() 
   declare -a NEW_PATH=() 
   # this array becomes the path. 
@@ -143,7 +146,7 @@ declare -a order=( "PIPX_SPACE"            \
      
   TMP="$( join_by : ${NEW_PATH[@]} )"
   # -----------------------------------------------------------------------------------
-  spaces["CONSOLE_SPACE"]="${TMP}"   # ha. ha.
+  spaces["CONSOLE_SPACE"]="${TMP}"  
 
   export BT=${HOME}/.bt
   # vars

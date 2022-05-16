@@ -6,33 +6,39 @@
 ## Qventus has a lot of infrastructure in AWS. This library
 ## contains streamlined functions to make that environment
 ## is easy to work with. 
+unset SOURCE_FILES
+LOADER=legacy
+
+# -----------------------------------------------------------------
+# PATH UTIL
+# -----------------------------------------------------------------
+
+${HOME}/.bt/lib
+
+source <(${HOME}/.bt/utils/path -s 2>/dev/null)
+bt
+echo PATH: "${PATH}"
 
 # -----------------------------------------------------------------
 # SHELL LOADER
 # -----------------------------------------------------------------
 
 # For loading associative arrays from files or variables.
-
 export BT="${HOME}/.bt"
-
-# Static libs.  No globbing.  Anything else was too brittle.
-
-. "${BT}/lib/bt.bash"             >/dev/null 2>&1
 . "${BT}/lib/utils.bash"          >/dev/null 2>&1
-. "${BT}/lib/env.bash"            >/dev/null 2>&1
-. "${BT}/lib/api.bash"            >/dev/null 2>&1
-. "${BT}/lib/rdslib.bash"         >/dev/null 2>&1
-#source <( "${BT}/lib/bridge.bash" 2>/dev/null )
 
 {
-    funcs="$(declare -F | grep -v '\-f _' | wc -l )" && {
+    funcs="$(declare -F | grep -cv '\-f _')" && {
         echo -e "Loaded ${CYAN}${funcs}${NC} functions."
     }
 
 } || true
 
 {
-  # -----------------------------------------------------------------
+
+
+
+# -----------------------------------------------------------------
   env | sort | grep AWS 
   echo -ne '\n\n'
   # -----------------------------------------------------------------
@@ -91,7 +97,7 @@ aws_profile () {
 # the Security Team has added notes to explain some of
 # the gotchas.  
 
-# Truth be told, it's best if you do not monkey with 
+# It's best if you do not monkey with these.
 #                        --- The QV Security Team 
 
 # qv standards
@@ -138,7 +144,7 @@ aws_defaults () {
   export AWS_DEFAULT_SSO_REGION=${qv_gbl}
   export AWS_DEFAULT_REGION=${qv_gbl}
   export AWS_SSO_CREDENTIAL_PROCESS_DEBUG=true
-  export AWS_SDK_LOAD_CONFIG=1   # for golang, terraform, e.g.
+  export AWS_SDK_LOAD_CONFIG=1   # fore golang, terraform, e.g.
                                  # which do not use ~/.aws/config
 
   # You should not need to touch these.
@@ -163,190 +169,328 @@ aws_profile
 # helpers
 get_account_number () { 
     acct="${1:-prod}"
-    jq -r --arg key ${acct} ' .accounts  | 
-                            to_entries[] | 
-           select(.key == ($key)).value' \
-        "${BT}/data/json/bt/accounts.json"
+    jq -r --arg key "${acct}" ' .accounts  | 
+                              to_entries[] | 
+             select(.key == ($key)).value' \
+          "${BT}/data/json/bt/accounts.json"
 }
+
+
 
 #function get_all_accounts();
 #function get_all_guilds();
 
 # multiiple line output - shows all accounts, one per line.
 # It also shows a spurious 'master' record, which we filter. 
-# Also note:  It DOES NOT give any info about prod. 
+# Also note:  This DOES NOT give any info about prod; 
 # Only SSO accounts. 
 export AWSLIB=devops
 export DEFAULT_AWS_LIB="${AWSLIB}-sso-util"
-account_records="$("$(which ${DEFAULT_AWSLIB})" \
-                  roles -r aws_team_ --no-header)"
-echo -en "RECORDS:\n ${account_records}\n"
 
 
-# example: identity   111122223333  aws_team_arch  <acct>-<team> 
-#          ^ ^ ^ ^     ^ ^ ^ ^ ^    ^ ^ ^ ^ ^ ^ ^  ^ ^ ^ ^ ^ ^ ^
-#          acct_name  account_id    sso team name   acct + team
+# example: identity   111122223333  aws_team_<team>  <acct>-<team> 
+#          ^ ^ ^ ^     ^ ^ ^ ^ ^    ^ ^ ^ ^ ^ ^ ^    ^ ^ ^ ^ ^ ^ ^
+#          acct_name  account_id    sso team name     acct + team
 
-declare -a v=()
+declare -a account_records=()
+roles+=( "$("${DEFAULT_AWS_LIB}" roles -r aws_team_ --no-header)" )
+
+declare -a i=()
 declare -a rec=()
 declare -a to_process=()
-declare -a account_records=()
+echo -en "RECORDS: ${#roles[@]}\n"
 
-for line in ${account_records}; do
-  [[ "${line}" =~ master ]] && { continue ;} 
-  rec="$( printf '%s %s %s' "${line}" )"
-  team_name="$(${line}|cut -d'_' -f 3)"
-  to_debug prof && echo rec: ${rec[@]} $team_name
-  v=( ${rec[@]} ${team_name} )  # 4 elements in total. 
+# parse a line of output from 'aws-sso-util roles'
+    # command looks like: "devops-sso-util roles | grep aws_team_"
+    # output line format:
+    #     identity     490475191208 aws_team_arch
+    #     qaplatform   566193147577 aws_team_arch
+
+    get_account_number
+
+parse_records() { 
+    n=1 i=1
+    while ($n < "${#@}" ); do
+        args=( "${[@]:(( n++ )):1}" "${[@]:(( n++ )):1}" "${[@]:(( n++ )):1}" )
+        acct_name="$i[0]"
+        acct_id="$(get_account_number qaplatform )"
+        team_name="$(echo "$i[2]"|cut -d'_' -f 3)"    # Derived elements.         
+        team_sso="aws_team_${team_name}"           # ...   
+        echo foo: "${acct_name}" "${acct_id}" "${team_sso}" "${team_name}"
+    
+        [[ "${i[@]}" =~ master ]] && continue 
+        [[ -n "${a[@]}" ]] && echo "FATAL: Bad record parse." && exit 1
+        #to_debug prof && echo "${team_name}" 
+        echo "${team_name}" > "${BT}/cache/team_info"
+        #[[ "$#@" -gt 0 ]] && recurse "${@:4}"
+    done
+}    
+
+
+lines() {
+
+    n=1
+    while ($n+3 < "${#@}" ); do
+        i=( "${[@]:(( n++ )):1}" "${[@]:(( n++ )):1}" "${[@]:(( n++ )):1}" )
+        acct_name="$i[0]"
+        acct_id="$i[1]"
+        team_name="$(echo "$i[2]"|cut -d'_' -f 3)"    # Derived elements.         
+        team_sso="aws_team_${team_name}"           # ...   
+        echo "${acct_name}" "${acct_id}" "${team_sso}" "${team_name}"
+    
+        [[ "${i[@]}" =~ master ]] && continue 
+        [[ -n "${a[@]}" ]] && echo "FATAL: Bad record parse." && exit 1
+        #to_debug prof && echo "${team_name}" 
+        echo "${team_name}" > "${BT}/cache/team_info"
+        #[[ "$#@" -gt 0 ]] && recurse "${@:4}"
+    done
+
+}
+
+
+for i in  "${account_records[@]}"; do
+    [[ "${line}" =~ master ]] && continue  # skip master acct
+
+    # example record: 
+    # -------------------------------------------------------
+    # identity   111122223333  aws_team_<team>  <acct>-<team> 
+    # ^ ^ ^ ^     ^ ^ ^ ^ ^    ^ ^ ^ ^ ^ ^ ^    ^ ^ ^ ^ ^ ^ ^
+    # acct_name    acct_id     sso team name     acct + team
+
+    # Here, we build the user's team identity from their 
+    # group affiliation with Okta. We do not need to query
+    # Okta directly, since the same identity info is also 
+    # shared directly with AWS.  Okta is the authority, 
+    # however.  Since the user's <team> doesn't change, 
+    # we cache this value locally. This record has a slightly
+    # different format in the 4th element.
   [[ "${line}" =~ identity ]] && { 
-      to_debug prof && echo "${v[3]}"  # identity.
-      to_debug prof && echo "${v[3]}" > "${BT}/cache/team_info"
+      i="$(parse_records ${line})"
+      i+=( "identity" "${acct_id}" "${team_sso}" "${team_name}" )
+      continue           # handle this record specially.
   }
-  # now we can keep going. Process all 
-  # additional account records (except prod
-  # which is non-sso). 
-  to_process+=( "${v[@]}" ) 
-  echo count: "${#to_process[@]}"
+
+
+  rec=( "$( printf '%s %s %s' "${[@]}" )" ) # 1st three elements.
+  team_name="$(${line}|cut -d'_' -f 3)"     # Derived elements.         
+  sso_name="aws_team_${team_name}"          # ...   
+  acct_name="${rec[0]}"                     # ...   
+  acct_id="${rec[1]}"                       # ...   
+  role_name="${acct_name}-${team_name}"     # Final element.
+
+  rec=( "${acct_name}" "${acct_id}"       \
+        "${sso_name}"  "${role_name}"     )  # 4 elements in total. 
+
+  [[ -z "${acct_name}" || \
+     -z "${sso_name}"  || \
+     -z "${acct_name}" || \
+     -z "${team_name}" ]] && { 
+     echo "FATAL: Error in fetching your roles from AWS."
+     echo "See your DEVOPS admin."
+     exit 1
+  } 
+
+  r="$(join_by \| "${acct_name}" "${acct_id}" "${sso_name}" "${role_name}" )"
+  echo r: "${r}"
+  #to_debug prof && echo rec: "${rec[@]}"     # complete record.
+
+  # We then make a list of all account records, and will 
+  # add these last, since eventually the list will grow 
+  # quite long.
+  to_process+=( "${rec[@]}" ) # multiple records here, 
+                              # one per acct.
+  echo account records to process: "${#to_process[@]}"
 done   
 
+echo 2p: "${#to_process[@]}"
+echo  i: "${i[@]}"
 
-# example: identity   111122223333  aws_team_arch  <acct>-<team> 
-#          ^ ^ ^ ^     ^ ^ ^ ^ ^    ^ ^ ^ ^ ^ ^ ^  ^ ^ ^ ^ ^ ^ ^
-#          acct_name  account_id    sso team name   acct + team
-
-
-# generate role chain profiles.
+# Generate role chain profiles.
 # -----------------------------
-
+# These three records create the shared profiles needed for 
+# role chaining between the identity account (where poeple
+# first authenticate) and either prod, or the other SSO 
+# accounts. (Note that prod is IAM, due to legacy.)
 
 # role template
-tpl='role_arn=arn:aws:iam::%s:role/%s'
 acct_id="$(get_account_number prod)"
 
 # --------------------------------------------------------
 # First, we hard code prod since it is the only exception. 
 # --------------------------------------------------------
 acct_name="prod"    acct_id="$(get_account_number prod)"
-team_sso="${v[2]}"  team_name="prod-${v[3]}"
-role_arn="$(printf 'arn:aws:iam::%s:role/%s' \
-         "$(echo "${acct_id}" "qv-gbl-prod-${team_name}")")" 
+team_sso="${i[2]}"  team_name="${i[3]}"
+role_name="${acct_name}-${team_name}"
+role_arn="$(printf 'arn:aws:iam::%s:role/%s'    \
+         "${acct_id}" "qv-gbl-prod-${team_name}")" 
+#                              ^  ^   ^    ^
+#                              |  |   |    |
+# NOTE: All roles follow the same convention: 
+# ---------------------------------------------
+# 'qv' is the org; 'gbl' stands for 'global'as opposed 
+# to regional.  Next is the account name, 'prod', in 
+# this case. And finally, the name of the team using 
+# the access.
 
-# role template
-declare -a p=()
-p+=( "prod" "${acct_id}" "qv-gbl-prod-${v[3]}" "prod-${v[3]}" )
-to_debug prof && echo prod: "${p[@]}"
+# Write a profile.  Here we use Ben Kehoe's aws-sso-util 
+# library to generate the profiles in our ~/.aws/bt_config 
+# file. Simply by rerunning this script, we can regenerate 
+# our profiles at any time in a standardized way. 
 
-# internal profile
-"${DEFAULT_AWSLIB}" configure profile         \
-       --existing-config-action overwrite     \
-       --non-interactive                      \
-       --no-credential-process                \
-       -c "role_arn=${role_arn}"              \
-       -c "source_profile=${team_sso}"        \
-       -a "${acct_id}" -r "${team_sso}" "prod-${team_name}" 
+"${DEFAULT_AWS_LIB}" configure profile         \
+       --existing-config-action overwrite      \
+       --non-interactive                       \
+       --no-credential-process                 \
+       --role-name="${team_sso}"               \
+       -c "role_arn=${role_arn}"               \
+       -c "source_profile=${team_sso}"         \
+       -a "${acct_id}" "prod-${team_name}" 
   
+# ----------------------------------------------------------
+# Done with prod.
+# ----------------------------------------------------------
 
-
-# These fist two role accounts are based in identity account. 
+# These next two roles are based in the identity account. 
 # They receive source profile requests on behalf of all 
-# other account roles.  Kind of a 'fan-in' structure.  
-# Hence, we need to declare each only once.
+# other account roles, and control all movements into and
+# out of other accounts.  To avoid complexity, we use a 
+# 'fan-in' structure for RBAC.  Hence, we need to declare 
+# these only once, for use by all other roles and accounts.
+# The PRIMARY role for this team's use in authenticating 
+# is the SSO role.  NOTE that this is the only role which 
+# has a credential_process defined.  That is because it is
+# used to authenticate all other chained roles for the team.
+
+# --------
+# sso role
+# -------- 
+acct_name="identity" acct_id="$(get_account_number ${acct_name})"
+team_sso="${i[2]}"   team_name="${i[3]}"
+role_arn="$(printf 'arn:aws:iam::%s:role/%s' \
+            "${acct_id}"  aws_team_"${team_name}" )"         
+role_name=aws_team_"${team_name}"                      \
+
+# write to file. 
+"${DEFAULT_AWS_LIB}" configure profile                 \
+    credential_process="${DEFAULT_AWS_LIB}             \
+    credential-process --profile ${team_name}"         \
+    --existing-config-action overwrite                 \
+    --non-interactive                                  \
+    -r "${role_name}"                                  \
+    -a "${acct_id}"                                    \
+    -c role_arn="${role_arn}"   
+    #"${team_name}"            
 
 
-# team
-  declare -a v=()
-  "${to_process[0]}"
-  for V in "$("${v[@]}" | \
-            perl -pe 's/\s*\|\s*/\n/g')"; do v+=( "${V}" ); done  
+# -----------
+# bridge role
+# ----------- 
 
-  acct_name="${v[0]}"     acct_id="${v[1]}"
-  team_sso="${v[2]}"    team_name="${v[3]}"
-  role_arn="$(printf 'arn:aws:iam::%s:role/%s'       \
-           "$("${v[1]}" aws_team_"${v[3]}" )")"         
+# This role is used to bridge the hop to prod, which 
+# is IAM based, hence the special requirement.
 
-  "${DEFAULT_AWSLIB}" configure profile              \
-      --existing-config-action overwrite             \
-      --no-credential-process                        \
-      --non-interactive                              \
-      -c source_profile="${v[2]}"                    \
-      -c role_arn="${role_arn}"                      \
-      -a "${v[1]}" -r "${v[2]}" "${v[3]}"            \
+acct_name="identity" acct_id="$(get_account_number ${acct_name})"
+team_sso="${i[2]}"   team_name="${i[3]}"
+role_arn="$(printf 'arn:aws:iam::%s:role/%s' \
+            "${acct_id}"  aws_team_"${i[3]}" )"         
+role_name="${acct_name}-${team_name}"
 
+"${DEFAULT_AWS_LIB}" configure profile               \
+    --existing-config-action overwrite              \
+    --no-credential-process                         \
+    --non-interactive                               \
+    -c source_profile="${team_name}"                \
+    -c role_arn="${role_arn}"                       \
+    -a "${acct_id}" -r "${role_name}" "${team_sso}" 
 
-# sso
-acct_name="${v[0]}"     acct_id="${v[1]}" 
-team_sso="${v[2]}"    team_name="${v[3]}"
-role_arn="$(printf 'arn:aws:iam::%s:role/%s'         \
-         "$("${v[2]}" aws_team_"${v[3]}")")"         
-
-declare -a v=()
-"${to_process[1]}"
-for V in "$("${v[@]}" | \
-          perl -pe 's/\s*\|\s*/\n/g')"; do v+=( $V ); done  
-
-  "${DEFAULT_AWSLIB}" configure profile                  \
-      credential_process="${DEFAULT_AWSLIB}"             \
-      credential-process --profile "${v[2]/aws_team_//}" \
-      --existing-config-action overwrite                 \
-      --non-interactive                                  \
-      -c role_arn="${role_arn}"                          \
-      -a "${v[1]}" -r "${v[2]}" "${v[2]}"            
 
 
 # Now we loop through all remaining accounts.
 # Creating a role for each. 
 
+  # example record: 
+  # -------------------------------------------------------
+  # identity   111122223333  aws_team_<team>  <acct>-<team> 
+  # ^ ^ ^ ^     ^ ^ ^ ^ ^    ^ ^ ^ ^ ^ ^ ^    ^ ^ ^ ^ ^ ^ ^
+  # acct_name    acct_id     sso team name     acct + team
 
-# example: identity   111122223333  aws_team_arch  <acct>-<team> 
-#          ^ ^ ^ ^     ^ ^ ^ ^ ^    ^ ^ ^ ^ ^ ^ ^  ^ ^ ^ ^ ^ ^ ^
-#          acct_name  account_id    sso team name   acct + team
-#            v[0]       v[1]            v[2]          v[3]
 
 
-# role template
-tpl='role_arn=arn:aws:iam::%s:role/%s'
+  for (( i=0; i++; i < ${#to_process[@]} )); do
+    rec=( "${to_process[$i]}" )
+    echo i: $i rec: ${rec[@]}
+    acct_name="${rec[0]}" acct_id="${rec[1]}"
+    team_sso="${rec[2]}"  team_name="${rec[3]}"
+    role_arn="$(printf 'arn:aws:iam::%s:role/%s' "${acct_id}" \
+                          qv-gbl-"${acct_name}"-"${team_name}" )"         
+    role_name="${acct_name}-${team_name}"
 
-# other account roles to process.
-declare -a v=()
-for i in $(echo ${to_process[@:2]}| \
-           perl -le 's/\s+/\n/g'); do v+=( "${i}" ) 
+  "${DEFAULT_AWS_LIB}" configure profile             \
+      --existing-config-action overwrite             \
+      --no-credential-process                        \
+      --non-interactive                              \
+      -c source_profile="${team_sso}"                \
+      -c role_arn="${role_arn}"                      \
+      -a "${acct_id}" -r "${team_sso}" "${role_name}"
 
-acct_name="${v[0]}"     acct_id="${v[1]}"
-team_sso="${v[2]}"    team_name="${v[3]}"
+  done  
 
-echo ${AWSLIB_DEFAULT} configure profile \
-      --existing-config-action overwrite \
-                 --no-credential-process \
-         -c source_profile="${team_sso}" \
-   -c role_arn='arn:aws:iam::%s:role/%s' \
-      "qv-gbl-${acct_name}-${team_name}" \
-      -a                    "${acct_id}" \
-      -r                  "${acct_name}" \
-            "${acct_name}-${team_name}" 
-
-# role template
-
-done
-
+# ---------------------------------------------------------
+# DEFAULT ROLE - qventus
+# ---------------------------------------------------------
 
 # NOTE: Qventus is a default account, used for generic logins.
-#       It mostly uses prod stats.
+#       It mostly uses the prod template.
+
+    #acct_name="prod" acct_id="$(get_account_number "${acct_name}")"
+    acct_name="prod" acct_id="566193147577"
+    team_sso="${rec[2]}"  team_name="${rec[3]}"
+    role_arn="$(printf 'arn:aws:iam::%s:role/%s' "${acct_id}" \
+                                  ${acct_name}-"${team_name}" )"         
+
 
 # qventus
-${AWSLIB_DEFAULT} configure profile                                 \
+${DEFAULT_AWS_LIB} configure profile                                 \
                   --existing-config-action overwrite                \
-                  --no-credential-proces                            \
-                  -c source_profile="${v[2]}"                       \
-                  -c role_arn="$(printf 'arn:aws:iam::%s:role/%s')" \
-                  -c "${p[1]}" "qv-gbl-prod-qventus)"               \
-                  -a "${v[1]}" -r "${v[2]}" "qventus" 
+                  --no-credential-process                           \
+                  --non-interactive                                 \
+                  -c source_profile="qventus"                   \
+                  -c role_arn="${role_arn}"                         \
+                  -a "${acct_id}" -r "${team_sso}" "qventus" 
+
+
+    acct_name=$(get_account_number qaplatform)
+
+# ---------------------------------------------------------
+# new account - qaplatform
+# ---------------------------------------------------------
+
+    acct_name="qaplatform" acct_id="$(get_account_number "qaplatform")"
+    team_sso="${rec[2]}"  team_name="arch" 
+    role_arn="$(printf 'arn:aws:iam::%s:role/%s' "${acct_id}" \
+            qa-gbl-qaplatform-arch   ${acct_name}-"${team_name}" )"         
+
+# qventus
+${DEFAULT_AWS_LIB} configure profile                                     \
+                  --existing-config-action overwrite                     \
+                  --no-credential-process                                \
+                  -c source_profile="aws_sso_utils"                      \
+                  -c role_arn="${role_arn}"                              \
+                  -a "566193147577" -r "aws_team_arch" "qaplatform-arch" 
+
+
+
+
+
+
+# Done with profile creation. 
 
 
 # set default to 'qventus'
 aws_profile qventus
 
 # Run a quick profile login, for prod.
-aws-whoami && echo -ne "\n\n" \
+${HOME}/.local/bin/aws-whoami && echo -ne "\n\n" \
            "---------------------------------------\n" \
            "  SUCCESS! Happy clouding...    :0]    \n" \
            "---------------------------------------\n" \
@@ -386,4 +530,5 @@ aws-whoami && echo -ne "\n\n" \
 #               -c role_arn="$(printf "$tpl" "${pf[1]}" "${pf[2]}")" \
 #                       -a "${v[1]}" -r "${pf[2]}" "qv-gbl-${pf[2]}" 
 #done
-                       
+
+

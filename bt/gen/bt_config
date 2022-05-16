@@ -1,0 +1,37 @@
+
+[profile arch]
+sso_start_url = https://qventus.awsapps.com/start
+sso_region = us-west-2
+sso_account_id = 490475191208
+sso_role_name = aws_team_arch
+region = us-west-2
+role_arn = arn:aws:iam::490475191208:role/aws_team_arch
+
+[profile aws_team_arch]
+sso_start_url = https://qventus.awsapps.com/start
+sso_region = us-west-2
+sso_account_id = 490475191208
+sso_role_name = aws_team_arch
+region = us-west-2
+source_profile = arch
+role_arn = arn:aws:iam::490475191208:role/aws_team_arch
+
+[profile prod-arch]
+sso_start_url = https://qventus.awsapps.com/start
+sso_region = us-west-2
+sso_account_id = 490475191208
+sso_role_name = aws_team_arch
+region = us-west-2
+source_profile = aws_team_arch
+role_arn = arn:aws:iam::351480950201:role/qv-gbl-prod-arch
+
+[profile qventus]
+sso_start_url = https://qventus.awsapps.com/start
+sso_region = us-west-2
+sso_account_id = 490475191208
+sso_role_name = aws_team_arch
+region = us-west-2
+source_profile = aws_team_arch
+role_arn = arn:aws:iam::351480950201:role/qv-gbl-prod-arch
+
+

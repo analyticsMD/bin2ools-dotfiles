@@ -10,11 +10,15 @@ account_lookup() {
   #acct_id="${2:-123456789012}"
 
   JSON_OBJ="$(cat "${BT}/data/json/bt/accounts.json")"
-  #JSON_OBJ="{\"account\":{\"${acct}\":${acct_id}}"
 
   # forward lookup
-  [[ -n "${acct}" ]] && { 
-     : # need jq. for number lookup.
+      [[ -n "${acct_name}" ]] &&  {  
+          jq -r '.account |  \
+             to_entries[] |                         \
+    select(.key|tostring) | "\(.key)"' "${JSON_OBJ}")"
+          
+      }
+    echo "${acct_name}" "${acct_id}"
   }
 
   # reverse lookup
@@ -23,9 +27,8 @@ account_lookup() {
     acct="$(echo "${acct_id}" |                         \
              jq -r  '.account |                         \
                  to_entries[] |                         \
-        select(.key|tostring) | "\(.key)"' "${JSON_OBJ}")"
+   select(.val|tostring) | "\(.val)"' "${JSON_OBJ}")"
 
-    echo "${acct}" "${acct_id}"
   } 
 }
 

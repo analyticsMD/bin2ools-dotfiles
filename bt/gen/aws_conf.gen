@@ -10,7 +10,7 @@
 # ----------------------------------------------- 
 export BT=${HOME}/.bt BT_TEAM=arch USR=${USER}
 
-. ${BT}/lib/bt_load
+#. ${BT}/lib/bt_load
                 # Whole environment. Separate from bootstrapping.
                 # --  includes BT vars, BT state vars,
                 # --  includes shared PATH vars.

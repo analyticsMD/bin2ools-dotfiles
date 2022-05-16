@@ -81,11 +81,11 @@ for profile, region in zip(profiles, regions):
     # filter hosts by pattern
     if filter:
         qvh = filter_hosts(qvh, filter) 
-                
+
     done = False
     for dct in qvh: 
         # remove errors
-        
+
         flags = f""" --target {dct['instance_id']}"""
         cmd = f"""aws ssm start-session"""
         wrapper = f"""aws-vault exec {user} --"""
