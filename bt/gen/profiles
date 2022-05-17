@@ -305,7 +305,7 @@ prod_id="$(get_account_number prod)"
 
 
 # sso
-    echo        "${DEFAULT_AWSLIB}" configure profile --existing-config-action overwrite \
+          "${DEFAULT_AWSLIB}" configure profile --existing-config-action overwrite \
    --credential-process \"aws-sso-util credential-process --profile ${this_team}\" \
                                       --role-name "${this_team}" --non-interactive \
                                      -a "${acct_id}" -r "${team_sso}"  
