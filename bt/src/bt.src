@@ -1,5 +1,7 @@
 #!/usr/bin/env /usr/local/bin/bash
 
+alias bt="export BT=\"${HOME}/.bt\"; cd ${BT}; make_tools"
+
 rg() { 
   grep --exclude-dir src --exclude-dir bak -r "${@}"
 }

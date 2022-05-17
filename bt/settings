@@ -4,7 +4,7 @@
 
 export LOADER=legacy
 export SOURCE_FILES=no
-bt
+#bt
 . ${HOME}/.bt/lib/utils.bash 
 
 

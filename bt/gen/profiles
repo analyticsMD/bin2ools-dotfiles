@@ -37,8 +37,9 @@ export FILE_SOURCES=no
 export LOADER=legacy
 bt
 
-set_team
-env_init
+set_team  && echo set_team
+env_init  && echo env_init 
+
 
 # Set and unset AWS_PROFILE.
 # --------------------------
@@ -206,10 +207,10 @@ aws_defaults () {
 }
 
 
-aws_profile
+aws_profile prod-arch
 
 
-aws_defaults
+aws_defaults  prod-arch
 
 
 
@@ -277,16 +278,14 @@ declare -a accounts=()
 acct_name="" acct_id="" team_sso="" this_team=""
 while read -r acct_name acct_id team_sso; do 
     shopt -s lastpipe
-    this_team="$(echo ${team_sso} | cut -d'_' -f 3)"
-    export acct_name="${acct_name}" acct_id="${acct_id}" \
-           team_sso="${team_sso}"   this_team="${this_team}"
     v=( "${acct_name}" "${acct_id}" "${team_sso}" "${this_team}" )
     acct="$(join_by \| "${v[@]}")" 
-    accounts+=( "${acct}" )
     # returns: identity 490475191208 aws_team_arch arch
 done <<< "$(${cmd} | grep -E '^identity' | head -n 1 )" 
 
+echo "accounts+=( "${acct}" )"
 echo "accounts: ${accounts[@]}"
+
 
 # cache the user's team info.
 # 
@@ -303,11 +302,6 @@ acct+=( $( echo ${accounts[0]} | perl -pe 's/\|/ /g;') )
 export acct_name="${acct[0]}"  acct_id="${acct[1]}" \
        team_sso="${acct[2]}"   this_team="${acct[3]}"
 
-acct_name="${acct[0]}"
-acct_id="${acct[1]}"
-team_sso="${acct[2]}"
-this_team="${acct[3]}"
-
 accounts+=( "${acct[@]}" )
 
 
@@ -318,68 +312,68 @@ accounts+=( "${acct[@]}" )
 # -----------------------------
 
 # sso
-${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite  \
-credential_process=\"${DEFAULT_AWSLIB} credential-process profile ${this_team}\" \
-               --non-interactive -a "${acct_id}" -r "${team_sso}" "${this_team}" 
+${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
+     credential_process=\"${DEFAULT_AWSLIB} aws-sso-credential-process \
+                              --sso-role-name ${this_team} --non-interactive \
+                        -a "${sso_account_id}" -r "${team_sso}" "${this_team}" 
 
 
 # team
 ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-                                               --non-interactive  \
-         -c source_profile="${this_team}" --no-credential-process \
-               -c "$(printf "${tpl}" "${acct_id}" "${team_sso}")" \
-                   -a "${acct_id}" -r "${team_sso}" "${team_sso}" 
+                                                     --non-interactive \
+              -c source_profile="${this_team}" --no-credential-process \
+                    -c "$(printf "${tpl}" "${acct_id}" "${team_sso}")" \
+                         -a "${acct_id}" -r "${team_sso}" "${team_sso}" 
 
 # prod role
 # identity 490475191208 aws_team_arch arch
 ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-                                                --non-interactive \
-          -c source_profile="${team_sso}" --no-credential-process \
-    -c "$(printf "$tpl" "${prod_id}" qv-gbl-prod-"${this_team}")" \
-             -a "${acct_id}" -r "${team_sso}" prod-"${this_team}" 
+                                                     --non-interactive \
+               -c source_profile="${team_sso}" --no-credential-process \
+         -c "$(printf "$tpl" "${prod_id}" qv-gbl-prod-"${this_team}")" \
+                  -a "${acct_id}" -r "${team_sso}" prod-"${this_team}" 
 
-
-if [[ "${FIRST_RUN}" == "no" ]]; then
 
 # qventus
 ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-                       "aws-sso-credential-process --profile qventus " \
-            " --start-url ${AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL} " \
-                  " --region ${AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION} " \
-                                                     --non-interactive \
-               -c source_profile="${team_sso}" --no-credential-process \
-                     -c "$(printf "$tpl" "${acct_id}" "${this_team}")" \
-                              -a "${acct_id}" -r "${team_sso}" default 
-
-aws_profile default 
-
-fi
-aws_profile default 
+              credential_process="${DEFAULT_AWS_LIB}" profile qventus" \
+        " --sso-start-url ${AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL} " \
+              " --sso-region ${AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION} " \
+                     --non-interactive -c source_profile="${team_sso}" \
+  -c role_arn="arn:aws:iam::${acct_id}:role/qv-gbl-prod-"${this_team}" 
+                             -a "${acct_id}" -r "${team_sso}" qventus 
 
 
-# this_acct=${accounts[@]}  
-#for this_acct in ${team_accounts[@]}; do
-#    this_id="$(get_account_number ${this_acct})"
-#      aws-sso-util configure profile --existing-config-action overwrite \
-#                                                     --non-interactive  \
-#-c "$(printf "$tpl" "${this_id}" qv-gbl-"${this_acct}"-"${this_team}")" \
-#      -c source_profile=aws_team_"${this_team}" --no-credential-process \
-#    -a "${this_id}" -r "${team_sso}" qv-gbl-"${this_acct}"-"${this_team}" 
-# done
+ aws_profile qventus 
 
-#debug_to prof echo prod: "${p[*]}"
-#p=( prod "${prod_id}" qv-gbl-prod-"${this_team}" prod-"${this_team}" ) 
+
+return 0 
+
+# qaplatform
+i=0
+this_acct=${accounts[i]}  
+for this_acct in ${team_accounts[@]}; do
+    this_id="$(get_account_number ${this_acct})"
+      "${DEFAULT_AWSLIB}" configure profile 
+      --existing-config-action overwrite  --non-interactive  \
+  -c "$(printf "$tpl" "${this_id}" qv-gbl-"${this_acct}"-"${this_team}")" \
+        -c source_profile=aws_team_"${this_team}" --no-credential-process \
+    -a "${this_id}" -r "${team_sso}" qv-gbl-"${this_acct}"-"${this_team}" 
+done
 
 
 # set default to 'qventus'
-#aws_profile qventus
+aws_profile qventus
 
 
 # Run a quick profile login, for prod.
-aws-whoami && echo -ne "\n\n" \
-                       "---------------------------------------\n" \
-                       "  SUCCESS! Happy clouding...    :0)    \n" \
-                       "---------------------------------------\n" \
+aws-whoami && echo -ne "\n\n\n"
+    
+
+
+printf                "---------------------------------------\n" \
+printf                "  SUCCESS! Happy clouding...    :0\)   \n" \
+printf                "---------------------------------------\n" \
 
 
 

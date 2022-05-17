@@ -5,7 +5,9 @@ sso_region = us-west-2
 sso_account_id = 490475191208
 sso_role_name = aws_team_arch
 region = us-west-2
-role_arn = arn:aws:iam::490475191208:role/aws_team_arch
+role_arn = arn:aws:iam::490475191208:role/aws_team_arch 
+aws-sso-credential-process --profile qventus --start-url https://qventus.awsapps.com/start --region us=west-2 --role-name aws_team_arch " --account-id 490475191208
+
 
 [profile aws_team_arch]
 sso_start_url = https://qventus.awsapps.com/start
