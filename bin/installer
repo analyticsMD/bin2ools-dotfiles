@@ -496,7 +496,7 @@ autologin "prod"
 
 export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}
 log "Executing 'profile' installer. Installs user AWS config."
-${BT}/gen/profiles.gen
+${BT}/gen/profiles
 logk
 
 # for bash & zsh - autocomplete for pipx modules.

@@ -23,10 +23,6 @@ if echo $? >/dev/null 2>&1; then
     echo -e client - ${GREEN}OK${NC}
 fi
 
-if [[ -e "${HOME}/.aws/bt_config}" ]]; then 
-    FIRST_RUN=no
-fi
-
 # For loading bash completions and 
 # other scripts and aliases from the .bintools-dotfiles dir. 
 #
@@ -35,7 +31,6 @@ export FILE_SOURCES=no
 # Whethere or not to use the new loader for working with 
 # libraries.
 export LOADER=legacy
-bt
 
 set_team  && echo set_team
 env_init  && echo env_init 
@@ -274,97 +269,98 @@ cmd="${DEFAULT_AWSLIB} roles -r aws_team_ --no-header "
 #echo cmd: ${md}
 
 declare -a v=()
-declare -a accounts=()
 acct_name="" acct_id="" team_sso="" this_team=""
 while read -r acct_name acct_id team_sso; do 
     shopt -s lastpipe
+    this_team="$(echo "${team_sso}" | cut -d'_' -f 3)"
     v=( "${acct_name}" "${acct_id}" "${team_sso}" "${this_team}" )
-    acct="$(join_by \| "${v[@]}")" 
+    acct_str="$(join_by \| "${v[@]}")" 
+    export acct_str="${acct_str}"
     # returns: identity 490475191208 aws_team_arch arch
 done <<< "$(${cmd} | grep -E '^identity' | head -n 1 )" 
 
-echo "accounts+=( "${acct}" )"
-echo "accounts: ${accounts[@]}"
+echo acct_str: "${acct_str}"
+
+declare -a accounts=()
+accounts+=( "${acct_str}" )
+echo "accounts: ${#accounts[*]}"
+
+declare -a this_acct=()
+this_acct+=( $( echo "${acct_str}" | perl -pe 's/\|/ /g;') )
+export acct_name="${this_acct[0]}"  acct_id="${this_acct[1]}" \
+       team_sso="${this_acct[2]}"   this_team="${this_acct[3]}"
 
 
 # cache the user's team info.
 # 
 export BT="${HOME}/.bt"
-
 mkdir -p "${BT}/cache" && rm ${BT}/cache/team_info
 echo "${this_team}" > "${BT}/cache/team_info"
-
-prod_id="$(get_account_number prod)"
-
-declare -a acct=()
-acct+=( $( echo ${accounts[0]} | perl -pe 's/\|/ /g;') )
-
-export acct_name="${acct[0]}"  acct_id="${acct[1]}" \
-       team_sso="${acct[2]}"   this_team="${acct[3]}"
-
-accounts+=( "${acct[@]}" )
-
-
-
 
 # -----------------------------
 # generate role chain profiles.
 # -----------------------------
 
-# sso
-${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-     credential_process=\"${DEFAULT_AWSLIB} aws-sso-credential-process \
-                              --sso-role-name ${this_team} --non-interactive \
-                        -a "${sso_account_id}" -r "${team_sso}" "${this_team}" 
+prod_id="$(get_account_number prod)"
 
+
+# sso
+    echo        "${DEFAULT_AWSLIB}" configure profile --existing-config-action overwrite \
+   --credential-process \"aws-sso-util credential-process --profile ${this_team}\" \
+                                      --role-name "${this_team}" --non-interactive \
+                                     -a "${acct_id}" -r "${team_sso}"  
+
+# Fix buggy template writer.    
+FIX=tmp_fix_file
+cat "${AWS_CONFIG_FILE}" | \
+    perl -pe "s/(\'[^\']+\')/${this_team}/g" > \
+    "${HOME}/.aws/${FIX}"
+
+mv "${HOME}/.aws/${FIX}" ${AWS_CONFIG_FILE}
 
 # team
 ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
                                                      --non-interactive \
               -c source_profile="${this_team}" --no-credential-process \
-                    -c "$(printf "${tpl}" "${acct_id}" "${team_sso}")" \
-                         -a "${acct_id}" -r "${team_sso}" "${team_sso}" 
+   -c role_arn="arn:aws:iam::${acct_id}:role/qv-gbl-prod-${this_team}" \
+                          -a "${acct_id}" -r "${team_sso}" "${team_sso}" 
+
 
 # prod role
-# identity 490475191208 aws_team_arch arch
 ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-                                                     --non-interactive \
+                             --role-name ${team_sso} --non-interactive \
                -c source_profile="${team_sso}" --no-credential-process \
-         -c "$(printf "$tpl" "${prod_id}" qv-gbl-prod-"${this_team}")" \
+  -c role_arn="arn:aws:iam::${prod_id}:role/qv-gbl-prod-${this_team}" \
                   -a "${acct_id}" -r "${team_sso}" prod-"${this_team}" 
-
 
 # qventus
 ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-              credential_process="${DEFAULT_AWS_LIB}" profile qventus" \
-        " --sso-start-url ${AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL} " \
-              " --sso-region ${AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION} " \
-                     --non-interactive -c source_profile="${team_sso}" \
-  -c role_arn="arn:aws:iam::${acct_id}:role/qv-gbl-prod-"${this_team}" 
+                             --role-name ${team_sso} --non-interactive \
+               -c source_profile="${team_sso}" --no-credential-process \
+  -c role_arn="arn:aws:iam::${prod_id}:role/qv-gbl-prod-${this_team}" \
                              -a "${acct_id}" -r "${team_sso}" qventus 
 
-
- aws_profile qventus 
-
-
-return 0 
-
-# qaplatform
-i=0
-this_acct=${accounts[i]}  
-for this_acct in ${team_accounts[@]}; do
-    this_id="$(get_account_number ${this_acct})"
-      "${DEFAULT_AWSLIB}" configure profile 
-      --existing-config-action overwrite  --non-interactive  \
-  -c "$(printf "$tpl" "${this_id}" qv-gbl-"${this_acct}"-"${this_team}")" \
-        -c source_profile=aws_team_"${this_team}" --no-credential-process \
-    -a "${this_id}" -r "${team_sso}" qv-gbl-"${this_acct}"-"${this_team}" 
-done
+aws_profile qventus 
 
 
-# set default to 'qventus'
+# roles for other accounts.
+#
+#for i in ${accounts[@]}; do  
+#    this_id="$(get_account_number ${this_acct})"
+#
+#    # account role
+#    ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
+#                               --role-name "${team_sso}" --non-interactive \
+#                  -c source_profile="${this_team}" --no-credential-process \
+#       -c role_arn="arn:aws:iam::${this_id}:role/qv-gbl-prod-${this_team}" \
+#                -a "${this_id}" -r "${team_sso}" "${this_acct}-${this_team}" 
+#
+#done
+
+
+
+ set default to 'qventus'
 aws_profile qventus
-
 
 # Run a quick profile login, for prod.
 aws-whoami && echo -ne "\n\n\n"
