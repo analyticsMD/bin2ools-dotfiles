@@ -1,20 +1,19 @@
-# setting up packages.
-# tool name is everything after the 'b2' in the package name.
+-- GEODESIC - needs its own installer for Python (packaged?)
+   -- needs packages for Ubuntu, AWS 2, and Debian ( maybe alpine)
+   -- otherwise, runs out of a homedir.  Most other scripts work as-is. 
 
-# pushd "b2${tool}   # Q: how to find package_dir? 
-##  source ~/.venv/bin/activate
-##  (should include) 
-##  source {package_name}/${tool}.cmpl 
-##  alias rds= 
 
-Adjust PATH util -- should NOT include ~/.bt/lib
-  -- can we leverage the loader for packaged consoles? 
-  -- give each its own self-contained loader? 
-  -- would help. 
-ssm.bash needs renamed to ssm.  
-need to run 'pipx ensurepath', and then alias the binaries in those dirs.
-  -- write stubs for site-packages dirs that contain our software.
-  -- write one for bt as well (bin2ools-base)
+-- DATAGRIP -  Includes initial install package.
+   -- 
+
+
+-- finish install instructions and documentation. 
+
+--  run 'pipx ensurepath' on startup.  
+
+--  write stubs for site-packages dirs that contain our software.
+--  write one for bt as well (bin2ools-base)
+
 need to source 'ensurepath' dir for ssm.cmpl and rds.cmpl. 
 need a routine in ssm and rds that look for .cml and .src first under ~/.bt, 
 and if not present, then look under ensurepath dirs.
@@ -61,5 +60,15 @@ MacBook-Pro:~ marc$ .bt/cmd/ssm emory-qval
 # inject under devops-sso-util. 
 #./.local/pipx/venvs/devops-sso-util/lib/python3.10/site-packages/b2rds-0.6.4.dist-info/INSTALLER
 #~/.local/pipx/venvs/         poetry/lib/python3.10/site-packages/b2rds.pth -> my dir.
+
+
+# setting up packages.
+# tool name is everything after the 'b2' in the package name.
+
+# pushd "b2${tool}   # Q: how to find package_dir? 
+##  source ~/.venv/bin/activate
+##  (should include) 
+##  source {package_name}/${tool}.cmpl 
+##  alias rds= 
 
 

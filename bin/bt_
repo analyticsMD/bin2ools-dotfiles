@@ -1,0 +1,37 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+SRC="/Users/marc/.local/pipx/venvs/devops-sso-util/lib/python3.10/site-packages"
+rds_complete () 
+{ 
+    source ${SRC}/b2rds/rds_complete
+}
+declare -fx rds_complete
+rds_generate () 
+{ 
+    ${SRC}/b2rds/rds_generate
+}
+declare -fx rds_generate
+rds_local () 
+{ 
+    ${SRC}/b2rds/rds_local ${@}
+}
+declare -fx rds_local
+ssm_complete () 
+{ 
+    source ${SRC}/b2ssm/ssm_complete
+}
+declare -fx ssm_complete
+ssm_generate () 
+{ 
+    ${SRC}/b2ssm/ssm_generate
+}
+declare -fx ssm_generate
+ssm_local () 
+{ 
+    ${SRC}/b2ssm/ssm_local ${@}
+}
+declare -fx ssm_local
+
+rds_complete 
+ssm_complete
+
