@@ -202,11 +202,9 @@ aws_defaults () {
 }
 
 
-aws_profile prod-arch
+aws_profile qventus
 
-
-aws_defaults  prod-arch
-
+aws_defaults  qventus
 
 
 ## ----------------------------------------------------------------
@@ -266,21 +264,29 @@ set_team   # NOTE: critical include.
 # commands
 prod_id="$(get_account_number prod)"
 cmd="${DEFAULT_AWSLIB} roles -r aws_team_ --no-header " 
-#echo cmd: ${md}
+
 
 declare -a v=()
-acct_name="" acct_id="" team_sso="" this_team=""
+#acct_name="" acct_id="" team_sso="" this_team=""
 while read -r acct_name acct_id team_sso; do 
     shopt -s lastpipe
+
     this_team="$(echo "${team_sso}" | cut -d'_' -f 3)"
     v=( "${acct_name}" "${acct_id}" "${team_sso}" "${this_team}" )
     acct_str="$(join_by \| "${v[@]}")" 
+
+    # export each account string as pipe-delimited fields.
     export acct_str="${acct_str}"
+
     # returns: identity 490475191208 aws_team_arch arch
 done <<< "$(${cmd} | grep -E '^identity' | head -n 1 )" 
 
-echo acct_str: "${acct_str}"
 
+# parse each account string into an array. 
+# then create an array of arrays for looping
+# through account descriptions. 
+#
+echo acct_str: "${acct_str}"
 declare -a accounts=()
 accounts+=( "${acct_str}" )
 echo "accounts: ${#accounts[*]}"
@@ -291,8 +297,11 @@ export acct_name="${this_acct[0]}"  acct_id="${this_acct[1]}" \
        team_sso="${this_acct[2]}"   this_team="${this_acct[3]}"
 
 
+
+# ---------------------------- 
 # cache the user's team info.
-# 
+# ---------------------------- 
+
 export BT="${HOME}/.bt"
 mkdir -p "${BT}/cache" && rm ${BT}/cache/team_info
 echo "${this_team}" > "${BT}/cache/team_info"
@@ -304,62 +313,33 @@ echo "${this_team}" > "${BT}/cache/team_info"
 prod_id="$(get_account_number prod)"
 
 
-# sso
-          "${DEFAULT_AWSLIB}" configure profile --existing-config-action overwrite \
-   --credential-process \"aws-sso-util credential-process --profile ${this_team}\" \
-                                      --role-name "${this_team}" --non-interactive \
-                                     -a "${acct_id}" -r "${team_sso}"  
-
-# Fix buggy template writer.    
-FIX=tmp_fix_file
-cat "${AWS_CONFIG_FILE}" | \
-    perl -pe "s/(\'[^\']+\')/${this_team}/g" > \
-    "${HOME}/.aws/${FIX}"
-
-mv "${HOME}/.aws/${FIX}" ${AWS_CONFIG_FILE}
-
-# team
-${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-                                                     --non-interactive \
-              -c source_profile="${this_team}" --no-credential-process \
-   -c role_arn="arn:aws:iam::${acct_id}:role/qv-gbl-prod-${this_team}" \
-                          -a "${acct_id}" -r "${team_sso}" "${team_sso}" 
+# generate primary roles from a flat file template.
+#
+export this_team=${this_team} && \
+    perl -pe "s/X__TEAM__X/${this_team}/g;" \
+    ${BT}/gen/bt_seed | tee ~/.aws/${AWS_CONFIG_FILE}
 
 
-# prod role
-${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-                             --role-name ${team_sso} --non-interactive \
-               -c source_profile="${team_sso}" --no-credential-process \
-  -c role_arn="arn:aws:iam::${prod_id}:role/qv-gbl-prod-${this_team}" \
-                  -a "${acct_id}" -r "${team_sso}" prod-"${this_team}" 
-
-# qventus
-${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-                             --role-name ${team_sso} --non-interactive \
-               -c source_profile="${team_sso}" --no-credential-process \
-  -c role_arn="arn:aws:iam::${prod_id}:role/qv-gbl-prod-${this_team}" \
-                             -a "${acct_id}" -r "${team_sso}" qventus 
-
+# set our profile to the default.h
 aws_profile qventus 
 
 
-# roles for other accounts.
-#
-#for i in ${accounts[@]}; do  
-#    this_id="$(get_account_number ${this_acct})"
-#
-#    # account role
-#    ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
-#                               --role-name "${team_sso}" --non-interactive \
-#                  -c source_profile="${this_team}" --no-credential-process \
-#       -c role_arn="arn:aws:iam::${this_id}:role/qv-gbl-prod-${this_team}" \
-#                -a "${this_id}" -r "${team_sso}" "${this_acct}-${this_team}" 
-#
-#done
+# generate roles for other accounts.
+
+for i in ${accounts[@]}; do  
+    this_id="$(get_account_number ${this_acct})"
+
+        # account role
+        ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
+                                   --role-name "${team_sso}" --non-interactive \
+                      -c source_profile="${this_team}" --no-credential-process \
+   -c role_arn="arn:aws:iam::${this_id}:role/qv-gbl-${this_acct}-${this_team}" \
+                  -a "${this_id}" -r "${team_sso}" "${this_acct}-${this_team}" 
+
+done
 
 
-
- set default to 'qventus'
+set default to 'qventus'
 aws_profile qventus
 
 # Run a quick profile login, for prod.
@@ -367,50 +347,8 @@ aws-whoami && echo -ne "\n\n\n"
     
 
 
-printf                "---------------------------------------\n" \
-printf                "  SUCCESS! Happy clouding...    :0\)   \n" \
-printf                "---------------------------------------\n" \
+echo -ne            "---------------------------------------\n" 
+echo -ne            "  ${GREEN}SUCCESS!${NC} Happy clouding...   ${PURPLE}:0)${NC} \n" 
+echo -ne            "---------------------------------------\n" 
 
 
-
-# NOTE: 
-# -----
-# All other accounts and profiles can be generated 
-# in a single loop based on the info above. Teams 
-# need only to be configured to access accounts in master. 
-
-# TODO: use data/json/bt/accounts.json
-# TODO: use data/json/bt/role_types.json (guilds)
-#declare -a accounts
-#declare -a guilds
-
-
-# Generate role profiles.
-# -----------------------
-# team profiles - One per account. Format: '(team)-(account)' e.g.
-#                 devops-cnc, devops-qa, devops-demo, etc.
-# NOTE: These are all assumable roles in the 'role' step of the 
-#       qventus standard role chain, e.g. sso->team->role->guild
-# 
-#declare -a rpf=()  # role profiles
-#for p in ${rpf[@]}; do 
-#  aws-sso-util configure profile --existing-config-action overwrite \
-#               -c role_arn="$(printf "$tpl" "${rpf[1]}" "${rpf[2]}")" \
-#                       -a "${v[1]}" -r "${rpf[2]}" "qv-gbl-${rpf[2]}" 
-#done
-
-# Generate guild profiles.
-# ------------------------
-# guild profiles - One per account. Format: '(team)-(account)' e.g.
-#                  devops-cnc, devops-qa, devops-demo, etc.
-# NOTE: These are all assumable roles in the 'guild' step of the 
-#       qventus standard role chain, e.g. sso->team->role->guild
-#
-#declare -a rpf=()  # role profiles
-#for g in ${gpf[@]}; do 
-#  aws-sso-util configure profile --existing-config-action overwrite \
-#               -c role_arn="$(printf "$tpl" "${pf[1]}" "${pf[2]}")" \
-#                       -a "${v[1]}" -r "${pf[2]}" "qv-gbl-${pf[2]}" 
-#done
-
-                       

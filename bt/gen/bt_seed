@@ -1,0 +1,36 @@
+
+[profile X__TEAM__X]
+sso_start_url = https://qventus.awsapps.com/start
+sso_region = us-west-2
+sso_account_id = 490475191208
+sso_role_name = aws_team_arch
+region = us-west-2
+credential_process = devops-sso-util credential-process --profile X__TEAM__X
+
+[profile aws_team_X__TEAM__X]
+sso_start_url = https://qventus.awsapps.com/start
+sso_region = us-west-2
+sso_account_id = 490475191208
+sso_role_name = aws_team_X__TEAM__X
+region = us-west-2
+source_profile = X__TEAM__X
+role_arn = arn:aws:iam::490475191208:role/aws_team_X__TEAM__X
+
+[profile prod-X__TEAM__X]
+sso_start_url = https://qventus.awsapps.com/start
+sso_region = us-west-2
+sso_account_id = 490475191208
+sso_role_name = aws_team_X__TEAM__X
+region = us-west-2
+source_profile = aws_team_X__TEAM__X
+role_arn = arn:aws:iam::351480950201:role/qv-gbl-prod-X__TEAM__X
+
+[profile qventus]
+sso_start_url = https://qventus.awsapps.com/start
+sso_region = us-west-2
+sso_account_id = 490475191208
+sso_role_name = aws_team_X__TEAM__X
+region = us-west-2
+source_profile = aws_team_X__TEAM__X
+role_arn = arn:aws:iam::351480950201:role/qv-gbl-prod-X__TEAM__X
+
