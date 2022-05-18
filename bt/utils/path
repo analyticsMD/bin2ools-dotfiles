@@ -123,7 +123,7 @@ declare -a order=( "PIPX_SPACE"           \
   spaces["PIPX_SPACE"]="$(join_by : ${pipx_space[@]})"
   
   # --------------------------------------
-  # PIPX CONSOLE SPACE
+  # BIN2OOLS SPACE
   # --------------------------------------
   [[ -z "${core}"   ]] && c='devops-sso-util'
   [[ -z "${python}" ]] && p='python3.10'
@@ -140,7 +140,7 @@ declare -a order=( "PIPX_SPACE"           \
       declare -a local_path=() 
       local_path+=( $h $v $c $l $p $s $b$t ) 
       TMP_PATH="$( join_by '/' ${local_path[@]} )"
-      echo TMP_PATH="$( join_by '/' ${local_path[@]} )"
+      to_debug path && echo TMP_PATH="$( join_by '/' ${local_path[@]} )"
       NEW_PATH+=( "$TMP_PATH" ) 
   done 
      

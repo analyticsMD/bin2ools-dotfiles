@@ -970,29 +970,6 @@ function locate_toml() {
 } || true
 
 
-# toggle bt venv on or off. 
-#
-function bt_venv() {
-  ret="$?"
-  if [[ -v BT_MANUAL ]]; then
-    return $ret
-  fi
-  if find_in_devops pyproject.toml &> /dev/null; then
-    if [[ ! -v VIRTUAL_ENV ]]; then
-      if BASE="$(poetry env info --path)"; then
-	    . "$BASE/bin/activate"
-        PS1=""
-      else
-        BT_MANUAL=1
-      fi
-    fi
-  elif [[ -v VIRTUAL_ENV ]]; then
-    deactivate
-  fi
-  return $ret
-} || true
-
-
 
 this_peek () { 
   [ -z "${BT_PEEK}" ] && { 
@@ -1003,27 +980,6 @@ this_peek () {
 } || true
 
 
-
-
-#bt() { 
-#  BT_MANUAL=1
-#  if [[ -v VIRTUAL_ENV ]]; then
-#    deactivate
-#  else
-#    . "$(poetry env info --path)/bin/activate"
-#  fi
-#  PROMPT_COMMAND="(bt);$PROMPT_COMMAND"
-#} 
-
-#activate() {
-#
-#  export BT="${HOME}/.bt"
-#  if [[ -v VIRTUAL_ENV ]]; then
-#    deactivate
-#  else
-#    . "$(poetry env info --path)/bin/activate"
-#  fi
-#}
 
 
 # PKG="${1}" # pass in package name (devops-sso-util).
@@ -1804,12 +1760,10 @@ to_debug flow && sleep 0.5 && echo api:end || true
 # installed as python packages work interchangeably
 # with dotfiles components, and with Geodesic on Linux.
 # 
-make_funcs() { 
+map_tools() { 
 
-    #export BT_DEBUG="bt_"
-    
     # -----------------------------------------------------
-    # make sure we have the pipx paths installed.
+    # make sure we have the pipx paths exported.
     # -----------------------------------------------------
     source <(${HOME}/.bt/utils/path -s 2>/dev/null)
     #echo PATH: ${PATH}
@@ -1831,12 +1785,12 @@ make_funcs() {
         to_debug bt_ && echo found toolset: ${t}
         toolsets+=( "${t#*${T}}" )
     done
-    echo "toolsets: ${toolsets[@]}"
+    echo -ne "loaded toolsets: ${CYAN}${toolsets[@]}${NC}\n"
     shopt -u extglob
 
 
     # -----------------------------------------------------
-    # export toolset "bridge" functions 
+    # export toolset "map" functions 
     # -----------------------------------------------------
     umask 0077
     tmpf=$(mktemp) && echo "" > ${tmpf}
@@ -1858,12 +1812,15 @@ make_funcs() {
     # -----------------------------------------------------
     # create toolset 'aliases'
     # -----------------------------------------------------
-
+    
     for ts in "${toolsets[@]}"; do
-        bash -c "${ts} () { "${ts}_local" ;};" 
+        bash -c "${ts} ()      { "${ts}_local"           ;};" 
+        bash -c "${ts}_cmpl () { . "${RDS}/${ts}_complete" ;};" 
+        bash -c "${ts}_gen ()  {   "${RDS}/${ts}_generate" ;};" 
+        declare -f ${ts} ${ts}_cmpl ${ts}_gen
     done
     
-    echo running completions.
+    echo -ne "running completions.\n"
     for ts in ${toolsets[@]}; do "${ts}_complete"; done
 } || true
 

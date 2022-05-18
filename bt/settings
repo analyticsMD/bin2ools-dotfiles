@@ -4,7 +4,7 @@
 
 export LOADER=legacy
 export SOURCE_FILES=no
-#bt
+
 . ${HOME}/.bt/lib/utils.bash 
 
 
@@ -127,12 +127,12 @@ set_team || true
 to_debug flow && sleep 0.5 && echo "stgs:path" || true
 
 [[ ! -f "${BT}"/cache/path_info ]] && {
-  to_debug stgs && sleep 1 && echo stgs:path_info
+  to_debug stgs && echo stgs:path_info
   "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info" 
 } || true
 
-to_debug stgs && sleep 1 && echo stgs:source_path
-source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )  || true
+to_debug stgs && sleep 0.5 && echo stgs:source_path
+source <( $(${BT}/utils/path -s 2>/dev/null) )  || true
 
 
 

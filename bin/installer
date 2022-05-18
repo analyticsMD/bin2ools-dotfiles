@@ -148,6 +148,10 @@ escape() { printf '%s' "${1//\'/\'}" ;}
 # create symlink shortcut. 
 [[ ! -L ${HOME}/.bt ]] && ln -s ${HOME}/.bin2ools-dotfiles ${HOME}/.bt
 
+ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2rds)" rds
+ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2ssm)" ssm
+
+
 # Given a list of scripts in the dotfiles repo, run the first one that exists
 
 run_dotfile_scripts() {
@@ -511,17 +515,14 @@ SUCCESS="1"
 log "Your system is now bootstrapped!"
 
 # Add quick script to launch bintools
-  echo -ne '#!/usr/bin/env /usr/local/bin/bash"\n\n
-  cd ${HOME}/.bt                  && \
-  . settings                      && \
-    autologin\n > /usr/local/bin/bt; \
-    chmod ug+x /usr/local/bin/bt'
-
-#${HOME}/.local/pipx/venvs/devops-sso-util/lib/python3.10/site-packages/b2*
 
 # check for github access (early on).
 # ssh git@github.com
 
+
 echo Adding bt installer.  ${GREEN}done${NC}.
 cp ${HOME}/.bintools-dotfiles/bin/bt /usr/local/bin
+
+/usr/local/bin/bt
+
 

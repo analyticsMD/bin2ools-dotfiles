@@ -1,1 +1,40 @@
-alias bt="export BT=\"${HOME}/.bt\"; cd ${BT}; make_tools"
+#!/usr/bin/env /usr/local/bin/bash
+
+. <(~/.bt/utils/path -s 2>/dev/null)  # find a better path. 
+
+export BT="${HOME}/.bt"               # expand your thinkscape.
+
+${BT}/settings                        # set a goal.
+
+. ${BT}/lib/utils.bash                # make like batman.
+
+map_tools                             # grab some tools.
+
+# expose list of tools. 
+# expos list of toolsets.
+
+shopt -s expand_aliases
+alias ssm="ssm_cmpl; ssm"
+
+#alias P='echo /Users/marc/.local/bin:/Users/marc/.local/pipx:/Users/marc/Library/Python/3.10/bin:/Users/marc/.local/pipx/venvs/devops-sso-util/lib/python3.10/site-packages/b2rds:/Users/marc/.local/pipx/venvs/devops-sso-util/lib/python3.10/site-packages/b2ssm:/Users/marc/.bt/cmd:/Users/marc/.bt/gen:/Users/marc/.bt/src:/Users/marc/.bt/utils:/Users/marc/.bt/inst:/Users/marc/.bt/lib:/usr/local/sbin:/usr/local/homebrew/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/opt/mysql-client/bin:/bin:/usr/bin:/sbin:/usr/sbin:/etc'
+
+#alias p='/Users/marc/.bt/utils/path -s 2>/dev/null'
+#alias .=.<(p)
+
+for ts in "$(echo "${PATH}"     | \
+            perl -pe 's/:/\n/g' | \
+            grep '\/b2')"; do 
+
+    echo found toolset: "$(basename ${ts})"
+    t="$(dirpath | perl -pe s/^b2//)"
+    echo found tool: ${t}
+    ln -s ${ts}/${t}_local ${HOME}/.local/bin/${t}_local
+    echo added link
+    ${t}() { ${t}_local ${@} ;}
+    declare -fx ${t} 
+    echo added function: ${t}
+done
+
+
+#ln -s "$(echo "$PATH" | perl -pe 's/:/\n/g' | grep rds_local)" rds_local
+# history >> /usr/local/bin/bt
