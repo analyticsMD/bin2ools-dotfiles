@@ -1,4 +1,8 @@
--- GEODESIC - needs its own installer for Python (packaged?)
+-- GEODESIC - Add Python install.  
+   -- run pipx scripts. 
+   -- see if root shell scripts work on Linux. 
+   -- other components work from homedir. 
+
    -- needs packages for Ubuntu, AWS 2, and Debian ( maybe alpine)
    -- otherwise, runs out of a homedir.  Most other scripts work as-is. 
 
@@ -28,8 +32,8 @@ alias rds_cmpl=". ${HOME}/.bt/src/rds.cmpl"
 alias rds="rds_cmpl; poe ~/src/devops-sso-util/b2rds rds ${@}"
 
 
-poetry run ssm=". ~/.bt/src/ssm.cmpl; poe --root ~/src/devops-sso-util/b2ssm ssm_bash ${@}"
-
+poetry run ssm=". ~/.bt/src/ssm.cmpl; \
+poe --root ~/src/devops-sso-util/b2ssm ssm_bash ${@}"
 
 
 alias ssm="poetry run bash -c \". ~/.bt/src/ssm.cmpl; \

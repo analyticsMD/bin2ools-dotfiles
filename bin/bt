@@ -4,37 +4,48 @@
 
 export BT="${HOME}/.bt"               # expand your thinkscape.
 
-${BT}/settings                        # set a goal.
-
-. ${BT}/lib/utils.bash                # make like batman.
+. ${BT}/settings                      # set a goal.
 
 map_tools                             # grab some tools.
 
-# expose list of tools. 
-# expos list of toolsets.
+# expose a list of installed tools and toolsets. 
 
 shopt -s expand_aliases
-alias ssm="ssm_cmpl; ssm"
 
-#alias P='echo /Users/marc/.local/bin:/Users/marc/.local/pipx:/Users/marc/Library/Python/3.10/bin:/Users/marc/.local/pipx/venvs/devops-sso-util/lib/python3.10/site-packages/b2rds:/Users/marc/.local/pipx/venvs/devops-sso-util/lib/python3.10/site-packages/b2ssm:/Users/marc/.bt/cmd:/Users/marc/.bt/gen:/Users/marc/.bt/src:/Users/marc/.bt/utils:/Users/marc/.bt/inst:/Users/marc/.bt/lib:/usr/local/sbin:/usr/local/homebrew/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/opt/mysql-client/bin:/bin:/usr/bin:/sbin:/usr/sbin:/etc'
+tmppath="$(echo $(gmktemp))"
 
-#alias p='/Users/marc/.bt/utils/path -s 2>/dev/null'
-#alias .=.<(p)
+{
+    SRC="$(dirname "$(echo "${PATH}"        | \
+           perl -pe 's/:/\n/g'              | \
+           grep -E 'devops|aws)-sso-util\/' | \
+           grep '\/b2'                      | \
+           perl -pe 's/^\/Users\/[\w_\-+]+(.*)/\$\{HOME\}\1/' | \
+           head -n 1 )"                       \
+    )"
+    echo -ne "export SRC=\"${SRC}\"\n\n"
 
-for ts in "$(echo "${PATH}"     | \
-            perl -pe 's/:/\n/g' | \
-            grep '\/b2')"; do 
+    declare -a features=( "generate" "complete" "local" ) 
 
-    echo found toolset: "$(basename ${ts})"
-    t="$(dirpath | perl -pe s/^b2//)"
-    echo found tool: ${t}
-    ln -s ${ts}/${t}_local ${HOME}/.local/bin/${t}_local
-    echo added link
-    ${t}() { ${t}_local ${@} ;}
-    declare -fx ${t} 
-    echo added function: ${t}
-done
+    . <(${HOME}/.bt/utils/path -s 2>/dev/null) 
+    for ds in $( echo "${PATH}" | perl -pe 's/:/\n/g' | grep '\/b2'); do  
+        
+        ts="$(basename ${ds})"            # toolset
+        t="$(echo ${ts} | perl -pe 's/^b2//')"  # tool
+        #echo tool: ${t} toolset: ${ts}
+
+        for f in ${features[@]}; do 
+            [[ "${f}" == "complete" ]] && s="source " || s=""
+            echo -ne "${t}_${f}() { ${s}\${SRC}/${ts}/${t}_${f} \${@} ;}\n\n"
+            echo -ne "declare -fx ${t}_${f}\n\n"
+        done
+
+        echo -ne ln -fs \${SRC}/${ts}/${t}_local "${HOME}/.local/bin/${t}\n\n"
+        echo -ne "${t}_complete\n\n"
+    done
+    
+} > "${tmppath}"
 
 
-#ln -s "$(echo "$PATH" | perl -pe 's/:/\n/g' | grep rds_local)" rds_local
-# history >> /usr/local/bin/bt
+source "${tmppath}"
+#cat "${tmppath}"
+rm "${tmppath}"
