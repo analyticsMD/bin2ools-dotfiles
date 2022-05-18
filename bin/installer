@@ -521,9 +521,7 @@ log "Your system is now bootstrapped!"
 
 
 echo Adding bt installer.  ${GREEN}done${NC}.
-cp ${HOME}/.bintools-dotfiles/bin/bt /usr/local/bin
-cp ${HOME}/.bintools-dotfiles/bin/bt_ /usr/local/bin
-source /usr/local/bin/bt_
+cp ${HOME}/.bin2ools-dotfiles/bin/bt /usr/local/bin
 
 
 
