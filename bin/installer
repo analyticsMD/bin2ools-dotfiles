@@ -288,6 +288,7 @@ logk
 
 echo "Installing minimal deps for github repo checkouts"
 brew_inst bash 
+brew_inst bash-completion@2
 brew_inst coreutils 
 brew_inst jq 
 brew_inst perl 
@@ -511,17 +512,51 @@ eval "$(register-python-argcomplete pipx 2>/dev/null)"
   rm ${HOME}/.bin2ools-dotfiles/bt/.bt 
 }
 
+
+export PATH="$PATH:/Users/marc/.local/bin"
+export LDFLAGS="-L/usr/local/opt/libffi/lib"
+export CPPFLAGS="-I/usr/local/opt/libffi/include"
+# For pkg-config to find libffi
+export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig"
+
 SUCCESS="1"
+
+# Adding partial path completion. I'm portant for 
+# tools finding themselves and each other. 
+
+ln -fs /usr/local/etc/bash_completion.d/partial_path \
+       ${HOME}/.bt/src/partial_path
+
+export PATH="/usr/local/Cellar/python@3.10/3.10.4/bin:$PATH"
+
+echo Adding bt installer.  ${GREEN}done${NC}.
+
+# install the bootstrapper.
+cp ${HOME}/.bin2ools-dotfiles/bin/bt /usr/local/bin
+
 log "Your system is now bootstrapped!"
 
-# Add quick script to launch bintools
+
 
 # check for github access (early on).
 # ssh git@github.com
 
 
-echo Adding bt installer.  ${GREEN}done${NC}.
-cp ${HOME}/.bin2ools-dotfiles/bin/bt /usr/local/bin
+# Enhanced file path completion in bash - https://github.com/sio/bash-complete-partial-path
+#[ -s "$HOME/.config/bash-complete-partial-path/bash_completion" ] && {
+#     source "$HOME/.config/bash-complete-partial-path/bash_completion"
+#     _bcpp --defaults
+
+
+# Enhanced file path completion in bash - 
+# https://github.com/sio/bash-complete-partial-path
+#
+#mkdir -p ${HOME}/.config/partial_path
+
+#[ -s "${HOME}/.config/partial_path/bash_completion" ] && {
+#    source "${HOME}/.config/partial-path/bash_completion"
+#    _bcpp --defaults
+#}
 
 
 
