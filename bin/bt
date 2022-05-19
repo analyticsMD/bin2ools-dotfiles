@@ -1,12 +1,16 @@
 #!/usr/bin/env /usr/local/bin/bash
 
 . <(~/.bt/utils/path -s 2>/dev/null)  # find a better path. 
+good="$(echo "${PATH}" | perl -pe 's/:/\n/g' | grep '\/b2' | wc -l)"
+[[ -n "${good}" ]] && { 
+    echo -e "You have ${CYAN}${good}${NC} bintools installed."
+} || {  
+    echo -e "${YELLOW}\$PATH${NC} is stale.\nPlease rerun the path tool."
+}
 
 export BT="${HOME}/.bt"               # expand your thinkscape.
-
 . ${BT}/settings                      # set a goal.
-
-map_tools                             # grab some tools.
+#map_tools                             # grab some tools.
 
 # expose a list of installed tools and toolsets. 
 
@@ -14,7 +18,8 @@ shopt -s expand_aliases
 
 tmppath="$(echo $(gmktemp))"
 
-{
+source <({
+
     SRC="$(dirname "$(echo "${PATH}"        | \
            perl -pe 's/:/\n/g'              | \
            grep -E 'devops|aws)-sso-util\/' | \
@@ -35,17 +40,36 @@ tmppath="$(echo $(gmktemp))"
 
         for f in ${features[@]}; do 
             [[ "${f}" == "complete" ]] && s="source " || s=""
-            echo -ne "${t}_${f}() { ${s}\${SRC}/${ts}/${t}_${f} \${@} ;}\n\n"
+
+            echo -ne "${t}_${f}() { ${s}${SRC}/${ts}/${t}_${f} \${@} ;}\n\n"
             echo -ne "declare -fx ${t}_${f}\n\n"
+            
+            echo -ne ln -fs ${SRC}/${ts}/${t}_${f} "${HOME}/.local/bin/${t}_${f}\n\n"
         done
 
-        echo -ne ln -fs \${SRC}/${ts}/${t}_local "${HOME}/.local/bin/${t}\n\n"
+        echo -ne ln -fs ${SRC}/${ts}/${t}_${f} "${HOME}/.local/bin/${t}\n\n"
+
+
+        echo -ne "${t}() { ${SRC}/${ts}/${t}_local \${@} ;}\n\n"
+        echo -ne "declare -fx ${t}"
+        echo -ne "declare -fx ${t}_complete"
         echo -ne "${t}_complete\n\n"
+
+
     done
     
-} > "${tmppath}"
 
+}) > "${tmppath}"
 
 source "${tmppath}"
-#cat "${tmppath}"
-rm "${tmppath}"
+
+
+# explicitly exec the exported functions
+# By the time we get here there are already
+# exported in the BASH env. 
+. <(${HOME}/.local/bin/ssm_complete)
+. <(${HOME}/.local/bin/rds_complete)
+
+#rm "${tmppath}"
+
+

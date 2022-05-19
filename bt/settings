@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------
 
 export LOADER=legacy
-export SOURCE_FILES=no
+export SOURCE_FILES=yes
 
 . ${HOME}/.bt/lib/utils.bash 
 
@@ -191,3 +191,39 @@ autologin "${BT_ROLE}" || true
 
 to_debug flow && sleep 0.5 && echo "stgs:sources" || true
 
+
+rds_generate() { ${SRC}/b2rds/rds_generate ${@} ;}
+
+declare -fx rds_generate
+
+rds_complete() { source ${SRC}/b2rds/rds_complete ${@} ;}
+
+declare -fx rds_complete
+
+rds_local() { ${SRC}/b2rds/rds_local ${@} ;}
+
+declare -fx rds_local
+
+ln -fs ${SRC}/b2rds/rds_local /Users/marc/.local/bin/rds
+
+rds() { ${SRC}/b2rds/rds_local ${@} ;}
+
+declare -fx rdsrds_complete
+
+ssm_generate() { ${SRC}/b2ssm/ssm_generate ${@} ;}
+
+declare -fx ssm_generate
+
+ssm_complete() { source ${SRC}/b2ssm/ssm_complete ${@} ;}
+
+declare -fx ssm_complete
+
+ssm_local() { ${SRC}/b2ssm/ssm_local ${@} ;}
+
+declare -fx ssm_local
+
+ln -fs ${SRC}/b2ssm/ssm_local /Users/marc/.local/bin/ssm
+
+ssm() { ${SRC}/b2ssm/ssm_local ${@} ;}
+
+declare -fx ssm_complete

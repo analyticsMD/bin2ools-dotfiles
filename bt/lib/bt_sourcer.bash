@@ -59,15 +59,18 @@ bt_source() {
 
 
     for d in $(ls -d1 *@($dir_glob)); do 
+
       [[ "${#dirs[@]}" -gt 0 ]] && continue
       to_debug src && echo dir: $d
-      q_pushd "${BT}/${d}"
+      pushd "${BT}/${d}"
       [[ "$q" == "noisy" ]] && { echo -ne "Sourcing in ${d}..." ;}
+
       # shellcheck disable=SC2125
       filter_glob=[!_!.]?*
       files=( "$( printf "%s\n" "${filter_glob}")" )
       to_debug src && echo files: ${files[@]}
       [[ "${#files[@]}" -gt 0 ]] &&  continue
+
       # longest file (for pretty-printing). 
       lg="$(printf '%s\n' ${files[@]} | awk '{ print length }' | sort -rn | head -n 1)" 
       for f in $(printf '%s' "${files[@]}"); do
@@ -104,5 +107,5 @@ bt_source() {
 #( NOTE: BT_SETTINGS=quiet suppresses this.) 
 # 
 # shellcheck disable=SC2015
-q_popd -1; q_popd -1 || true
+# || true
 bt_settings src && bt_source "${NOISE}" || true
