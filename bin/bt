@@ -18,6 +18,8 @@ shopt -s expand_aliases
 
 tmppath="$(echo $(gmktemp))"
 
+
+
 source <({
 
     SRC="$(dirname "$(echo "${PATH}"        | \
@@ -32,6 +34,7 @@ source <({
     declare -a features=( "generate" "complete" "local" ) 
 
     . <(${HOME}/.bt/utils/path -s 2>/dev/null) 
+
     for ds in $( echo "${PATH}" | perl -pe 's/:/\n/g' | grep '\/b2'); do  
         
         ts="$(basename ${ds})"            # toolset
@@ -44,15 +47,15 @@ source <({
             echo -ne "${t}_${f}() { ${s}${SRC}/${ts}/${t}_${f} \${@} ;}\n\n"
             echo -ne "declare -fx ${t}_${f}\n\n"
             
-            echo -ne ln -fs ${SRC}/${ts}/${t}_${f} "${HOME}/.local/bin/${t}_${f}\n\n"
+            echo -ne ln -fs ${SRC}/${ts}/${t}_${f} "\${HOME}/.local/bin/${t}_${f}\n\n"
         done
 
-        echo -ne ln -fs ${SRC}/${ts}/${t}_${f} "${HOME}/.local/bin/${t}\n\n"
+        echo -ne ln -fs ${SRC}/${ts}/${t}_${f} "\${HOME}/.local/bin/${t}\n\n"
 
 
         echo -ne "${t}() { ${SRC}/${ts}/${t}_local \${@} ;}\n\n"
-        echo -ne "declare -fx ${t}"
-        echo -ne "declare -fx ${t}_complete"
+        echo -ne "declare -fx ${t}\n"
+        echo -ne "declare -fx ${t}_complete\n"
         echo -ne "${t}_complete\n\n"
 
 
@@ -61,15 +64,20 @@ source <({
 
 }) > "${tmppath}"
 
+#cat "${tmppath}"
+
 source "${tmppath}"
 
 
 # explicitly exec the exported functions
 # By the time we get here there are already
 # exported in the BASH env. 
-. <(${HOME}/.local/bin/ssm_complete)
-. <(${HOME}/.local/bin/rds_complete)
+#. <(${HOME}/.local/bin/ssm_complete)
+#. <(${HOME}/.local/bin/rds_complete)
+
+get_src_dir 
+rds_complete
+ssm_complete
 
 #rm "${tmppath}"
-
 

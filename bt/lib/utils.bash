@@ -7,7 +7,23 @@ bt() { export BT="${HOME}/.bt" ;} || true
 to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
 to_debug flow && sleep 0.5 && echo rds:start || true
 
+get_src_dir() {
 
+    . <(~/.bt/utils/path -s 2>/dev/null)  # find a better path.
+
+    SRC="$(dirname "$(echo "${PATH}"        | \
+           perl -pe 's/:/\n/g'              | \
+           grep -E 'devops|aws)-sso-util\/' | \
+           grep '\/b2'                      | \
+           perl -pe 's/^\/Users\/[\w_\-+]+(.*)/\$\{HOME\}\1/' | \
+           head -n 1 )"                       \
+    )"
+    export SRC=\"${SRC}\"\n\n
+    echo -ne "export SRC=\"${SRC}\"\n\n"
+
+  declare -fx get_src_dir
+  export SRC="$(echo get_src_dir)"
+}
 
 
 

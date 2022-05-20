@@ -146,8 +146,10 @@ logk()  { STEP="";   echo "OK"; }
 escape() { printf '%s' "${1//\'/\'}" ;}
 
 # create symlink shortcut. 
-[[ ! -L ${HOME}/.bt ]] && ln -s ${HOME}/.bin2ools-dotfiles ${HOME}/.bt
-
+[[ -e "${HOME}/.bt" && -L ${HOME}/.bt ]] && { 
+    rm "${HOME}"/.bt 
+    ln -s "${HOME}/.bin2ools-dotfiles/bt" "${HOME}/.bt"
+} 
 ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2rds)" rds
 ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2ssm)" ssm
 
@@ -524,8 +526,8 @@ SUCCESS="1"
 # Adding partial path completion. I'm portant for 
 # tools finding themselves and each other. 
 
-ln -fs /usr/local/etc/bash_completion.d/partial_path \
-       ${HOME}/.bt/src/partial_path
+export CMPL=/usr/local/etc/bash_completion.d
+ln fs ${HOME}/.bt/src/partial_path ${CMPL}/partial_path 
 
 export PATH="/usr/local/Cellar/python@3.10/3.10.4/bin:$PATH"
 
