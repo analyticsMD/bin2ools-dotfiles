@@ -29,7 +29,7 @@ source <({
            perl -pe 's/^\/Users\/[\w_\-+]+(.*)/\$\{HOME\}\1/' | \
            head -n 1 )"                       \
     )"
-    echo -ne "export SRC=\"${SRC}\"\n\n"
+    echo -ne \"export SRC=\"${SRC}\"\\n\\n\"
 
     declare -a features=( "generate" "complete" "local" ) 
 
