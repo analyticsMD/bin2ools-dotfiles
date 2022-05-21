@@ -1,6 +1,30 @@
 #!/bin/bash
 
 
+
+## ANSI COLOR 
+## -----------------------------------------------------------------
+## We use colors in multiple places to improve the user experience. 
+##  
+##      .-------------- # constant part.
+##      vvvvv  vvvv --- # ansi code.
+##
+## shellcheck disable=code disable=SC2034
+{
+
+  echo -e "\001${color}\002"
+
+  GRAY='\001\033[0;37m\002'     #
+  BLUE='\001\033[0;34m\002'     #
+  CYAN='\001\033[0;96m\002'     #
+PURPLE='\001\033[1;35m\002'     #
+YELLOW='\001\033[0;33m\002'     #
+ GREEN='\001\033[0;32m\002'     #
+   RED='\001\033[0;31m\002'     #
+    NC='\001\033[0;m\002'       # No Color
+} || true
+
+
 # Initialize (or reinitialize) sudo to save unhelpful prompts later.
 _msg () { 
 
@@ -14,7 +38,7 @@ _msg () {
     echo -ne     "---------------------------------------------------\n"
     echo -ne     "V    V    V    V    V    V    V    V    V    V    V\n\n"
     echo -ne     "                                                   \n"
-    echo "${PURPLE}PASSWORD${NC} --> "
+    echo -ne "${PURPLE}PASSWORD${NC} --> "
 
 }
 
@@ -454,7 +478,7 @@ if [ -n "$QV_GITHUB_USER" ] && {
 fi
 
 
-# Install from local Brewfile
+# Install from localBrewfile
 #if [ -f "$HOME/.Brewfile" ]; then
 #  log "Installing from user Brewfile on GitHub:"
 #  brew bundle check --global || brew bundle --global
@@ -496,7 +520,7 @@ echo -ne "\nALMOST DONE!  Generating AWS Profiles...\n\n"
 # Run post-install dotfiles scripts
 logn "Executing 'source ${HOME}/.bt/settings':"
 ${BT}/settings 
-autologin "prod"
+autologin "prod-${BT_TEAM}"
 
 
 export BT_ACCOUNT=prod BT=${HOME}/.bt && cd ${BT}
@@ -512,24 +536,21 @@ eval "$(register-python-argcomplete pipx 2>/dev/null)"
   rm ${HOME}/.bin2ools-dotfiles/bt/.bt 
 }
 
-
 export PATH="$PATH:/Users/marc/.local/bin"
 export LDFLAGS="-L/usr/local/opt/libffi/lib"
 export CPPFLAGS="-I/usr/local/opt/libffi/include"
 # For pkg-config to find libffi
 export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig"
 
-SUCCESS="1"
-
 # Adding partial path completion. I'm portant for 
 # tools finding themselves and each other. 
 
 export CMPL=/usr/local/etc/bash_completion.d
-ln fs ${HOME}/.bt/src/partial_path ${CMPL}/partial_path 
+ln -fs "${HOME}/.bt/src/partial_path" "${CMPL}/partial_path"
 
 export PATH="/usr/local/Cellar/python@3.10/3.10.4/bin:$PATH"
 
-echo -ne Adding bt installer.  ${GREEN}done${NC}.
+echo -ne Adding ${PURPLE}BT${NC} installer. ${GREEN}Done${NC}.
 
 # install the bootstrapper.
 cp ${HOME}/.bin2ools-dotfiles/bin/bt /usr/local/bin

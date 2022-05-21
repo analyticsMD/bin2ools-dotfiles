@@ -2,8 +2,6 @@
 # shellcheck disable=SC2148,SC2034
 # -----------------------------------------------------------------
 
-export LOADER=legacy
-export SOURCE_FILES=yes
 
 . ${HOME}/.bt/lib/utils.bash 
 
@@ -16,7 +14,9 @@ export SOURCE_FILES=yes
 # global debug function.
 to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
 
-bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
+# uncomment while debugging.
+#export BT_DEBUG="env lgin rds rdsl rdsc rdst cche util data prmt qv"
+#export BT_DEBUG="rds rdsl rdsc rdst"
 
 # shellcheck disable=SC1090,SC1094 
 
@@ -37,35 +37,78 @@ to_debug flow && sleep 0.5 && echo "stgs:debug" || true
 
 to_debug flow && sleep 0.5 && echo "stgs:settings" || true
     
-
+bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 #export BT_SETTINGS="_src_alog_quiet_"
-
-# Determines whether function libraries are loaded 
-# via flat files (legacy) or a newer parallel loader. 
-# Default is legacy. The loader has proven problematic
-# at times. 
-#export LOADER="legacy"
 
 # Add 'quiet' if you want to silence status reporting of each 
 # config file when loaded. Add 'src' if you want to load BT's 
 # preconfigured dotfiles (from ~/.bin2ools-dotfiles) or add your own.
 
-# uncomment while debugging.
-#export BT_DEBUG="env lgin rds rdsl rdsc rdst cche util data prmt qv"
-#export BT_DEBUG="rds rdsl rdsc rdst"
 
-export NOISE="quiet"
-export SOURCE_FILES="no"
-export DEFAULT_ROLE="qventus"
-export DEFAULT_ACCOUNT="prod"
 
-# finding the proper sso-lib
+
+# -----------------------------------------------------------------
+# CACHE SETTINGS
+# -----------------------------------------------------------------
+
+
+
+to_debug flow && sleep 0.5 && echo "stgs:cache" || true
+set_team || true
+
+[[ ! -f "${BT}"/cache/path_info ]] && {
+  "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
+}
+source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+
+
+
+
+# -----------------------------------------------------------------
+# LIB SETTINGS
+# -----------------------------------------------------------------
+
+
+
+# load the proper sso-lib
 export AWSLIB="devops"
 # fall back to aws-sso-util when devops isn't available.
 [[ ! -e "${DEFAULT_AWSLIB}" ]] && { 
     export AWSLIB="aws" 
     export DEFAULT_AWSLIB="${HOME}/.local/bin/${AWSLIB}-sso-util" 
 } || true
+
+
+
+# -----------------------------------------------------------------
+# LOGIN SETTINGS
+# -----------------------------------------------------------------
+
+
+to_debug flow && sleep 0.5 && echo "stgs:autologin"
+
+set_team || echo "${RED}FATAL${NC}: No Team set."
+
+# Team account defaults to prod, for now.
+export DEFAULT_ACCOUNT="prod"
+
+[[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;}
+[[ -z "${BT_TEAM}"    ]] && export BT_TEAM="$(cat "${HOME}/cache/team_info")"
+[[ -z "${BT_ROLE}"    ]] && export BT_ROLE="${BT_ACCOUNT}"-"${BT_TEAM}" 
+
+autologin "${BT_ROLE}" || true
+
+export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+
+
+
+
+# -----------------------------------------------------------------
+# PROMPT PARSING
+# -----------------------------------------------------------------
+
+
+
 
 function prompt_off() { unset PROMPT_COMMAND ;}
 function prompt_on() { export PROMPT_COMMAND="prompt" ;}
@@ -77,11 +120,6 @@ function prompt() {
   PS1="$(_prompt)"
   export PS1
 }
-
-
-# -----------------------------------------------------------------
-# ARG PARSING
-# -----------------------------------------------------------------
 
 to_debug flow && sleep 0.5 && echo "stgs:arg_parsing"  || true
 
@@ -95,6 +133,15 @@ account="${1:-"prod"}"
 
 # For loading associative arrays from files or variables.
 
+# Determines whether function libraries are loaded 
+# via flat files (legacy) or a newer parallel loader. 
+# Default is legacy. The loader has proven problematic
+# at times. 
+
+export LOADER="legacy"
+
+
+
 
 # -----------------------------------------------------------------
 # SHELL SOURCER 
@@ -104,6 +151,11 @@ account="${1:-"prod"}"
 # their homedir. With this command, you can add them all to 
 # Bintool and manage them through github. 
 
+export NOISE="quiet"
+export SOURCE_FILES="no"
+
+
+
 [[ "${SOURCE_FILES}" =~ "yes" ]] && { 
     source "${BT}/lib/bt_sourcer.bash" || true
     bt_source ${NOISE}
@@ -112,13 +164,6 @@ account="${1:-"prod"}"
 
 # NOTE: this feature is controlled by adding the string 
 # 'src' to the variable: BT_SETTINGS. See: the settings section. 
-
-# -----------------------------------------------------------------
-# CACHE SETTINGS
-# -----------------------------------------------------------------
-
-to_debug flow && sleep 0.5 && echo "stgs:cache" || true
-set_team || true
 
 # -----------------------------------------------------------------
 # PATH SETTINGS
@@ -160,7 +205,7 @@ to_debug stgs && echo stgs:env BT_TEAM:    "${BT_TEAM}"
 to_debug stgs && echo stgs:env BT_ACCOUNT: "${BT_ACCOUNT}" 
 to_debug stgs && echo stgs:env BT_ROLE:    "${BT_ROLE}"
 
-chmod 777 .
+
 
 # -----------------------------------------------------------------
 # Bootstrap functions.
@@ -172,18 +217,6 @@ to_debug flow && sleep 0.5 && echo "stgs:bootstrap_funcs" || true
 
 
 
-# -----------------------------------------------------------------
-# AWS LOGIN
-# -----------------------------------------------------------------
-
-to_debug flow && sleep 0.5 && echo "stgs:autologin"
-
-# Team account defaults to prod, for now.
-
-BT_ROLE=qventus 
-autologin "${BT_ROLE}" || true
-
-
 
 # ------------------------------------------------------------------
 # load bintools functions, customizations, completions.
@@ -191,39 +224,3 @@ autologin "${BT_ROLE}" || true
 
 to_debug flow && sleep 0.5 && echo "stgs:sources" || true
 
-
-rds_generate() { ${SRC}/b2rds/rds_generate ${@} ;}
-
-declare -fx rds_generate
-
-rds_complete() { source ${SRC}/b2rds/rds_complete ${@} ;}
-
-declare -fx rds_complete
-
-rds_local() { ${SRC}/b2rds/rds_local ${@} ;}
-
-declare -fx rds_local
-
-ln -fs ${SRC}/b2rds/rds_local /Users/marc/.local/bin/rds
-
-rds() { ${SRC}/b2rds/rds_local ${@} ;}
-
-declare -fx rdsrds_complete
-
-ssm_generate() { ${SRC}/b2ssm/ssm_generate ${@} ;}
-
-declare -fx ssm_generate
-
-ssm_complete() { source ${SRC}/b2ssm/ssm_complete ${@} ;}
-
-declare -fx ssm_complete
-
-ssm_local() { ${SRC}/b2ssm/ssm_local ${@} ;}
-
-declare -fx ssm_local
-
-ln -fs ${SRC}/b2ssm/ssm_local /Users/marc/.local/bin/ssm
-
-ssm() { ${SRC}/b2ssm/ssm_local ${@} ;}
-
-declare -fx ssm_complete
