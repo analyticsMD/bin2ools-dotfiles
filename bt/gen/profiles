@@ -1,4 +1,92 @@
 #!/usr/bin/env /usr/local/bin/bash
+# shellcheck disable=SC2148,SC2034
+# -----------------------------------------------------------------
+
+export BT="${HOME}/.bt"
+. ${BT}/lib/utils.bash
+
+#set_team || echo "${RED}FATAL${NC}: Set team failed." && exit 1
+
+# -----------------------------------------------------------------
+# DEBUGGING
+# -----------------------------------------------------------------
+
+# global debug function.
+to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
+
+# uncomment while debugging.
+#export BT_DEBUG="env lgin prof"
+
+# shellcheck disable=SC1090,SC1094 
+
+i=${#BASH_SOURCE[@]}
+ver="$(echo "${BASH_VERSION}"             | \
+       perl -nle 'print if s/(\d+)\..*/\1/')"
+[[ "${ver}" -ne 5 ]] && { 
+  echo "WARNING: unsupported shell spawned: ${BASH_VERSION}"
+  return 1
+} || true
+
+
+# -----------------------------------------------------------------
+# CACHE SETTINGS
+# -----------------------------------------------------------------
+
+
+to_debug flow && sleep 0.5 && echo "prof:cache" || true
+
+
+
+# -----------------------------------------------------------------
+# PATH SETTINGS
+# -----------------------------------------------------------------
+
+
+[[ ! -f "${BT}"/cache/path_info ]] && {
+  "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
+}
+source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+
+
+
+
+# -----------------------------------------------------------------
+# LIB SETTINGS
+# -----------------------------------------------------------------
+
+
+
+# load the proper sso-lib
+export AWSLIB="devops"
+# fall back to aws-sso-util when devops isn't available.
+[[ ! -e "${DEFAULT_AWSLIB}" ]] && { 
+    export AWSLIB="aws" 
+    export DEFAULT_AWSLIB="${HOME}/.local/bin/${AWSLIB}-sso-util" 
+} || true
+
+
+
+# -----------------------------------------------------------------
+# LOGIN SETTINGS
+# -----------------------------------------------------------------
+
+
+to_debug flow && sleep 0.5 && echo "prof:autologin"
+
+#set_team || echo "${RED}FATAL${NC}: No Team set."
+
+# Team account defaults to prod, for now.
+export DEFAULT_ACCOUNT="prod"
+
+[[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;}
+[[ -z "${BT_TEAM}"    ]] && export BT_TEAM="$(cat "${HOME}/cache/team_info")"
+[[ -z "${BT_ROLE}"    ]] && export BT_ROLE="${BT_ACCOUNT}"-"${BT_TEAM}" 
+
+autologin "${BT_ROLE}" || true
+
+export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+
+
 
 ## ----------------------------------------------------------------
 ## AWS SETTINGS
@@ -10,232 +98,17 @@
 export BT="${HOME}/.bt"
 source <( echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 
-. ${BT}/lib/utils.bash
-
-export AWSLIB="devops"
-export DEFAULT_AWSLIB="${AWSLIB}-sso-util"
-if ! $(which ${DEFAULT_AWSLIB} >/dev/null 2>&1); then 
-   export AWSLIB=aws
-fi
-
 ${HOME}/.local/bin/${DEFAULT_AWSLIB} --help >/dev/null 2>&1
 if echo $? >/dev/null 2>&1; then 
     echo -e client - ${GREEN}OK${NC}
 fi
 
-# For loading bash completions and 
-# other scripts and aliases from the .bintools-dotfiles dir. 
-#
-export FILE_SOURCES=no
 
-# Whethere or not to use the new loader for working with 
-# libraries.
-export LOADER=legacy
+env_init
 
-set_team  && echo set_team
-env_init  && echo env_init 
+aws_profile prod-arch
 
-
-# Set and unset AWS_PROFILE.
-# --------------------------
-# Uses the 'aws configure list-profiles' command for 
-# validation (also has auto-completion routines, which 
-# are a bit slow).
-#
-aws_profile () {
-  if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    echo "USAGE:"
-    echo "aws_profile              <- print out current value"
-    echo "aws_profile PROFILE_NAME <- set PROFILE_NAME active"
-    echo "aws_profile --unset      <- unset the env vars"
-  elif [ -z "$1" ]; then
-    if [ -z "$AWS_PROFILE$AWS_DEFAULT_PROFILE" ]; then
-      echo "No profile is set"
-      return 1
-    else
-      echo "current profile: $AWS_PROFILE"
-      echo "default profile: $AWS_DEFAULT_PROFILE" 
-
-    fi
-  elif [ "$1" = "--unset" ]; then
-    AWS_PROFILE=
-    AWS_DEFAULT_PROFILE=
-    # needed because of https://github.com/aws/aws-cli/issues/5016
-    export -n AWS_PROFILE AWS_DEFAULT_PROFILE
-  else
-    # needed because of https://github.com/aws/aws-cli/issues/5546
-    if ! aws configure list-profiles | ggrep --color=never -Fxq -- "$1"; then
-      echo "$1 is not a valid profile"
-      return 2
-    else
-      export AWS_PROFILE=$1 AWS_DEFAULT_PROFILE=$1
-    fi;
-  fi;
-}
-
-
-
-## ----------------------------------------------------------------
-## AWS ENVIRONMENT VARS
-## ----------------------------------------------------------------
-# Qventus has a complicated set of AWS environment
-# variables used to standardize its AWS deployments. 
-# 
-# Changing some of these can have difficult ramifications
-# unless you know what you're doing. Where necessary, 
-# the Security Team has added notes to explain some of
-# the gotchas.  
-
-# Truth be told, it's best if you do not monkey with 
-#                        --- The QV Security Team 
-
-# qv standards
-if [ ! -f "${HOME}/.aws" ]; then
-  mkdir -p "${HOME}/.aws"
-fi
-export BT_CREDS="${HOME}/.aws/bt_creds"
-export BT_CONFIG="${HOME}/.aws/bt_config"
-export qv_gbl=us-west-2
-export qv_start_url=https://qventus.awsapps.com/start
-
-if [ ! -f "${HOME}/.aws" ]; then
-  mkdir -p "${HOME}/.aws" 
-fi
-[[ ! -f "${BT_CREDS}" ]] && {
-  umask 0077
-  cp "${BT}/config.d/bt_creds" \
-     "${BT_CREDS}"
-  umask 0022
-}
-
-
-aws_defaults () { 
-
-  # For reliability, Bintools isolates its configs from the defaults.
-  export AWS_CONFIG_FILE="${BT_CONFIG}"            \
-         AWS_SHARED_CREDENTIALS_FILE=${BT_CREDS} \
-         AWS_SDK_LOAD_CONFIG=1
-
-  # aws-sso-credential-process 
-  # when run on a headless system; credential_process captures 
-  # stdout and stderr, so the URL and code that are printed out 
-  # for use when the browser popup do not appear to the user.
-  export AWS_SSO_INTERACTIVE_AUTH=true
-
-  # for configuring the aws-sso-util credential process.
-  export AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_CONFIGURE_DEFAULT_SSO_REGION=${qv_gbl}
-  export AWS_CONFIGURE_DEFAULT_REGION=${qv_gbl}
-
-  export AWS_LOGIN_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_LOGIN_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_DEFAULT_SSO_REGION=${qv_gbl}
-  export AWS_DEFAULT_REGION=${qv_gbl}
-  export AWS_SSO_CREDENTIAL_PROCESS_DEBUG=true
-  export AWS_SDK_LOAD_CONFIG=1   # for golang, terraform, e.g.
-                                 # which do not use ~/.aws/config
-
-
-# You should not need to touch these.
-  export AWS_VAULT_PL_BROWSER=com.google.chrome 
-  export AWS_DEFAULT_OUTPUT=json
-  export AWS_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_DEFAULT_REGION=${qv_gbl} 
-  export AWS_REGION=${qv_gbl}
-
-# ----------------------------------------------------------------
-# variables that define the behavior of aws-vault backend secrets. 
-# Qventus uses aws-vault to encrypt credentials at rest on laptops, 
-# ecs, and ec2 hosts.  This is specifically to remove any long term 
-# credentials stored in the clear on laptops, etc. 
-
-# Lowest maintenance alternative is the 'file' option, which uses 
-# encrypted flat files in the aws-vault file space.
-# export AWS_VAULT_FILE_PASSPHRASE=(autogenerated-password)
-
-# The autogenerated password frees you from the need to type 
-# regular passwords to unlock your credentials.  Instead, a randomly 
-# generated password is created with each 8h session, and loaded
-# into this variable. This makes the password a 'throw-away' credential,
-# not unlike the temporary session tokens deployed by AWS.
-
-# Other useful var (not currently implemented).
-# See flag: --backend
-# AWS_VAULT_BACKEND=file
-# See flags--prompt
-# AWS_VAULT_PROMPT=terminal
-
-# AWS_ROLE_ARN: ARN of IAM role in the active profile
-# AWS_ROLE_SESSION_NAME: name of the role session in the active profile
-
-# AWS_STS_REGIONAL_ENDPOINTS: must be "regional" or "legacy"
-# AWS_MFA_SERIAL: id number of MFA device. We do not need this, as we 
-#                 use Okta for MFA before Federated Authentication. 
-
-# TTLs for sessions:
-# AWS_SESSION_TOKEN_TTL:         8h
-# AWS_CHAINED_SESSION_TOKEN_TTL: 1h
-# AWS_ASSUME_ROLE_TTL:           1h 
-# AWS_FEDERATION_TOKEN_TTL:     12h
-# AWS_MIN_TTL:                   5m
-
-# Comma separated key-value list of tags passed with the 
-# AssumeRole call, overrides session_tags profile config variable.
-# AWS_SESSION_TAGS: 
-
-# Comma separated list of transitive tags. 
-# Overrides transitive_session_tags profile config variable
-# AWS_TRANSITIVE_TAGS: 
-
-# We currently do not support the macos keychain or pass options
-# for credential protection on the local host.  We might someday, 
-# and if you really want them, you can manage your own configs. 
-
-# AWS_VAULT_KEYCHAIN_NAME: Name of macOS keychain to use (see the flag --keychain)
-# AWS_VAULT_PASS_PASSWORD_STORE_DIR: Pass password store directory (see the flag --pass-dir)
-# AWS_VAULT_PASS_CMD: Name of the pass executable (see the flag --pass-cmd)
-# AWS_VAULT_PASS_PREFIX: Prefix to prepend to the item path stored in pass (see the flag --pass-prefix)
-
-
-}
-
-
-aws_profile qventus
-
-aws_defaults  qventus
-
-
-## ----------------------------------------------------------------
-## AWS SETTINGS
-## ----------------------------------------------------------------
-# Save secrets history in ssm, via chamber. 
-# once saved, create a new password, and then 
-# migrate aws-vault creds to a new file.
-# (There are only one or two per person.)
-# Then change the password. Script should 
-# log this in the background.
-# 
-aws_vault_rotate () {
-  # generate new secret. 
-  s=$(openssl rand -base64 40 | colrm 27)
-  # update backend.
-   
-  # update secret.
-  declare -x AWS_VAULT_FILE_PASSPHRASE=$s
-} 
-
-
-
-# Takes two args: quick or full. 
-# Defaults to quick. 
-#
-aws_creds_regen () {
-
-    :
-
-}
+aws_defaults prod-arch
 
 
 
@@ -258,8 +131,6 @@ get_account_number () {
 
 # role template
 tpl='role_arn=arn:aws:iam::%s:role/%s'
-
-set_team   # NOTE: critical include.
 
 # commands
 prod_id="$(get_account_number prod)"
@@ -284,7 +155,7 @@ done <<< "$(${cmd} | grep -E '^identity' | head -n 1 )"
 
 # parse each account string into an array. 
 # then create an array of arrays for looping
-# through account descriptions. 
+# through all multi-account descriptions. 
 #
 echo acct_str: "${acct_str}"
 declare -a accounts=()
@@ -302,9 +173,8 @@ export acct_name="${this_acct[0]}"  acct_id="${this_acct[1]}" \
 # cache the user's team info.
 # ---------------------------- 
 
-export BT="${HOME}/.bt"
-mkdir -p "${BT}/cache" && rm ${BT}/cache/team_info
-echo "${this_team}" > "${BT}/cache/team_info"
+#set_team  && echo BT_TEAM: ${BT_TEAM}
+
 
 # -----------------------------
 # generate role chain profiles.
@@ -317,17 +187,50 @@ prod_id="$(get_account_number prod)"
 #
 export this_team=${this_team} && \
     perl -pe "s/X__TEAM__X/${this_team}/g;" \
-    ${BT}/gen/bt_seed | tee ~/.aws/${AWS_CONFIG_FILE}
+    ${BT}/gen/bt_seed > ${AWS_CONFIG_FILE}
 
 
 # set our profile to the default.h
-aws_profile qventus 
+aws_profile ${BT_ROLE}
+
 
 
 # generate roles for other accounts.
+declare -a v=()
+#acct_name="" acct_id="" team_sso="" this_team=""
+while read -r acct_name acct_id team_sso; do 
+    shopt -s lastpipe
+
+    this_team="$(echo "${team_sso}" | cut -d'_' -f 3)"
+    v=( "${acct_name}" "${acct_id}" "${team_sso}" "${this_team}" )
+    acct_str="$(join_by \| "${v[@]}")" 
+
+    # export each account string as pipe-delimited fields.
+    export acct_str="${acct_str}"
+
+    # returns: identity 490475191208 aws_team_arch arch
+done <<< "$(${cmd} | grep -Ev '^identity' | head -n 1 )" 
+
+echo acct_str: "${acct_str}"
+declare -a accounts=()
+accounts+=( "${acct_str}" )
+echo "accounts: ${#accounts[*]}"
+
+
+declare -a this_acct=()
+this_acct+=( $( echo "${acct_str}" | perl -pe 's/\|/ /g;') )
+export acct_name="${this_acct[0]}"  acct_id="${this_acct[1]}" \
+       team_sso="${this_acct[2]}"   this_team="${this_acct[3]}"
+
 
 for i in ${accounts[@]}; do  
     this_id="$(get_account_number ${this_acct})"
+
+
+    declare -a this_acct=()
+    this_acct+=( $( echo "${acct_str}" | perl -pe 's/\|/ /g;') )
+    export acct_name="${this_acct[0]}"  acct_id="${this_acct[1]}" \
+           team_sso="${this_acct[2]}"   this_team="${this_acct[3]}"
 
         # account role
         ${DEFAULT_AWSLIB} configure profile --existing-config-action overwrite \
@@ -339,8 +242,12 @@ for i in ${accounts[@]}; do
 done
 
 
-set default to 'qventus'
-aws_profile qventus
+
+set default to new default 'prod-${BT_TEAM}'
+aws_profile "${BT_ROLE}"
+
+cat "${AWS_CONFIG_FILE}"
+echo -ne "\n\n"
 
 # Run a quick profile login, for prod.
 aws-whoami && echo -ne "\n\n\n"

@@ -798,6 +798,7 @@ get_usr() {
 } || true
 
 get_team() { 
+  [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
   set_team && echo "${BT_TEAM}"  
 } || true
 
@@ -1592,23 +1593,30 @@ perms() {
 
 set_team() { 
 
-  # team var not proper.  check team cache.
+  [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
+
+
+  # Unset cache if improperly set.
   [ -f "${BT}/cache/team_info" ] && { 
     team="$(cat "${BT}/cache/team_info")"
-    [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
-      # cache worked.
-      BT_TEAM="${team}" 
-      export BT_TEAM="${BT_TEAM}" 
+    [[ -z "${team}"           || \
+       "${team}" = *NONE*     || \
+       "${team}" = *[\ \-\_\:\!\|\&]* ]] && { 
+      # cached var not proper.  Flush team cache.
+      unset BT_TEAM
+      rm -rf "${BT}/cache/team_info"
       return 
     }  
   }
 
-  # cache did not work. Try aws config...
+  # Try refreshing the BT_TEAM var from the AWS config. 
   team="$(cat "${AWS_CONFIG_FILE}"                                  | \
       perl -nle "print if s/.*aws_team_([\w_\-]+).*/\1/;" | tail -n 1)"
 
-    # aws config worked.
-  [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
+  # aws config has (seemingly) valid info. 
+  [[ -n "${BT_ROLE}"                     && \
+     ! "${BT_ROLE}" = *NONE*             && \
+     ! "${BT_ROLE}" = *[\ \-\_\:\!\|\&]* ]] && { 
     BT_TEAM="${team}" 
     export BT_TEAM="${BT_TEAM}" 
     # cache not present. Populate.    
@@ -1616,16 +1624,16 @@ set_team() {
     return 
   }  
 
-  to_debug env && echo "env:set_team succeeded - team is: ${BT_TEAM}"
+  to_debug prof && echo "env:set_team succeeded - team is: ${BT_TEAM}"
   
   # Otherwise, fail loudly. 
   # Warn the user to fix the problem.
   rm -rf "${BT}/cache/team_info"
-  echo "----------------------------" 
-  echo "FATAL: team not set." 
-  echo "Please run 'profiles' again."
-  echo "From the command line."
-  echo "----------------------------" 
+  echo -e "----------------------------" 
+  echo -e "${RED}FATAL${NC}: team var not set." 
+  echo -e "Please rerun \'${PURPLE}~/.bt/gen/profiles${NC}\'"
+  echo -e "from the command line."
+  echo -e "----------------------------" 
 
 } || true
 
@@ -1674,102 +1682,6 @@ unset_profile() {
 
 to_debug flow && echo api:autologin || true
 
-# unattended login
-autologin() { 
-
-  export AWS_CONFIG_FILE="${HOME}/.aws/bt_config"
-  export AWS_SHARED_CREDENTIAL_FILE="${HOME}/.aws/bt_creds"
-  #ACCT_ID="$(find_in_accounts "${BT_ACCOUNT}" | awk '{print $2}')"
-
-
-  [[ "${BT_TEAM}" == "NONE" || \
-      -z "${BT_TEAM}"       ]] && { 
-     echo "Failed to find a Team. Please rerun ~/.bt/gen/profiles"
-     return 1
-  } 
-
-  env_init
-  to_debug flow && echo api:autologin:env_init.
-
-  # look for expired creds.
-  raw="$("${DEFAULT_AWSLIB}" check 2>&1)" 
-  to_debug lgin echo raw check output: "${raw}"
-
-  sso="$(echo "${raw}" | \
-      perl -nle 'print if s/.*(valid until [\w\-\:\ ]+|fix|expired).*/\1/')"
-
-  to_debug lgin echo sso: $sso
-  to_debug lgin echo "BT_ROLE: ${BT_ROLE} BT_ACCOUNT: ${BT_ACCOUNT} BT_TEAM: ${BT_TEAM}" 
-
-  # refresh just the sso token (12 hour lifespan).
-  # collect the status, which is your expire time.
-  status=unset
-  [[ "${sso}" = fix*     || \
-     "${sso}" = expired* ]] && { 
-    cmd="$("${DEFAULT_AWSLIB}" login --profile "${BT_TEAM}")" 
-    status="$(echo "$cmd" | perl -nle \
-            'print if s/.*(valid until [\w\-\:\ ]+)/$1/')"
-  }
-  to_debug lgin echo status_cmd: $cmd
-  to_debug lgin echo status: $status
-  # this should fail hard for multi-account.
-  if aws_profile "${BT_ROLE}" >/dev/null 2>&1; then 
-     to_debug lgin echo profile set to: ${BT_ROLE}   
-  else 
-    echo "Could not set profile to: ${BT_ROLE}."
-    echo "Please rerun the 'profiles' command."
-    return
-  fi
-
-  chain=unset
-  [[ "${chain}" == "unset" ]] && { 
-    chain="$("${DEFAULT_AWSLIB}" login --profile "${BT_ROLE}")" 
-    status="$(echo "$chain" | perl -nle 'print if m/Successful/')"
-  }
-
-  [[ "${status}" == "unset" || "${sso}" =~ valid ]] && { 
-    ts="$sso"
-  } || { 
-    ts="${status}"
-  }
-
-  t="$(echo "${ts}" | \
-      perl -pe 's/valid until //' | \
-      ddiff -E -qf %S now)"
-
-  [[ "$t" -gt 0 ]] && { 
-    X="$(gdate --utc -d "0 + ${t} seconds" +"%Hh:%Mm:%Ss")"
-  } 
-  to_debug lgin echo "ts:$ts, t:$t, X:${X} R:${BT_ROLE}"
-  export "ts=${ts} t=${t} X=${X} R=${BT_ROLE}" 
-
-  arn=unset
-  [[ "${chain}" =~ Successful ]] && {
-    arn="$(aws sts get-caller-identity --profile "${BT_ROLE}" 2>&1 | \
-      jq -r '.Arn' | cut -d':' -f 5-6 | cut -d'/' -f 1-2)"
-      # (prints some informative stats about the session.)
-    echo -e "LOGIN: $arn"
-  }
-  to_debug lgin echo in: $arn
-
-  # construct a header.
-  if [[ "${t}" -ge 601 ]]; then
-    echo -e login: ${GREEN}${BT_ACCOUNT}${NC} expires: ${GREEN}${X}${NC}"\n"
-  elif [[ "${t}" -ge 11 ]]; then
-    echo -e login: ${YELLOW}${BT_ACCOUNT}${NC} expires soon: ${YELLOW}${X}${NC}"\n"
-  elif [[ "${t}" -eq 0 ]]; then  
-    echo -e login: ${CYAN}unknown${NC}."\n"
-  elif [[ "${t}" -lt 0 ]]; then 
-    echo -e ${RED}expired${NC}."\n"
-  else 
-      :
-  fi
-  return
-  
-} || true 
-
-to_debug flow && echo api:autologin.end || true
-to_debug flow && sleep 0.5 && echo api:end || true
 
 
 # Creates bridge functions such that components
@@ -1777,6 +1689,8 @@ to_debug flow && sleep 0.5 && echo api:end || true
 # with dotfiles components, and with Geodesic on Linux.
 # 
 map_tools() { 
+
+  [[ -z "${BT}" ]] && echo "FATAL: BT var not set." && exit 1
 
     # -----------------------------------------------------
     # make sure we have the pipx paths exported.
@@ -1856,6 +1770,8 @@ function prompt_off() { unset PROMPT_COMMAND ;} || true
 function prompt_on() { export PROMPT_COMMAND="prompt" ;} || true
 
 function prompt() {
+
+  [[ -z "${BT}" ]] && echo "FATAL: BT var not set." && exit 1
     # generate the next cache peek,
     # and hence, the next prompt.
 
@@ -1932,6 +1848,8 @@ to_debug flow && echo env:state || true
 # Establish vars that comprise the env state.
 #
 env_state()  { 
+
+  [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
 
   #include api
   export BT_USR="$(echo "${USER}")"
@@ -2015,6 +1933,8 @@ env_init() {
   to_debug env echo "env:init:BT ${BT}"
 
   role=""
+  # env_init is called by autologin. 
+  # Something is wrong if we don't have an AWS ENV by now.
   [[ -z "${AWS_CONFIG_FILE}" ]] && { echo "No aws config. Exiting..." ;}
 
   # ROLE, TEAM, ACCOUNT.
@@ -2031,8 +1951,9 @@ env_init() {
   # if request is not valid, report an error. 
   [[ -z "${role}" || "${role}" = *NONE* ]] && { 
     echo -e "${RED}FATAL${NC}: \"${ARGV}\" is not a configured destination."
+    echo -e "It is more likely a broken fault. "
     echo -e "Try rebuilding your aws config by running \"${BLUE}profiles${NC}\"".
-    return 0
+    exit !
   }
  
   to_debug env && echo DEFAULT_ROLE: "${DEFAULT_ROLE}"
@@ -2041,11 +1962,6 @@ env_init() {
     export BT_ROLE="${DEFAULT_ROLE}"
 
     # need to validate BT_TEAM var a bit further.
-    [[ -n "${BT_TEAM}" && ! "${BT_TEAM}" = *NONE* ]] && { 
-      export BT_TEAM="${BT_TEAM}"
-    } || { 
-      # team var not proper.  check team cache.
-      [ -f "${BT}/cache/team_info" ] && { 
         team="$(cat "${BT}/cache/team_info")"
         [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
           # cache worked.
@@ -2060,20 +1976,12 @@ env_init() {
           echo "From the command line."
           echo "----------------------------" 
         }
-      } || { 
+  } || { 
         # cache not present. Populate.    
         echo "${BT_TEAM}" > "${BT}/cache/team_info"
-      }
-    }
+  }
+   
 
-  } || true
-
-  # BT_ACCOUNT:   
-  # use defaults if nothing explicitly passed in. 
-  [[ "${role}" == "${DEFAULT_ROLE}" ]] && { 
-      export BT_ROLE="${DEFAULT_ROLE}" \
-             BT_ACCOUNT="${DEFAULT_ACCOUNT}"
-  } 
   # account needs more vetting. 
   declare -a ROLE
   ROLE=( $(echo "${role}" | tr '-' ' ') )  
@@ -2442,5 +2350,140 @@ aws_defaults || true
 
 to_debug flow && echo env:aws_profile  || true
 aws_profile qventus || true
+
+
+# unattended login
+autologin() { 
+
+  [[ -z "${BT}" ]] && echo "FATAL: BT var not set." && exit 1
+
+  # get path. 
+  # try cache.
+  [[ ! -f "${BT}"/cache/path_info ]] && {
+    "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
+  }
+  source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+
+  # fall back to aws-sso-util when devops isn't available.
+  export AWSLIB="devops"
+  # if devops-sso-util is not installed, use aws-sso-util.
+  [[ ! -e "${HOME}/.local/bin/${AWSLIB}-sso-util}" ]] && {
+    export AWSLIB="aws"
+    export DEFAULT_AWSLIB="${AWSLIB}-sso-util"
+  }
+
+  # set AWS config.
+  [[ -z "${AWS_CONFIG_FILE}" ]] && \
+      export AWS_CONFIG_FILE="${HOME}/.aws/bt_config"
+  [[ -z "${AWS_SHARED_CREDENTIAL_FILE}" ]] && \
+      export AWS_SHARED_CREDENTIAL_FILE="${HOME}/.aws/bt_creds"
+
+  # set team
+  set_team || echo "${RED}FATAL${NC}: No Team set."
+  
+  [[ "${BT_TEAM}" = *NONE* || -z "${BT_TEAM}" ]] && { 
+     echo -ne "${RED}FATAL${NC}: Missing Team var. \n"
+     echo -ne "Please rerun: ${PURPLE}~/.bt/gen/profiles${NC} and \n"
+     echo -ne "try again.\n\n"
+     exit 1
+  }
+
+  # set account (or use default.)
+  export DEFAULT_ACCOUNT="prod"
+  [[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;}
+  
+  
+  # set role.
+  [[ -n "${DEFAULT_ACCOUNT}" && -n "${BT_TEAM}" ]] && {
+      [[ -z "${BT_ROLE}" ]] && { 
+        export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+      } 
+  } 
+  #ACCT_ID="$(find_in_accounts "${BT_ACCOUNT}" | awk '{print $2}')"
+ 
+
+  env_init
+  #to_debug flow && echo api:autologin:env_init.
+
+  # look for expired creds.
+  raw="$("${DEFAULT_AWSLIB}" check 2>&1)" 
+  to_debug lgin echo raw check output: "${raw}"
+
+  sso="$(echo "${raw}" | \
+      perl -nle 'print if s/.*(valid until [\w\-\:\ ]+|fix|expired).*/\1/')"
+
+  to_debug lgin echo sso: $sso
+  to_debug lgin echo "BT_ROLE: ${BT_ROLE} BT_ACCOUNT: ${BT_ACCOUNT} BT_TEAM: ${BT_TEAM}" 
+
+  # refresh just the sso token (12 hour lifespan).
+  # collect the status, which is your expire time.
+  status=unset
+  [[ "${sso}" = fix*     || \
+     "${sso}" = expired* ]] && { 
+    cmd="$("${DEFAULT_AWSLIB}" login --profile "${BT_TEAM}")" 
+   status="$(echo "$cmd" | perl -nle \
+            'print if s/.*(valid until [\w\-\:\ ]+)/$1/')"
+  }
+  to_debug lgin echo status_cmd: $cmd
+  to_debug lgin echo status: $status
+  # this should fail hard for multi-account.
+  if aws_profile "${BT_ROLE}" >/dev/null 2>&1; then 
+     to_debug lgin echo profile set to: ${BT_ROLE}   
+  else 
+    echo "Could not set profile to: ${BT_ROLE}."
+    echo "Please rerun the 'profiles' command."
+    return
+  fi
+
+  #chain=unset
+  #[[ "${chain}" == "unset" ]] && { 
+  #  chain="$("${DEFAULT_AWSLIB}" login --profile "${BT_ROLE}")" 
+  #  status="$(echo "$chain" | perl -nle 'print if m/Successful/')"
+  #}
+  
+  # Whicn login - SSO or IAM ? 
+  [[ "${status}" == "unset" || "${sso}" =~ valid ]] && { 
+    ts="$sso"
+  } || { 
+    ts="${status}"
+  }
+
+  t="$(echo "${ts}" | \
+      perl -pe 's/valid until //' | \
+      ddiff -E -qf %S now)"
+
+  [[ "$t" -gt 0 ]] && { 
+    X="$(gdate --utc -d "0 + ${t} seconds" +"%Hh:%Mm:%Ss")"
+  } 
+  to_debug lgin echo "ts:$ts, t:$t, X:${X} R:${BT_ROLE}"
+  export "ts=${ts} t=${t} X=${X} R=${BT_ROLE}" 
+
+  arn=unset
+  [[ "${chain}" =~ Successful ]] && {
+    arn="$(aws sts get-caller-identity --profile "${BT_ROLE}" 2>&1 | \
+      jq -r '.Arn' | cut -d':' -f 5-6 | cut -d'/' -f 1-2)"
+      # (prints some informative stats about the session.)
+    echo -e "LOGIN: $arn"
+  }
+  to_debug lgin echo in: $arn
+
+  # construct a header.
+  if [[ "${t}" -ge 601 ]]; then
+    echo -e login: ${GREEN}${BT_ACCOUNT}${NC} expires: ${GREEN}${X}${NC}"\n"
+  elif [[ "${t}" -ge 11 ]]; then
+    echo -e login: ${YELLOW}${BT_ACCOUNT}${NC} expires soon: ${YELLOW}${X}${NC}"\n"
+  elif [[ "${t}" -eq 0 ]]; then  
+    echo -e login: ${CYAN}unknown${NC}."\n"
+  elif [[ "${t}" -lt 0 ]]; then 
+    echo -e ${RED}expired${NC}."\n"
+  else 
+      :
+  fi
+  return
+ 
+}
+to_debug flow && echo api:autologin.end || true
+
+
 
 to_debug flow && sleep 0.5 && echo env:end || true
