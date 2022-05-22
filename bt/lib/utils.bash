@@ -1614,9 +1614,9 @@ set_team() {
       perl -nle "print if s/.*aws_team_([\w_\-]+).*/\1/;" | tail -n 1)"
 
   # aws config has (seemingly) valid info. 
-  [[ -n "${BT_ROLE}"                     && \
-     ! "${BT_ROLE}" = *NONE*             && \
-     ! "${BT_ROLE}" = *[\ \-\_\:\!\|\&]* ]] && { 
+  [[ -n "${team}"                     && \
+     ! "${team}" = *NONE*             && \
+     ! "${team}" = *[\ \-\_\:\!\|\&]* ]] && { 
     BT_TEAM="${team}" 
     export BT_TEAM="${BT_TEAM}" 
     # cache not present. Populate.    
