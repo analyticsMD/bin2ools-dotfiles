@@ -1,7 +1,7 @@
 
 # shellcheck shell=bash
 
-bt() { export BT="${HOME}/.bt" ;} || true
+b2() { export BT="${HOME}/.bt" ;} || true
 
 # global debug function.
 to_debug()    { [[ "${BT_DEBUG}"    = *$1* ]] && >&2 "${@:2}" ;} || true
@@ -2286,7 +2286,6 @@ aws_profile () {
     
 
 
-
 ## ----------------------------------------------------------------
 ## AWS ENVIRONMENT VARS
 ## ----------------------------------------------------------------
@@ -2418,12 +2417,14 @@ autologin() {
   # refresh just the sso token (12 hour lifespan).
   # collect the status, which is your expire time.
   status=unset
+
   [[ "${sso}" = fix*     || \
      "${sso}" = expired* ]] && { 
     cmd="$("${DEFAULT_AWSLIB}" login --profile "${BT_TEAM}")" 
    status="$(echo "$cmd" | perl -nle \
             'print if s/.*(valid until [\w\-\:\ ]+)/$1/')"
   }
+
   to_debug lgin echo status_cmd: $cmd
   to_debug lgin echo status: $status
   # this should fail hard for multi-account.
@@ -2447,7 +2448,7 @@ autologin() {
   } || { 
     ts="${status}"
   }
-
+  
   t="$(echo "${ts}" | \
       perl -pe 's/valid until //' | \
       ddiff -E -qf %S now)"
@@ -2466,7 +2467,7 @@ autologin() {
     echo -e "LOGIN: $arn"
   }
   to_debug lgin echo in: $arn
-
+  
   # construct a header.
   if [[ "${t}" -ge 601 ]]; then
     echo -e login: ${GREEN}${BT_ACCOUNT}${NC} expires: ${GREEN}${X}${NC}"\n"
@@ -2480,10 +2481,7 @@ autologin() {
       :
   fi
   return
- 
 }
 to_debug flow && echo api:autologin.end || true
-
-
 
 to_debug flow && sleep 0.5 && echo env:end || true

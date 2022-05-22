@@ -54,7 +54,7 @@ sudo_init() {
     return
   fi
 
-  # If TouchID for sudo is setup: use that instead.
+  #If TouchID for sudo is setup: use that instead.
   #if grep -q pam_tid /etc/pam.d/sudo; then
   #  return
   #fi
@@ -237,8 +237,10 @@ logk
 # HOMEBREW DIAGNOSTICS and INSTALLS.
 
 # Look for outdated packages. 
-# Skip if our dependencies to not need updating.
+# Skip any of our dependencies that not need updating.
 brew outdated | tee > ${HOME}/.outdated 2>&1
+printf "[ %b ] %*s %s %s\n" [ %b ] "${CYAN}${brew}${NC} "$m"${GREEN}present${NC}. Skipping...
+
 
 brew_inst() {
   last="${@:$#}" 
@@ -253,6 +255,7 @@ brew_inst() {
   fi
 }
 
+exit
 
 # Setup Homebrew directory and permissions.
 logn "Installing Homebrew:"
@@ -312,31 +315,28 @@ brew tap homebrew/services
 brew tap microsoft/git
 logk
 
+declare -a brews=()
+brews+=( bash bash-completion@2 coreutils jq perl )
+brews+=( zlib openssl@1.1 xz tree pstree git tmux )
+brews+=( python@3.10 pip pipx mysql-client poetry ) 
+brews+=( git-credential-manager-core awscli@2 )
+brews+=( session-manager-plugin )
 
-echo "Installing minimal deps for github repo checkouts"
-brew_inst bash 
-brew_inst bash-completion@2
-brew_inst coreutils 
-brew_inst jq 
-brew_inst perl 
-brew_inst zlib 
-brew_inst openssl@1.1
-brew_inst xz 
-brew_inst tree 
-brew_inst pstree 
-brew_inst git
-brew_inst tmux
-brew_inst python@3.10
-brew_inst pip
-brew_inst pipx
-brew_inst mysql-client
-brew_inst poetry
-brew_inst git-credential-manager-core
+echo -ne "Examining your laptop for known install problems..."
 
-echo -ne "Installing ssm_plugin and awscliv2\n\n"
-brew_inst awscli@2 
-brew_inst session-manager-plugin 
-#logk
+echo -ne "Installing homebrew packages"
+
+m=-1
+for b in ${brews[@]}; do [ ${#x} -gt $m ] && m=${#x}; done
+
+for b in ${brews[@]}; do 
+    printf "%0s %-$m %0s\n" 'random text' 'random text' 'random text'
+done
+
+
+ackages... \n\n"
+
+logk
 
 # clean up outdated file.
 #rm ${HOME}/.outdated
@@ -359,10 +359,9 @@ logk()  { STEP="";   echo "OK" ;}
 escape() { printf '%s' "${1//\'/\'}" ;}
 
 # Setup Git configuration.
-echo .
 
 # Set by web/app.rb
-GIT_NAME="$(git config --list                  | \
+GIT_NAME="$(git config --list                    | \
                   grep user.name                 | \
                   perl -pe 's/.*\=([\w\ ]+)/$1/' | \
                   head -n 1)"
@@ -553,7 +552,13 @@ export PATH="/usr/local/Cellar/python@3.10/3.10.4/bin:$PATH"
 echo -ne Adding ${PURPLE}BT${NC} installer. ${GREEN}Done${NC}.
 
 # install the bootstrapper.
-cp ${HOME}/.bin2ools-dotfiles/bin/bt /usr/local/bin
+cp ${HOME}/.bin2ools-dotfiles/bin/b2 /usr/local/bin
+
+if ! `grep 'b2=' ${HOME}/.bash_profile`; then
+    echo -e 'alias bt="b2;. ${HOME}/.bt/settings"' >> "${HOME}/.bash_profile"
+    echo -ne "BT helper alias ${GREEN}installed${NC}.\n\n"
+fi
+
 
 log "Your system is now bootstrapped!"
 

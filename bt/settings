@@ -3,7 +3,9 @@
 # -----------------------------------------------------------------
 
 export BT="${HOME}/.bt"
-. "${HOME}/.bt/lib/utils.bash" 
+. "${BT}/lib/utils.bash" 
+
+env_init
 
 
 # -----------------------------------------------------------------
@@ -34,6 +36,7 @@ to_debug flow && sleep 0.5 && echo "stgs:debug" || true
 # ------------------------------------------------------------------
 # SETTINGS
 # ------------------------------------------------------------------
+
 
 to_debug flow && sleep 0.5 && echo "stgs:settings" || true
     
@@ -97,6 +100,7 @@ export DEFAULT_ACCOUNT="prod"
 [[ -z "${BT_ROLE}"    ]] && export BT_ROLE="${BT_ACCOUNT}"-"${BT_TEAM}" 
 
 autologin "${BT_ROLE}" || true
+
 
 export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
 
@@ -212,7 +216,6 @@ to_debug stgs && echo stgs:env BT_ROLE:    "${BT_ROLE}"
 # -----------------------------------------------------------------
 
 to_debug flow && sleep 0.5 && echo "stgs:bootstrap_funcs" || true
-
 
 
 

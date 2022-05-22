@@ -12,8 +12,8 @@ toolsets="$(echo "${PATH}" | perl -pe 's/:/\n/g' | \
 }
 
 export BT="${HOME}/.bt"               # expand your thinkscape.
-. "${BT}/settings"                    # set a goal.
-. "${BT}/lib/utils.bash"
+. <(cat "${BT}/lib/utils.bash")
+. <(cat "${BT}/settings")             # set a goal.
 
 # expose a list of installed tools and toolsets. 
 
@@ -66,9 +66,6 @@ tmppath="$(gmktemp)"
         echo -ne "declare -fx ${t}\n"
 
    done
-    
-. rds_complete >/dev/null 2>&1
-. ssm_complete >/dev/null 2>&1
 
 } > "${tmppath}" 2>/dev/null
 
@@ -76,13 +73,15 @@ tmppath="$(gmktemp)"
 
 source "${tmppath}"
 
+. rds_complete >/dev/null 2>&1
+. ssm_complete >/dev/null 2>&1
 
 # Explicitly exec the exported functions
 # By the time we get here they are already
 # exported in the BASH ENV. 
-#. <(. ${HOME}/.local/bin/ssm_complete)
-#. <(. ${HOME}/.local/bin/rds_complete)
+. <(. ${HOME}/.local/bin/ssm_complete)
+. <(. ${HOME}/.local/bin/rds_complete)
 
 
-#rm "${tmppath}"
+rm "${tmppath}"
 
