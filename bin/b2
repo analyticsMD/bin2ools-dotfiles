@@ -1,29 +1,19 @@
 #!/usr/bin/env /usr/local/bin/bash
 
-. <(${HOME}/.bt/utils/path -s 2>/dev/null)  # find a better path. 
+
+. <(${HOME}/.bt/utils/path -s -x 2>/dev/null)  # find a better path.
 
 toolsets="$(echo "${PATH}" | perl -pe 's/:/\n/g' | \
       perl -nle 'print if m/\/b2/' | wc -l)"
 
-[[ -n "${toolsets}" ]] && { 
-    echo -e "You have ${CYAN}${good}${NC} bintools installed."
-} || {  
-    echo -e "${YELLOW}\$PATH${NC} is stale.\nPlease rerun the path tool."
-}
+export BT="${HOME}/.bt"
+. <(cat "${BT}/lib/utils.bash" >/dev/null 2>&1 )
+. <(cat "${BT}/settings" >/dev/null 2>&1 )
 
-export BT="${HOME}/.bt"               # expand your thinkscape.
-. <(cat "${BT}/lib/utils.bash")
-. <(cat "${BT}/settings")             # set a goal.
-
-# expose a list of installed tools and toolsets. 
-
-shopt -s expand_aliases
-
-tmppath="$(gmktemp)"
-
-
+tmppath="$(gmktemp)" 
 
 { 
+    echo "#!/usr/bin/env /usr/local/bin/bash"
 
     SRC="$(dirname "$(echo "${PATH}"        | \
            perl -pe 's/:/\n/g'              | \
@@ -35,7 +25,7 @@ tmppath="$(gmktemp)"
     echo -ne export SRC="${SRC}\n\n"
     declare -a features=( "generate" "complete" "local" ) 
 
-    . <("${HOME}"/.bt/utils/path -s 2>/dev/null)
+    . <("${HOME}"/.bt/utils/path -s -x 2>/dev/null)
 
     for ds in $( echo "${PATH}" | perl -pe 's/:/\n/g' | grep '\/b2'); do  
         
@@ -65,23 +55,38 @@ tmppath="$(gmktemp)"
         echo -ne "declare -fx ${t}_complete\n"
         echo -ne "declare -fx ${t}\n"
 
-   done
+    done
 
+
+toolsets="$(echo "${PATH}" | perl -pe 's/:/\n/g' | \
+      perl -nle 'print if m/\/b2/' | wc -l)"
+
+#[[ -n "${toolsets}" ]] && { 
+ #   echo -e "You have ${CYAN}${good}${NC} bintools installed."
+#} || {  
+ #   echo -e "Your ${YELLOW}\$PATH${NC} is stale.\nPlease rerun the path tool."
+#}
+
+export BT="${HOME}/.bt"         
+. <(cat "${BT}/lib/utils.bash" >/dev/null 2>&1)
+. <(cat "${BT}/settings" >/dev/null 2>&1)       
+
+# expose a list of installed tools and toolsets. 
+
+echo "shopt -s expand_aliases"
+echo "shopt -s progcomp_alias"
+
+    # Explicitly exec the exported functions
+    # By the time we get here they are already
+    # exported in the BASH ENV. 
+echo    . \${HOME}/.local/bin/ssm_complete
+echo    . \${HOME}/.local/bin/rds_complete
+    
 } > "${tmppath}" 2>/dev/null
 
-#cat "${tmppath}"
+chmod u+x "${tmppath}"
+echo -ne "${tmppath}\n"
 
-source "${tmppath}"
-
-. rds_complete >/dev/null 2>&1
-. ssm_complete >/dev/null 2>&1
-
-# Explicitly exec the exported functions
-# By the time we get here they are already
-# exported in the BASH ENV. 
-. <(. ${HOME}/.local/bin/ssm_complete)
-. <(. ${HOME}/.local/bin/rds_complete)
-
-
-rm "${tmppath}"
+# cleanup
+#rm "${tmppath}"
 
