@@ -553,16 +553,20 @@ export PATH="/usr/local/Cellar/python@3.10/3.10.4/bin:$PATH"
 echo -ne Adding ${PURPLE}BT${NC} installer. ${GREEN}Done${NC}.
 
 # install the bootstrapper.
-cp ${HOME}/.bin2ools-dotfiles/bin/bt /usr/local/bin
+cp ${HOME}/.bin2ools-dotfiles/bin/b2 /usr/local/bin
 
 log "Your system is now bootstrapped!"
 
 
 
+
 # check for github access (early on).
 # ssh git@github.com
-
+# ----------------------
+# BASH file completion. 
+# ----------------------
 # update bash_profile
+
 [[ "$arch" =~ x86 ]] && ARCH_DIR=/usr/local/etc/bash_completion
 echo "[ -f "${ARCH_DIR}" ] && . /usr/local/etc/bash_completion" >> ~/.bash_profile
 

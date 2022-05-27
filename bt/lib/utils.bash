@@ -70,11 +70,11 @@ get_forwarder() {
   stats="$(find_in_rds "${this}")" 
 
   to_debug rds echo stats: $stats  
-  h="$(echo "${stats}" | cut -d'%' -f 1)"
+  h="$(echo "${stats}"  | cut -d'%' -f 1)"
   in="$(echo "${stats}" | cut -d'%' -f 2)"
-  t="$(echo "${stats}" | cut -d'%' -f 3)"
-  p="$(echo "${stats}" | cut -d'%' -f 4)"
-  e="$(echo "${stats}" | cut -d'%' -f 5)"
+  t="$(echo "${stats}"  | cut -d'%' -f 3)"
+  p="$(echo "${stats}"  | cut -d'%' -f 4)"
+  e="$(echo "${stats}"  | cut -d'%' -f 5)"
 
   to_debug rds echo -ne "h: ${h}\ni: ${in}\nt: ${t}\np: ${p}\ne: ${e}\n"
   [[ -z "${e}" ]] && { 

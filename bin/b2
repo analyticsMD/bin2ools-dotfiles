@@ -81,7 +81,9 @@ echo "shopt -s progcomp_alias"
     # exported in the BASH ENV. 
 echo    . \${HOME}/.local/bin/ssm_complete
 echo    . \${HOME}/.local/bin/rds_complete
-    
+
+alias bt="source ${tmppath}"
+
 } > "${tmppath}" 2>/dev/null
 
 chmod u+x "${tmppath}"

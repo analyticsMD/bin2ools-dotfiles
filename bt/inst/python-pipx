@@ -44,7 +44,8 @@ opts="-f --include-deps"
 pipx install $opts "devops-sso-util @ $u/$p$g=cli&devops-sso-util"
 
 opts="-f --include-apps --include-deps"
-pipx inject --update_inject $opts devops-sso-util "b2rds @ $u/$p$g=b2rds&rds_complete&rds_generate&rds_local&dg&rds_refresh"
+#pipx inject --update_inject $opts devops-sso-util "b2rds @ $u/$p$g=b2rds&rds_complete&rds_generate&rds_local&dg&rds_refresh"
+pipx inject $opts devops-sso-util "b2rds @ $u/$p$g=b2rds&rds_complete&rds_generate&rds_local&dg&rds_refresh"
 pipx inject $opts devops-sso-util "b2ssm @ $u/$p$g=b2ssm&ssm_complete&ssm_generate&ssm_local"
 
 pipx inject devops-sso-utils aws-fuzzy-finder
