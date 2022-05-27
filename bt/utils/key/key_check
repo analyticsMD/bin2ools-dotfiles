@@ -1,0 +1,98 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# key_check
+# ---------
+# Requires a file called 'keys' in the home dir
+# (which can also be designated with -f).
+
+# Loops through a list of keys, checking each.
+
+# If the key is for a confd template (e.g it ends in 'tmpl', 
+# or 'toml' and has 'conf.d' or 'templates' in its path, 
+# we look for a corresponding template file in the local 
+# directory (.toml or .tmpl), and alert if the two differ. 
+
+
+usage () {
+    echo " usage "
+    echo " -----"
+    echo " -a aws_region  - region to query."
+    echo " -d debug       - add debugging output."
+    echo " -D dry_run     - with -w, will not take action."
+    echo " -e environment - used to select an AWS profile. "
+    echo " -f file        - (file with key|value pairs) NOTE: multiline values "
+    echo " -h help        - print this message."
+    exit 1
+}
+
+# lib/utils
+dir="${BASH_SOURCE%/*}"
+if [[ ! -d "${dir}" ]]; then dir="$PWD"; fi
+. "${dir}/lib/utils"
+
+while getopts a:dDe:f:hv:-: OPT; do
+
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+        OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        a | aws_region )  needs_arg; aws_region="$OPTARG" ;;
+        d | debug )       debug=true ;;
+        D | dry_run )     dry_run=true ;;
+        e | environment ) needs_arg; environment="$OPTARG" ;;
+        f | file )        needs_arg; file="$OPTARG" ;;
+        h | help )        help=true ;;
+        ??* )             die "Illegal option --$OPT" ;;  # bad long option
+        \? )              exit 2 ;;  # bad short option (error reported via getopts)
+    esac
+done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+# defaults
+arg_parse
+deps
+
+# parse input
+declare -A params
+while IFS='|' read -r key encoding value; do
+     params[${key}]=${value}
+     params[${key}]=${encoding}
+done < ${file:-/dev/stdin}
+
+# loop through lines
+for key in ${!params[@]}; do 
+  value=${params[${key}]}
+ 
+  BASE="aws ssm get-parameter --name " 
+  REQ=$(printf '%b\n' "${BASE} \"${key}\"")
+  CMD="${REQ} 2> /dev/null 1> /dev/null"
+  # dry run output
+  [ ! -z "${dry_run}" ] && echo ${CMD} && continue
+  # otherwise, run it!
+  eval ${CMD} 
+  [ $? -gt 0 ] && echo "Missing: ${key} || Present: ${key}" 
+
+  FOUND=0
+  file=$(echo $key | \
+      perl -ne 'print if s/.*(templates|conf.d)\/([\w\.\-\_]+\.t(mp|om)l)$/\2/')
+  [ ! -z ${file} ] && {
+      FOUND=$(find . -name ${file} -type f | wc -l)
+
+      if [ ${FOUND} -eq 1 ]; then 
+          fpath=$(find . -name ${file} -type f)
+          diff="$(compare $key $fpath)"
+	  [[ -n "${diff}" ]] && echo -ne "${fpath} has changed:\n${diff}\n"
+      elif [ ${FOUND} -gt 1 ]; then 
+          echo cannot test. Multiple versions of $file found.
+      else 
+          echo template: $file not found.
+      fi 
+  }
+
+done
+
+

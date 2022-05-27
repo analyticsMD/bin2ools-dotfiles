@@ -1,0 +1,247 @@
+#!/usr/bin/env /usr/local/bin/bash -i
+# shellcheck shell=bash disable=SC1008
+
+
+# rds 
+# ---
+# An IAM-based mysql client for RDS.
+
+#export BT_DEBUG="rds rdsl rdst rdsc"
+# ----- 
+# Usage
+# -----
+# rds <cluster> <mysql_args>
+# 
+# First arg is a clustername, such as 'fairview-amd'. 
+# All other args are mysql flags (Client can handle any/all.)
+# Type -h for details. 
+
+
+# Examples: 
+# ---------
+# For an interactive shell:  rds wellspan-amd
+# For query results:         rds wellspan-amd -e "SELECT 1;"
+
+# For loading associative arrays from files or variables.
+
+# -----------------------------------------------------------
+export LOADER=legacy
+
+. ${HOME}/.bt/lib/utils.bash 
+
+# no need to source configs, when
+# we are running as a standalone app. 
+set_team || echo "${RED}FATAL${NC}: No Team set." 
+
+unset SOURCE_FILES
+export NOISE="quiet"
+
+export DEFAULT_ACCOUNT="prod"
+export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+[[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;} 
+
+
+# fall back to aws-sso-util when devops isn't available.
+export AWSLIB="devops"
+[[ ! -e "${HOME}/.local/bin/${AWSLIB}-sso-util}" ]] && {
+    export AWSLIB="aws"
+    export DEFAULT_AWSLIB="${AWSLIB}-sso-util"
+}
+
+[[ ! -f "${BT}"/cache/path_info ]] && {
+  "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
+} 
+source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" ) 
+#poetry="$(which poetry)"
+
+[[ -z "${BT_ROLE}" ]] && export BT_ROLE="${DEFAULT_ROLE}"
+autologin "${BT_ROLE}" 
+
+
+set -m
+mkdir -p ${HOME/tmp}
+
+# set file descriptors for IPC.
+exec 3>&1 5>&1             # redirect 3 and 5 to the pipeline; 
+                           # redirect 4 and 6 to stdout.
+                           # (closed in the parent.)
+#1>&4- 1>&6-
+
+#export BT_DEBUG="rds"
+BT_CLUSTER=${1}    # important: all runs will have an RDS argument.
+
+[[ -n ${BT_CLUSTER} ]] || { export BT_CLUSTER="${1}" ;}
+script_info "${BASH_SOURCE[0]}"
+cluster_info "${BT_CLUSTER}"
+
+to_debug rds && echo BT_LAUNCH_DIR: ${BT_LAUNCH_DIR} \
+                     BT_PKG_DIR: "${BT_PKG_DIR}"
+
+[[ -n "${help}"       ]] && { rds_usage ;}
+[[ -n "${mysql_help}" ]] && { mysql_help ;}
+
+to_debug rds && echo "${PURPLE}M${NC}: Spinning up a tunnel for ${BT_CLUSTER}" >&3
+to_debug rds && echo this_team: ${BT_TEAM}  >&3
+
+
+# -----------
+# parse args.
+# -----------
+
+help=false
+# returns sourceable arrays for rds and mysql params
+arg_parse() { 
+  declare -a rds_args=() || echo "No rds args."  # rds args (before the -- )
+  declare -a mysql_args=() || echo "No mysql args."  # mysql args (after the -- )
+  source <(parse_rds_args "${args[@]}")
+  
+  to_debug rds && echo mysql_args: "${mysql_args[@]}" >&3
+  to_debug rds && echo rds_args: "${rds_args[@]}"   >&3
+} 
+
+arg_parse
+
+iam_user=restricted  # default
+
+#debug echo instance: ${instance}
+[[ "$help" == true ]] && usage
+
+# Determine default RDS IAM user, based on team. 
+iam_user=restricted    # default
+[[ -n "$(find_in primary | grep "${BT_TEAM}")" ]] && ((is_primary++))
+[[ -n "${is_primary}" ]] && iam_user=dba_guild          # guild role
+[[ -z "${is_primary}" ]] && iam_user="team-${BT_TEAM}"  # team role
+
+
+# ---------------------------------------------
+# Ensure we have an active session and a role.
+# ---------------------------------------------
+
+# TUNNEL METHODS
+# --------------
+# We have three interchangeable methods for spawning
+# tunnels to RDS clusters. We prefer the 'pure ssm' 
+# method because of its simplicity. There are occasionally
+# reasons for selecting another, such as the need to 
+# multiplex connections, as when scanning, or updating 
+# many clusters at once. 
+#
+# Pure RDS method...
+# ------------------
+# Spawn a socat traffic forwarder on the designated
+# host for the cluster. Connect to the forwarder 
+# using ssm port forwarding, then let socat forward 
+# traffic to the designated RDS cluster. 
+
+# Requires: 
+# ---------
+# -- ssm policy access to the host
+# -- port forwarding privileges on the host
+# -- command privileges on the host
+# -- RDS IAM credentials for an iam_user.
+# 
+# TODO: Fork additional managed subshells to 
+# handle tunnel persistence, and LogForwarding capability. 
+
+
+[[ "${BT_CLUSTER}" == "NONE" ]] && { 
+  echo "You must select an RDS cluster to connect with." && \
+  echo "Use tab completion to select a cluster name."    && \
+  exit 1
+}
+
+# Set up a forking, multiplexing,
+# connection forwarder for encrypted RDS sessions.
+
+# start the cycle of acquiring a tunnel. 
+# --------------------------------------
+to_debug rds && echo -e "${GREEN}M${NC}: Spinning up a tunnel for ${CLUSTER}". >&3
+
+# Fork and detach a process to act autonomously as a tunnel manager.  
+# Before the fork, you must first duplicate stdout to the parent. 
+
+method=ssm
+
+# --------------------------------
+# Determine iam_user
+# --------------------------------
+iam_user="$(set_iam_user)"
+to_debug rds echo -e "${CYAN}T${NC}: iam_user is: ${iam_user}" >&3 
+
+# Pulling out all the stops to spawn
+# an independent process. MacOS isn't helping. 
+# 1.) double fork
+# 2.) new session
+# 3.) close all filehandles: 
+#     stdin, stdout, stderr, fd3, fd5
+# 4.) run with nohup
+
+TNL=( ${BT_LAUNCH_DIR}/rds_tunnel "${BT_CLUSTER}" )
+echo -ne "\n\n${GREEN}M${NC}: -----------------------------------\n"
+echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${BT_CLUSTER}. \n"
+echo -ne     "${GREEN}M${NC}: -----------------------------------\n\n"
+${TNL[@]} <&- & 
+
+# wait for tunnel. 
+# 
+# shellcheck disable=SC2015
+[[ -z "${bt_port}" ]] && echo "FATAL: port not set." && exit
+
+# get ready for response.
+# ----------------------------------------------------
+# get an RDS IAM login token 
+# ----------------------------------------------------
+tmppath="$(get_tmppath)"  
+to_debug rdsc && echo ${PURPLE}C${NC}: GETTING TOKEN: "${bt_endpoint}"
+to_debug rdsc && echo ${PURPLE}C${NC}: vars: "${iam_user}" "${bt_endpoint}"  "${tmppath}" >&5
+
+TOKEN="$(aws rds generate-db-auth-token \
+         --hostname "${bt_endpoint}" \
+         --port 3306                    \
+         --username "${iam_user}")"
+
+to_debug rdsc && echo token fingerprint: "${TOKEN:(-7)}"  >&5
+
+
+# write a temp file for mysql client config. 
+# -----------------------------------------------
+{ 
+  # for global opts.
+  echo -ne "\n[client]\n"
+  echo -ne "user=\"${iam_user}\"\npassword=\"${TOKEN}\"\n"
+  echo -ne "host=\"127.0.0.1\"\nport=\"${bt_port}\"\n"
+  echo -ne "protocol=\"TCP\"\nbind-address=\"127.0.0.1\"\n"
+  echo -ne "connect_timeout=\"30\"\n"
+  echo -ne "ssl-ca=\"${BT}/certs/rds-combined-ca-bundle.pem\"\n\n"
+} > "${HOME}/tmp/rds.cfg"  2>/dev/null
+
+
+# -------------------
+# reprocess mysql args.
+# -------------------
+# NOTE: This includes decoding in-line SQL.
+arg_parse() { 
+  declare -a mysql_args
+  cfg_args+=( --defaults-extra-file="${tmppath}.cfg" )
+  source <( reprocess_mysql_args ${mysql_args[@]} )
+}
+arg_parse
+
+# ------------------------
+# build the mysql command
+# ------------------------
+export LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN=y
+
+# ---------------------------------
+# ready for tunnel. Start polling.
+# ----------------------------------
+# (Blocks until a proxy tunnel is available.)
+#
+to_debug rdst && echo -ne ${PURPLE}C${NC}: repolling  >&5
+repoll "${bt_port}" && sleep 0.1 && echo -ne "\n\n"
+
+# run the mysql client 
+to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
+#loader_addpath /usr/local/Cellar/mysql/8.0.29/bin
+#loader_flag mysql
+mysql --defaults-extra-file="${HOME}/tmp/rds.cfg"

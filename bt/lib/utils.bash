@@ -769,6 +769,14 @@ YELLOW='\001\033[0;33m\002'     #
     NC='\001\033[0;m\002'       # No Color
 } || true
 
+set_red="$(  tput setaf 1)"
+set_green="$(tput setaf 2)"
+set_yellow="$( tput setaf 3)"
+set_blue="$( tput setaf 4)"
+set_purple="$( tput setaf 5)"
+set_cyan="$( tput setaf 6)"
+set_nc="$(   tput setaf 7)"
+
 ## -----------------------------------------------------------------
 ## Utility functions (various, useful across all libs.)
 ## -----------------------------------------------------------------
@@ -1595,7 +1603,9 @@ set_team() {
 
   [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
 
-
+  [ ! -f "${BT}/cache/team_info" ] && { 
+    echo "${BT_TEAM}" > "${BT}/cache/team_info"    
+  } 
   # Unset cache if improperly set.
   [ -f "${BT}/cache/team_info" ] && { 
     team="$(cat "${BT}/cache/team_info")"
@@ -2485,3 +2495,245 @@ autologin() {
 to_debug flow && echo api:autologin.end || true
 
 to_debug flow && sleep 0.5 && echo env:end || true
+#!/usr/bin/env  /usr/local/bin/bash
+
+die() { echo "$*" >&2; exit 2; }
+
+needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$OPT option" && usage; fi; }
+
+to_err() { >&2 echo "$@"; }
+
+os=$(uname -s) && [ "${os}" == "Darwin" ] && b64=gbase64 || b64=base64
+
+log() { echo -e ${@} | tee -a ${log}; }
+
+debug() { [ ! -z "${debug}" ] && >&2 log ${@}; }
+
+silent_pushd() { builtin pushd "$@" > /dev/null; }
+
+get_tags() { 
+    __key=$1
+    aws ssm list-tags-for-resource \
+        --region "${aws_region}" \
+        --resource-type "Parameter" \
+        --resource-id "${__key}" | \
+    jq -r '.TagList[] | (.Key+"|"+.Value)'
+} 
+
+put_tag() { 
+    __key=$1
+    __tag=$2
+    __val=$3
+    BASE="aws ssm add-tags-to-resource \
+        --resource-type Parameter \
+        --resource-id " 
+    ARGS="\"${__key}\" --tags Key=\"${__tag}\",Value=\"${__val}\""
+    CMD="${BASE} ${ARGS}"
+    [ ! -z ${dry_run} ] && echo ${BASE} ${ARGS} && exit 0
+    eval ${CMD} && echo success || echo fail
+} 
+
+del_tag() { 
+    __key=$1
+    __tag=$2
+    aws ssm remove-tags-from-resource \
+    --resource-type "Parameter" \
+    --resource-id "${__key}" \
+    --tag-keys "${__tag}" && \
+    echo success || echo fail
+
+}
+
+# Rules for encoding:
+# 1.) if payload is one line only, we pass through.
+#     This is the case, e.g., for ssh private keys that
+#     have had newlines removed, passwords, and previously
+#     encoded templates passed from stdin.)
+# 2.) if payload contains multiple lines, we encode by
+#     gzipping then base64 encoding the full text. This is
+#     useful for encoding template files. In reverse, we do
+#     the opposite, e.g. gunzip, then base64 decode. We also 
+#     tag any encoded key (see tag_* functions).
+# 3.) if the key is tagged with 'encoding:lines_to_spaces',
+#     keys are removed by the decode() function.
+#
+# error correction:
+# This function throws an error if a payload is too big to 
+# fit into a key (see AWS standards). Later: We will split
+# these into multiple files.
+#
+ssm_encode() {
+    #IFS='%%'
+    local  __key=$1
+    local  __payload=$2
+    local  __encoding=$3
+    key=${__key}
+    payload=${__payload}
+    
+    # prefer explicit encoding, if given.
+    if [ ! -z ${__encoding} ]; then 
+        encoding="${__encoding}"
+    fi
+
+    # fall back to existing encoding.
+    if [ ${encoding} == "" ]; then
+        exists=$(aws ssm get-parameter --name "${key}" && echo success || echo fail)
+        if [ "${exists}" == "success" ]; then 
+            declare -A tags
+            while IFS='|' read -r k v; do
+                tags[$k]=$v
+            done < <(get_tags ${key})
+        fi
+        encoding=${tags['encoding']}
+    fi
+   
+    # use 'raw' as a default
+    if [ -z ${encoding} ]; then
+        encoding="raw"
+    fi
+
+    lines=$(echo "${payload}" | wc -l)
+    chars=$(echo "${payload}" | wc -c)
+    to_err key: ${key} payload - lines: $lines, chars $chars
+
+    if [[ $lines -ge 2 && ${encoding} == "raw" ]]; then 
+        die "ERROR: ${key} has multiple lines.  It cannot be encoded as 'raw'."
+    fi
+    if [[ $chars -ge 8192 && ${encoding} != "gz+b64" ]]; then 
+        die "ERROR: ${key} has more than 8192 chars. Encoding must be 'gz+b64'."
+    fi
+    
+    if [ "${encoding}" == 'raw' ]; then     
+        encoded=${payload}
+    elif [ "${encoding}" == 'newlines_to_spaces' ]; then 
+        encoded=$(echo "${payload}")
+    elif [ "${encoding}" == 'gz+b64' ]; then
+        encoded=$(echo "${payload}" | gzip | ${b64})
+    else
+        to_err "WARNING: Unrecognized encoding: ${encoding}. Using raw."
+        encoded=${payload}  # for bad encodings.
+    fi 
+
+    echo "${encoded}"
+}
+
+# See rules for encoding, above. 
+# If a key is tagged with an encoding of 'newlines_to_spaces', then 
+# lines are returned upon decoding. key_dump, in contast, returns 
+# a single line suitable for file dumps. 
+#
+ssm_decode() { 
+    local  __key=$1
+    local  __payload=$2
+    local  __encoding=$3
+    key=${__key}
+    payload=${__payload}
+   
+    # prefer explicit encoding, if given.
+    if [ ! -z ${__encoding} ]; then 
+        encoding="${__encoding}"
+    fi
+   
+    # prefer explicit encoding, if given.
+    if [ ! -z ${__encoding} ]; then 
+        encoding="${__encoding}"
+    fi
+
+    # fall back to existing encoding.
+    if [ -z ${encoding} ]; then 
+        exists=$(aws ssm get-parameter --name "${key}" && echo success || echo fail)
+        if [ "${exists}" == "success" ]; then 
+            declare -A tags
+            while IFS='|' read -r k v; do
+                tags[$k]=$v
+            done < <(get_tags ${key})
+        fi
+        encoding=${tags['encoding']}
+    fi
+   
+    # use 'raw' as a default
+    if [ -z ${encoding} ]; then
+        encoding="raw"
+    fi
+
+    # decode
+    if [ "${encoding}" == 'raw' ]; then     
+        decoded=${payload}
+    elif [ "${encoding}" == 'newlines_to_spaces' ]; then 
+        decoded="$(echo -ne ${payload} | \
+        perl -pe '! s/ (?!(PRIVATE|KEY|RSA|END|OPENSSH|BEGIN|KEYBEGIN|CERTIFICATE|OPENSSH))/\n/g')"
+    elif [ "${encoding}" == 'gz+b64' ]; then
+        decoded=$(echo ${payload} | ${b64} -d -i | gzip -d)
+    else
+        :
+    fi 
+
+    echo "${decoded}"
+
+}
+
+arg_parse() { 
+
+        # Each host is tagged as part of a designated environment. 
+        # get my instance_id 
+        TOKEN=$(curl -qs --connect-timeout 2 \
+               -X PUT "http://169.254.169.254/latest/api/token" \
+               -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+        instance_id=$(curl -qs --connect-timeout 2 \
+                     -H "X-aws-ec2-metadata-token: $TOKEN" \
+                     http://169.254.169.254/latest/meta-data/instance-id)
+        ( 
+            [ -z "${instance_id}" ] && \
+            to_err "WARN: failed to get instance_id for this host." && \
+            exit
+        ) 
+        
+	stack=$(aws ec2 describe-tags \
+        --filters "Name=resource-id,Values=${instance_id}" | \
+        jq -r '(.Tags[]|select(.Key=="qventus:stack")|.Value)')
+    to_err setting stack to: ${stack}
+   
+    if [ "${help}" == "true" ]; then 
+        usage
+    fi
+
+    rgx='^/'
+    if [[ ! -z "${key}" && "$key" =~ "${rgx}" ]]; then 
+        to_err "ERROR: key is not of the proper format."
+        usage
+    fi 
+} 
+
+# Compare the contents of an ssm key to that of a file.
+# Report differneces as a diff.
+#
+compare() {
+    dir="${BASH_SOURCE%/*}"
+    if [[ ! -d "${dir}" ]]; then dir="$PWD"; fi
+
+    # note: we remove the final newline, for consistency.
+    diff -B \
+      <(${dir}/../key_get -k "${1}" 2> /dev/null | perl -pe 'eof&&chomp') \
+      <(cat "${2}" | perl -pe 'next if /^\s*$/; eof&&chomp')
+}
+
+# dependencies: jq, svn, moretools
+# check deps - note: ts = moreutils.
+deps() {
+
+    declare -a deps=("jq" "ts")
+    for dep in ${deps[@]}; do
+        if ! command -v ${dep} >/dev/null 2>&1 ; then
+            echo ${dep} not installed! | log
+            exit 1
+        fi
+    done
+    
+}
+
+set_path() {
+    shopt -s expand_aliases
+    shopt -s progcomp_alias
+    source <(path -s -x 2>/dev/null)
+}
+

@@ -1,0 +1,5 @@
+
+export HOMEBREW_BREW_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/brew"
+# put your Git mirror of Homebrew/homebrew-core here
+export HOMEBREW_CORE_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/homebrew-core"
+

@@ -1,0 +1,100 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# TODO: test with large file full of flags.
+
+# key_del
+# --------
+# For managing our many keys in a coherent manner.
+
+usage () {
+    echo " usage "
+    echo " -----"
+    echo " -a aws_region  - region to query."
+    echo " -d debug       - add debugging output."
+    echo " -D dry_run     - with -w, will not take action."
+    echo " -e environment - used to select an AWS profile. "
+    echo " -f file        - (file with a list of keys)" 
+    echo " -h help        - print this message."
+    echo " -k key_path    - (key path to write.)"
+    echo " -R recurse     - Recursively print keys. Implies -r."
+    exit 1
+}
+
+# lib/utils
+dir="${BASH_SOURCE%/*}"
+if [[ ! -d "${dir}" ]]; then dir="$PWD"; fi
+. "${dir}/lib/utils"
+
+while getopts a:dDe:f:hk:rR-: OPT; do
+
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+        OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        a | aws_region )  needs_arg; aws_region="$OPTARG" ;;
+        d | debug )       debug=true ;;
+        D | dry_run )     dry_run=true ;;
+        e | environment ) needs_arg; environment="$OPTARG" ;;
+        f | file )        needs_arg; file="$OPTARG" ;;
+        h | help )        help=true ;;
+        k | key )         needs_arg; key="$OPTARG" ;;
+        R | recurse )     recurse=true ;;
+        ??* )             die "Illegal option --$OPT" ;;  # bad long option
+        \? )              exit 2 ;;  # bad short option (error reported via getopts)
+    esac
+done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+arg_parse
+deps
+
+
+if [[ ! -z "${file}" && -f "${file}" ]]; then
+    to_err using file: ${file} for import.
+elif [ ! -z "${file}" ]; then 
+    to_err ERROR: "${file}" is not a regular file..
+    usage
+else 
+    :
+fi
+
+if [ ! -z "${key}" ]; then 
+    BASE="aws ssm delete-parameter --name \"${key}\""
+    [ ! -z "${dry_run}" ] && echo ${BASE} && exit 0
+    eval ${BASE}
+fi
+
+# load params from a file
+declare -A params
+if [ ! -z "${file}" ]; then
+    while IFS='|' read -r key value; do
+        params[${key}]=${value}
+    done < ${file} 
+fi
+
+if [ ! -z "${recurse}" ]; then
+    BASE="aws ssm get-parameters-by-path --recursive --with-decrypt --path "
+    REQ=$(printf '%b\n' "${CMD} \"${key}\" ")
+    FILTER="| jq -r '.Parameters[] | .Name'"
+    CMD="${REQ} ${FILTER}"
+    [ ! -z ${dry_run} ] && echo "${CMD}" && exit 0
+    declare -a params
+    IFS=$'\n' read -d '' -r -a params < <(eval ${CMD})
+fi
+
+# recurse through keys, deleting.
+for key in ${!params[@]}; do 
+    # read and/or recurse command
+    to_err deleting: $key
+    BASE="aws ssm delete-parameter --name "
+    [[ -z "${recurse}" ]] && REQ=$(printf '%b\n' "${BASE} \"${key}\" ")
+    # dry_run
+    [ ! -z "${dry_run}" ] && echo ${REQ} && exit 0
+    eval ${REQ} 
+done
+
+

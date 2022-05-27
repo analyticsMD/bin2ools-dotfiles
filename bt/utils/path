@@ -151,6 +151,7 @@ declare -a order=( "PIPX_SPACE"           \
   export BT=${HOME}/.bt
   # vars
   declare -a user=()
+  user+=( "${BT}"       )
   user+=( "${BT}/cmd"   )
   user+=( "${BT}/gen"   )
   user+=( "${BT}/src"   )

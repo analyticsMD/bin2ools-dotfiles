@@ -1,0 +1,118 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# key_dump
+# --------
+# For managing our many keys in a coherent manner.
+#    --tags "Key=encoding,Value=gz+b64"
+# NOTE: 
+#  -k implies dumping a single key (with optional recursion)
+#  -f reads keys from a file, but does not recurse. 
+#  -k and -f are mutually exclusive. 
+
+usage () {
+    echo " usage "
+    echo " -----"
+    echo " -a aws_region  - region to query."
+    echo " -d debug       - add debugging output."
+    echo " -D dry_run     - with -w, will not take action."
+    echo " -e environment - used to select an AWS profile. "
+    echo " -f file        - (file with key|value pairs) NOTE: multiline values "
+    echo " -h help        - print this message."
+    echo " -k key_path    - (key path to write.)"
+    echo " -R recurse     - Recursively print keys."
+    exit 1
+}
+
+# lib/utils
+dir="${BASH_SOURCE%/*}"
+if [[ ! -d "${dir}" ]]; then dir="$PWD"; fi
+. "${dir}/lib/utils"
+
+while getopts a:dDe:f:hk:R-: OPT; do
+
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+        OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        a | aws_region )  needs_arg; aws_region="$OPTARG" ;;
+        d | debug )       debug=true ;;
+        D | dry_run )     dry_run=true ;;
+        e | environment ) needs_arg; environment="$OPTARG" ;;
+        f | file )        needs_arg; file="$OPTARG" ;;
+        h | help )        help=true ;;
+        k | key )         needs_arg; key="$OPTARG" ;;
+        R | recurse )     recurse=true ;;
+        ??* )             die "Illegal option --$OPT" ;;  # bad long option
+        \? )              exit 2 ;;  # bad short option (error reported via getopts)
+    esac
+done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+arg_parse
+deps
+
+if [[ ! -z ${file} && ! -k ${key} ]]; then 
+    to_err "-k implies dumping a single key (with optional recursion)"
+    to_err "-f reads keys from a file (or stdin), but does not recurse."
+    to_err "-k and -f are mutually exclusive."
+    usage
+fi
+
+if [[ ! -z ${file} && -f "${file}" ]]; then
+    to_err "using file: ${file} for import."
+    usage
+fi
+
+# Only recurse when given a single key. 
+# This command produces a list of key|value pairs.
+if [[ ! -z ${recurse} && ! -z ${key} ]]; then 
+    BASE="aws ssm get-parameters-by-path --recursive --with-decrypt --path \"${key}\""
+    FILTER="| jq -r '.Parameters[] | .Name'"
+    CMD="${BASE} ${FILTER}"
+    [ ! -z ${dry_run} ] && echo "${CMD}" && exit 0
+    declare -a params
+    IFS=$'\n' read -d '' -r -a params < <(eval ${CMD})
+fi
+
+# Non-recursive.  payload from -f flag or stdin
+declare -a params
+if [[ -z ${key} && ("${file}" == "-" || -z ${file}) ]]; then
+    IFS=$'\n' read -d '' -r -a params < ${file:-/dev/stdin}
+    #IFS=$'\n' GLOBIGNORE='*' command eval  'XYZ=($(${file:-/dev/stdin}))'
+fi
+
+debug "params: ${params[@]}"
+
+for key in ${params[@]}; do 
+    # Figure out encoding from key tags, user input, or the default.
+    # Get encoding tags (if existing).
+    declare -A tags
+    while IFS='|' read -r k t v; do
+        tags[$k]=$v
+    done < <(get_tags ${key})
+
+    if [ ! -z ${tags['encoding']} ]; then
+        encoding="${tags['encoding']}"
+    else 
+        encoding=raw
+    fi
+
+    debug encoding: ${encoding}
+
+    # dump command 
+    BASE="aws ssm get-parameter --with-decryption --name "
+    REF=$(printf '%b\n' "${BASE} \"${key}\"")
+    FILTER=" | jq -r '.Parameter | (.Name+\"|\"+.Value)'"
+    CMD="${REF} ${FILTER}"
+    # produce dry run output
+    [ ! -z "${dry_run}" ] && echo -ne "${CMD}\n" && continue
+    # otherwise, run it!
+    eval ${CMD}
+ 
+done
+
+

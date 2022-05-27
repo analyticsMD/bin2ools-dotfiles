@@ -1,0 +1,120 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# key_put
+# --------
+# For managing our many keys in a coherent manner.
+# TODO: fix -l log flag
+#IFS='%%'
+
+usage () {
+    echo " usage "
+    echo " -----"
+    echo " -a aws_region  - region to query."
+    echo " -c encoding    - encode: raw, newlines_to_spaces, or gz+b64."
+    echo " -d debug       - add debugging output."
+    echo " -D dry_run     - show results."
+    echo " -e environment - used to select an AWS profile. "
+    echo " -f file        - load key from file."
+    echo " -h help        - print this message."
+    echo " -k key         - (key path to write.)"
+    echo " -l log         - path to transaction log."
+    echo " -v value       - (value to write.)"
+    exit 1
+}
+
+# lib/utils
+dir="${BASH_SOURCE%/*}"
+if [[ ! -d "${dir}" ]]; then dir="$PWD"; fi
+. "${dir}/lib/utils"
+
+while getopts a:c:dDe:f:hk:l:v:-: OPT; do
+
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+        OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        a | aws_region )  needs_arg; aws_region="$OPTARG" ;;
+        c | encoding )    needs_arg; encoding="$OPTARG" ;;
+        d | debug )       debug=true ;;
+        D | dry_run )     dry_run=true ;;
+        e | environment ) needs_arg; environment="$OPTARG" ;;
+        f | file )        needs_arg; file="$OPTARG" ;;
+        h | help )        help=true ;;
+        k | key )         needs_arg; key="$OPTARG" ;;
+        l | log )         needs_arg; log="$OPTARG" ;;
+        v | value )       needs_arg; value="$OPTARG" ;;
+        t | tags )        needs_arg; tags="$OPTARG" ;;
+        ??* )             die "Illegal option --$OPT" ;;  # bad long option
+        \? )              exit 2 ;;  # bad short option (error reported via getopts)
+    esac
+done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+debug b64: $b64
+
+#arg_parse
+deps
+
+# default encoding is raw.
+if [ -z "${encoding}" ]; then 
+    encoding=raw   
+fi
+
+# payload - from -f flag, -v flag, or stdin
+# ------------------------------------------
+load_file() {
+    while IFS='%%' read line || [ -n "${line}" ]; do
+        [ ! -n "${payload}" ] && payload=${line} ||
+        payload="$(echo "${payload}\n${line}")"
+    done < "${file:-/dev/stdin}"
+}
+
+if [[ ! -z "${file}" && -z "${value}" ]]; then 
+    [ "${file}" == '-' ] && file=''
+    [[ -f "${file}" || -n "${file}" ]] && load_file
+elif [[ ! -z "${value}" && -z "${file}" ]]; then
+    payload="${value}"
+else
+    to_err ERROR: Must designate -v "value", -f "file", or stdin.
+    usage
+fi
+
+debug got payload: "${payload}"
+
+
+# automatically gz+b64 encode params with multiple lines.
+lines=0
+if [ ! -z "${payload}" ]; then
+    blank="$(echo "${payload}" | perl -pe 's/^(\s*|\/)$//')"
+    [[ "$payload" =~ *[^[:space:]]* ]] && \
+    to_err "ERROR: payload cannot be blank spaces." && usage
+    lines=$(echo -ne ${payload} | wc -l)
+    debug "lines in payload: $lines"
+fi
+
+if [[ $lines -gt 1 && "${encoding}" == "raw" ]]; then
+    to_err "NOTICE: multiline content detected. \
+    This key will automatically be encoded (and tagged) gz+b64." 
+    encoding='gz+b64'
+fi
+
+encoded="$(encode ${key} "${payload}" "${encoding}")"
+debug encoded: $encoded
+
+
+# build upload command
+BASE="aws ssm put-parameter --type SecureString --tier 'Intelligent-Tiering' --overwrite --name "
+CMD="$(printf '%b\n' "${BASE} \"${key}\" --value \"${encoded}\"")"
+[ ! -z "${dry_run}" ] && echo "${CMD}" 
+eval "${CMD}"
+
+# update encodings
+[ ${tags[encoding]} ] && old_encoding=${tags[encoding]}
+if [[ "${old_encoding}" != "${encoding}" ]]; then 
+    put_tag ${key} "encoding" ${encoding}
+fi
+

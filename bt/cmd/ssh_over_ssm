@@ -1,8 +1,8 @@
 #!/usr/bin/env /usr/local/bin/bash
 
-BT=${HOME}/.bt
-. ${BT}/lib/bt
-. ${BT}/src/inst_map.src
+export BT=${HOME}/.bt
+. ${BT}/lib/utils.bash
+. ${BT}/src/inst_arr
 
 autologin 
 

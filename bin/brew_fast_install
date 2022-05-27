@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# installs to compare
+
+# TODO: tests
+# 1.) Tarball.  github vs fastgit.
+# 
+# 
+
+#export HOMEBREW_BREW_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/brew/tarball/master"
+export      HOMEBREW_BREW_GIT_REMOTE="https://github.com/Homebrew/brew/tarball/master"
+
+#export HOMEBREW_CORE_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/brew/tarball/master"
+export HOMEBREW_CORE_GIT_REMOTE="https://github.com/Homebrew/brew/tarball/master"
+
+# Try api install as well.
+
+#/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+#/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+
+echo download...
+time { 
+# Pick a location, then...
+mkdir homebrew 
+curl -L ${HOMEBREW_BREW_GIT_REMOTE} | \
+  tar xz --strip 1 -C homebrew
+} 
+
+echo update ...
+
+time { 
+# set vars for new location.
+eval "$(homebrew/bin/brew shellenv)"
+brew update --force --quiet
+chmod -R go-w "$(brew --prefix)/share/zsh"
+} 
+

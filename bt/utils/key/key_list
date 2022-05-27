@@ -1,0 +1,80 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# key_list
+# --------
+# For managing our many keys in a coherent manner.
+# Takes a key and outputs all subkeys.
+ 
+usage () {
+    echo " usage "
+    echo " -----"
+    echo " -a aws_region  - region to query."
+    echo " -d debug       - add debugging output."
+    echo " -D dry_run     - with -w, will not take action."
+    echo " -e environment - used to select an AWS profile. "
+    echo " -f file        - Add resulting list to a file."
+    echo " -h help        - print this message."
+    echo " -k key_path    - (key path to write.)"
+    echo " -R recurse     - Recursively print keys." 
+    echo " -t tags        - Show tags. (All by default.)"
+    exit 1
+}
+
+# lib/utils
+export BT=${HOME}/.bt
+. "${BT}/lib/utils.bash"
+
+while getopts a:dDe:f:hk:R-: OPT; do
+
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+        OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        d | debug )       debug=true ;;
+        D | dry_run )     dry_run=true ;;
+        f | file )        needs_arg; file="$OPTARG" ;;
+        h | help )        help=true ;;
+        k | key )         needs_arg; key="$OPTARG" ;;
+        R | recurse )     recurse=true ;;
+        ??* )             die "Illegal option --$OPT" ;;  # bad long option
+        \? )              exit 2 ;;  # bad short option (error reported via getopts)
+    esac
+done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+# defaults
+autologin
+echo .
+#arg_parse
+echo key: $key
+#deps
+
+# write to stdout if no file given.
+if [[ ! -z "${file}" && -f "${file}" ]]; then
+    >&2 echo using file: ${file} to export key list.
+else 
+    :
+fi
+echo ...
+
+if [[ ! -z "${recurse}" ]]; then 
+    read=true 
+fi
+echo ....
+BASE="aws ssm get-parameters-by-path \
+    --recursive \
+    --with-decrypt \
+    --path ${key}"
+echo .....
+FILTER="| jq -r '. | .Parameters[].Name'"
+CMD="${BASE} ${FILTER}"
+echo V
+[ ! -z ${dry_run} ] && echo ${CMD} && exit 0
+echo VV
+eval ${CMD}
+echo VVV
+

@@ -1,0 +1,91 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# key_get
+# --------
+# Fetches a key from ssm. Checks key tags to find encoding.
+IFS='%%'
+
+usage () {
+    echo " usage "
+    echo " -----"
+    echo " -a aws_region  - region to query."
+    echo " -c encoding    - specify encoding: raw, newlines_to_spaces, or gz+b64."
+    echo " -d debug       - add debugging output."
+    echo " -D dry_run     - with -w, will not take action."
+    echo " -e environment - used to select an AWS profile. "
+    echo " -h help        - print this message."
+    echo " -k key_path    - (key path to read.)"
+    exit 1
+}
+
+export BT="${HOME}/.bt"
+. "${BT}/lib/utils.bash"
+
+while getopts a:c:dDe:f:hk:-: OPT; do
+
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+        OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        #c | encoding )    needs_arg; encoding="$OPTARG" ;;
+        d | debug )       debug=true ;;
+        D | dry_run )     dry_run=true ;;
+        h | help )        help=true ;;
+        k | key )         needs_arg; key="$OPTARG" ;;
+        ??* )             die "Illegal option --$OPT" ;;  # bad long option
+        \? )              exit 2 ;;  # bad short option (error reported via getopts)
+    esac
+done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+autologin
+
+if [[ ! -z ${file} && -f "${file}" ]]; then
+    to_err writing to local file: ${file}.
+elif [ "${file}" == "-" ]; then 
+    output=""
+else 
+    :
+fi
+
+# Figure out encoding from key tags, user input, or the default. 
+# Get encoding tags (if existing).
+#declare -A tags
+#while IFS='|' read -r k v; do
+#  tags[$k]=$v
+#done < <(get_tags ${key})
+
+# explicitly set.
+#if [ ! -z ${encoding} ]; then 
+#   :
+#elif [ ! -z ${tags['encoding']} ]; then 
+#    encoding="${tags['encoding']}"
+#else
+#    :
+#fi
+
+# default
+[ -z ${encoding} ] && encoding=raw
+debug encoding: ${encoding}
+
+# build command. 
+BASE="aws ssm get-parameter --with-decryption --name "
+REQ=$(printf '%b\n' "${BASE} \"${key}\" ")
+FILTER="| jq -r '.Parameter.Value'"
+CMD="${REQ} ${FILTER}"
+
+[ ! -z "${dry_run}" ] && echo ${CMD} && exit 0
+
+# check that the key exists.
+eval ${REQ} > /dev/null
+[ $? -eq 255 ] && echo to_err key undefined && exit 1 || debug present 
+
+payload=$(eval "${CMD}")
+
+# decode it
+decoded="$(ssm_decode "${key}" ${payload} "${encoding}")"
+echo -ne "${decoded}" && exit 0

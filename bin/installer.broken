@@ -25,6 +25,7 @@ YELLOW='\001\033[0;33m\002'     #
 } || true
 
 
+
 # Initialize (or reinitialize) sudo to save unhelpful prompts later.
 _msg () { 
 
@@ -47,14 +48,14 @@ sudo_init() {
 
   mkdir -p "${HOME}/tmp"
 
-  #export HOMEBREW_NO_INSTALL_CLEANUP=yes
-  #export HOMEBREW_NO_ENV_HINTS=yes
+  export HOMEBREW_NO_INSTALL_CLEANUP=yes
+  export HOMEBREW_NO_ENV_HINTS=yes
 
   if [ -z "$INTERACTIVE" ]; then
     return
   fi
 
-  # If TouchID for sudo is setup: use that instead.
+  #If TouchID for sudo is setup: use that instead.
   #if grep -q pam_tid /etc/pam.d/sudo; then
   #  return
   #fi
@@ -237,20 +238,37 @@ logk
 # HOMEBREW DIAGNOSTICS and INSTALLS.
 
 # Look for outdated packages. 
-# Skip if our dependencies to not need updating.
+# Skip any of our dependencies that not need updating.
+touch ${HOME}/.outdated ${HOME}/.packages
+echo -ne "Need upgrades: \n"
 brew outdated | tee > ${HOME}/.outdated 2>&1
+echo -ne "Need installed: \n"
+brew leaves | tee > ${HOME}/.packages 2>&1
+
 
 brew_inst() {
   last="${@:$#}" 
-  [[ -z "$last" ]] && echo "Nothing todo." && return
-  if ! grep -qE "$last" "${HOME}/.outdated"; then 
-    echo -ne "${@:1} is already installed. Skipping...\n"
-    return
-  elif grep -qE "$last" ${HOME}/.outdated; then 
-    brew upgrade -q "${@:1:$#}" >/dev/null 2>&1;  
-  else 
-    brew install -q "${@:1:$#}" >/dev/null 2>&1; 
+  l=${#last} 
+  [[ -z "$last" ]] && echo "Nothing to do." && return
+
+  if ! "$(grep $Q ${last[$#]} ${HOME}/.packages)"; then 
+      brew install $Q ${last[$#]}
+      printf "[ %b ] %.*b %b\n" "${CYAN}${last}${NC}" \
+          "$(( $m - $l - 26 )) " "is ${GREEN}present${NC}." && return
+
   fi
+
+  grep $Q "${last[$#]}" ${HOME}/.outdated && { 
+      brew update $Q ${last[$#]} 
+      printf "[ %b ] %.*b %b\n" "${CYAN}${last}${NC}" \
+      "$(( $m - $l - 26 )) " "is ${YELLOW}outdated${NC}." 
+      } && return
+
+
+
+  printf "[ %b ] %.*b %b\n" "${CYAN}${last}${NC}" \
+      "$(( $m - $l - 26 )) " "is ${GREEN}present${NC}." && return
+
 }
 
 
@@ -271,7 +289,7 @@ fi
 [ -d "$HOMEBREW_PREFIX" ] || sudo_askpass mkdir -p "$HOMEBREW_PREFIX"
 if [ "$HOMEBREW_PREFIX" = "/usr/local" ]
 then
-  sudo_askpass chown "root:wheel" "$HOMEBREW_PREFIX" 2>/dev/null || true
+  sudo_askpass chown "root:wheel" "$HOMEBREW_PREFIX/*" 2>/dev/null || true
 fi
 (
   cd "$HOMEBREW_PREFIX"
@@ -292,7 +310,11 @@ fi
 # Download Homebrew.
 export GIT_DIR="$HOMEBREW_REPOSITORY/.git" GIT_WORK_TREE="$HOMEBREW_REPOSITORY"
 git init $Q
-git config remote.origin.url "https://github.com/Homebrew/brew"
+#git config remote.origin.url "https://github.com/Homebrew/brew"
+# put your Git mirror of Homebrew/brew here
+export HOMEBREW_BREW_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/brew"
+# put your Git mirror of Homebrew/homebrew-core here
+export HOMEBREW_CORE_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/homebrew-core"
 git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
 git fetch $Q --tags --force
 git reset $Q --hard origin/master
@@ -302,49 +324,41 @@ logk
 # Update Homebrew.
 export PATH="$HOMEBREW_PREFIX/bin:$PATH"
 logn "Updating Homebrew:"
-#brew update --quiet
+brew update --quiet
 logk
 
-logn "Installing Homebrew taps and extensions..."
+logn "Installing Homebrew taps and extensions...\n\n"
 brew tap homebrew/cask
 brew tap homebrew/core
 brew tap homebrew/services
 brew tap microsoft/git
 logk
 
+echo -ne "Examining your laptop for known install problems...\n\n"
+time { 
+declare -a brews=()
+brews+=( bash bash-completion@2 coreutils jq perl )
+brews+=( zlib openssl@1.1 xz tree pstree git tmux )
+brews+=( python@3.10 pip pipx mysql-client poetry ) 
+brews+=( git-credential-manager-core awscli@2     )
+brews+=( session-manager-plugin shellcheck dateutils )
 
-echo "Installing minimal deps for github repo checkouts"
-brew_inst bash 
-brew_inst bash-completion@2
-brew_inst coreutils 
-brew_inst jq 
-brew_inst perl 
-brew_inst zlib 
-brew_inst openssl@1.1
-brew_inst xz 
-brew_inst tree 
-brew_inst pstree 
-brew_inst git
-brew_inst tmux
-brew_inst python@3.10
-brew_inst pip
-brew_inst pipx
-brew_inst mysql-client
-brew_inst poetry
-brew_inst git-credential-manager-core
+echo -ne "Installing homebrew packages"
 
-echo -ne "Installing ssm_plugin and awscliv2\n\n"
-brew_inst awscli@2 
-brew_inst session-manager-plugin 
-#logk
+m=-1    # find longest line.
+for b in ${brews[@]}; do [ ${#b} -gt $m ] && m=${#m}; done
+}
+
+# install each (if needed).
+for b in ${brews[@]}; do brew_inst $b;  done
+
+logk
 
 # clean up outdated file.
-#rm ${HOME}/.outdated
-
-#/usr/local/bin/bash -c $(cat <<'++'
+rm ${HOME}/.outdated  ${HOME}/.packages
 
 BT="${HOME}/.bt"
-
+time {
 # functions for turning off debug for use when handling the user password
 reset_debug() { [ -n "$_DEBUG" ] && set -x ;} 
 clear_debug() { set +x ;}
@@ -359,10 +373,9 @@ logk()  { STEP="";   echo "OK" ;}
 escape() { printf '%s' "${1//\'/\'}" ;}
 
 # Setup Git configuration.
-echo .
 
 # Set by web/app.rb
-GIT_NAME="$(git config --list                  | \
+GIT_NAME="$(git config --list                    | \
                   grep user.name                 | \
                   perl -pe 's/.*\=([\w\ ]+)/$1/' | \
                   head -n 1)"
@@ -371,9 +384,10 @@ GIT_EMAIL="${USER}@qventus.com"
 
 GITHUB_USER="$(git config --list | \
               grep user.email | perl -pe 's/.*\+([\w+_-]+)\@.*/$1/')"
+}
 
-#GITHUB_TOKEN=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
-GITHUB_TOKEN=
+GITHUB_TOKEN=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
+#GITHUB_TOKEN=
 
 # CUSTOM_HOMEBREW_TAP=
 # CUSTOM_BREW_COMMAND=
@@ -394,6 +408,7 @@ fi
 if [ -n "$GITHUB_USER" ] && [ "$(git config github.user)" != "$GITHUB_USER" ]; then
   git config --global github.user "$GITHUB_USER"
 fi
+
 
 # Squelch git 2.x warning message when pushing
 if ! git config push.default >/dev/null; then
@@ -553,24 +568,35 @@ export PATH="/usr/local/Cellar/python@3.10/3.10.4/bin:$PATH"
 echo -ne Adding ${PURPLE}BT${NC} installer. ${GREEN}Done${NC}.
 
 # install the bootstrapper.
-cp ${HOME}/.bin2ools-dotfiles/bin/bt /usr/local/bin
+cp ${HOME}/.bin2ools-dotfiles/bin/b2 /usr/local/bin
+
+if ! `grep 'b2=' ${HOME}/.bash_profile`; then
+    echo -e 'alias bt="b2;. ${HOME}/.bt/settings"' >> "${HOME}/.bash_profile"
+    echo -ne "BT helper alias ${GREEN}installed${NC}.\n\n"
+fi
+
 
 log "Your system is now bootstrapped!"
 
 
+# moving. 
+move_again() { 
+    echo -e "${YELLOW}WARNING${NC}: /usr/local/Homebrew detected agaain."
+    echo -e "Moving ..."
+    cd ~/.bin2ools-dotfiles/bin
+    brew bundle dump | tee  
+    rm -rf /usr/local/Homebrew/Cellar
+    brew bundle
+} 
 
 # check for github access (early on).
 # ssh git@github.com
 
-# update bash_profile
-[[ "$arch" =~ x86 ]] && ARCH_DIR=/usr/local/etc/bash_completion
-echo "[ -f "${ARCH_DIR}" ] && . /usr/local/etc/bash_completion" >> ~/.bash_profile
 
 # Enhanced file path completion in bash - https://github.com/sio/bash-complete-partial-path
-[ -s "$HOME/.config/bash-complete-partial-path/bash_completion" ] && {
-     source "$HOME/.config/bash-complete-partial-path/bash_completion"
-     _bcpp --defaults
- }    
+#[ -s "$HOME/.config/bash-complete-partial-path/bash_completion" ] && {
+#     source "$HOME/.config/bash-complete-partial-path/bash_completion"
+#     _bcpp --defaults
 
 
 # Enhanced file path completion in bash - 
@@ -582,6 +608,4 @@ echo "[ -f "${ARCH_DIR}" ] && . /usr/local/etc/bash_completion" >> ~/.bash_profi
 #    source "${HOME}/.config/partial-path/bash_completion"
 #    _bcpp --defaults
 #}
-
-
 

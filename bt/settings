@@ -60,7 +60,7 @@ to_debug flow && sleep 0.5 && echo "stgs:cache" || true
 set_team || true
 
 [[ ! -f "${BT}"/cache/path_info ]] && {
-  "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
+  "${BT}/utils/path" -s 2>/dev/null | tee "${BT}/cache/path_info"
 }
 source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 
@@ -177,11 +177,11 @@ to_debug flow && sleep 0.5 && echo "stgs:path" || true
 
 [[ ! -f "${BT}"/cache/path_info ]] && {
   to_debug stgs && echo stgs:path_info
-  "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info" 
+  "${BT}"/utils/path -s -x 2>/dev/null | tee "${BT}/cache/path_info" 
 } || true
 
 to_debug stgs && sleep 0.5 && echo stgs:source_path
-source <( $(${BT}/utils/path -s 2>/dev/null) )  || true
+source <( $(${BT}/utils/path -s -x 2>/dev/null) )  || true
 
 
 

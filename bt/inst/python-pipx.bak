@@ -2,6 +2,12 @@
 
 . ${BT}/settings
 
+# put your Git mirror of Homebrew/homebrew-core here
+export HOMEBREW_BREW_GIT_REMOTE="https://git.com/Homebrew/brew"
+export HOMEBREW_CORE_GIT_REMOTE="https://git.com/Homebrew/homebrew-core"
+
+# use string equality when comparing values t
+
 source <( echo "$("${BT}"/cmd/_path -s 2>/dev/null)" )
 
 echo -ne "\n\n----------------------------------\n"
@@ -34,20 +40,22 @@ pipx uninstall devops-sso-util || true
 #pipx uninstall bin2ools-rds || true
 
 # install devops and b2 namespace packages.
-u="git+https://github.com/analyticsmd"
+c="gangofnuns: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"
+u="git+https://$c@github.com/analyticsmd"
 p="devops-sso-util"
 g="@master#subdirectory"
 opts="-f --include-deps"
 
 # echo installing the main package: ${CYAN}devops-sso-util${NC}.
 
-pipx install $opts "devops-sso-util @ $u/$p$g=cli&devops-sso-util"
+pipx ensurepath
+pipx install $opts "$p @ $u/$p$g=cli&$p"
 
 opts="-f --include-apps --include-deps"
-pipx inject --update_inject $opts devops-sso-util "b2rds @ $u/$p$g=b2rds&rds_complete&rds_generate&rds_local&dg&rds_refresh"
+pipx inject $opts devops-sso-util "b2rds @ $u/$p$g=b2rds&rds_complete&rds_generate&rds_local&dg&rds_refresh"
 pipx inject $opts devops-sso-util "b2ssm @ $u/$p$g=b2ssm&ssm_complete&ssm_generate&ssm_local"
 
-pipx inject devops-sso-utils aws-fuzzy-finder
+#pipx inject devops-sso-utils aws-fuzzy-finder
 
 pipx ensurepath
 

@@ -1,0 +1,76 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# key_load
+# --------
+# Uploads keys from a dumpfile, or stdin. 
+# NOTE: keys loaded MUST already be encoded (i.e. one line only). 
+
+# Examples: 
+# ---------
+# WONT WORK: echo -ne '/gov/stack/demo|foo\nbar\nbaz' | key_load
+# WILL WORK: echo -ne '/gov/stack/demo|foo bar baz' | key_load
+
+
+usage () {
+    echo " usage "
+    echo " -----"
+    echo " -a aws_region  - region to query."
+    echo " -d debug       - add debugging output."
+    echo " -D dry_run     - with -w, will not take action."
+    echo " -e environment - used to select an AWS profile. "
+    echo " -f file        - (file with key|value pairs) NOTE: multiline values "
+    echo " -h help        - print this message."
+    exit 1
+}
+
+# utils
+. ./lib/utils
+
+while getopts a:dDe:f:hv:-: OPT; do
+
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+        OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        a | aws_region )  needs_arg; aws_region="$OPTARG" ;;
+        d | debug )       debug=true ;;
+        D | dry_run )     dry_run=true ;;
+        e | environment ) needs_arg; environment="$OPTARG" ;;
+        f | file )        needs_arg; file="$OPTARG" ;;
+        h | help )        help=true ;;
+        ??* )             die "Illegal option --$OPT" ;;  # bad long option
+        \? )              exit 2 ;;  # bad short option (error reported via getopts)
+    esac
+done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+# defaults
+arg_parse
+deps
+
+# parse input
+declare -A params
+while IFS='|' read -r key encoding value; do
+     params[${key}]=${value}
+     params[${key}]=${encoding}
+done < ${file:-/dev/stdin}
+
+# loop through lines
+for key in ${!params[@]}; do 
+  value=${params[${key}]}
+ 
+  BASE="aws ssm put-parameter --type SecureString --tier 'Intelligent-Tiering' --overwrite --name " 
+  CMD=$(printf '%b\n' "${BASE} \"${key}\" --value \"${value}\" ")
+
+  # dry run output
+  [ ! -z "${dry_run}" ] && echo ${CMD} && continue
+  # otherwise, run it!
+  eval ${CMD} 
+
+done
+
+
