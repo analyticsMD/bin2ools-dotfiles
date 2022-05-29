@@ -1932,6 +1932,69 @@ env_cache() {
 
 #env_cache || true
 
+env_fuzz() { 
+
+  export AWS_FUZZ_USE_CACHE=yes                     \
+         AWS_FUZZ_PRIVATE_IP=true                   \
+         AWS_FUZZ_USER="${USER}"                    \
+         AWS_FUZZ_CACHE_EXPIRY=0                    \
+         AWS_FUZZ_SSH_COMMAND_TEMPLATE="ssm {host}" \
+         AWS_FUZZ_REGIONS="${AWS_REGION}" 
+
+} || true
+
+#env_fuzz || true 
+to_debug flow && echo env:fuzz  || true
+
+## ----------------------------------------------------------------
+## AWS ENVIRONMENT VARS
+## ----------------------------------------------------------------
+# Qventus has a complicated set of AWS environment
+# variables used to standardize its AWS deployments. 
+# 
+# Changing some of these can have difficult ramifications
+# unless you know what you're doing. Where necessary, 
+# the Security Team has added notes to explain some of
+# the gotchas.  
+
+# Truth be told, it's best if you do not monkey with 
+# these too much unless you understand what you're doing. 
+# 
+#                        --- The QV Security Team 
+env_aws() { 
+
+  #source "${BT}/lib/aws" 
+  #aws_defaults
+
+  AWS_CONFIG="${BT_CONFIG}"
+  AWS_CREDS="${BT_CREDS}"
+  # aws files.
+  export AWS_CONFIG_FILE="${AWS_CONFIG}"                            \
+         AWS_SDK_LOAD_CONFIG=1                                      \
+         AWS_SHARED_CREDENTIALS_FILE="${AWS_CREDS}" 
+
+  # aws-sso-credential-process 
+  # when run on a headless system; credential_process captures 
+  # stdout and stderr, so the URL and code that are printed out 
+  # for use when the browser popup do not appear to the user.
+  export AWS_SSO_INTERACTIVE_AUTH=true
+
+  # AWS VARS - You should not need to touch these.
+  export AWS_VAULT_PL_BROWSER=com.google.chrome 
+  export AWS_DEFAULT_OUTPUT=json
+  export AWS_SSO_CREDENTIAL_PROCESS_DEBUG=true 
+  export AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
+  export AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
+  export AWS_LOGIN_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
+  export AWS_LOGIN_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
+  export AWS_DEFAULT_SSO_START_URL=${qv_start_url} 
+  export AWS_DEFAULT_SSO_REGION=${qv_gbl} 
+  export AWS_DEFAULT_REGION=${qv_gbl} 
+  export AWS_REGION=${qv_gbl}
+} || true
+
+#env_aws || true
+
 to_debug flow && echo env:set_team || true 
 
 to_debug flow && echo env:init || true
@@ -2018,21 +2081,6 @@ env_init() {
 env_init || true
 
 
-
-env_fuzz() { 
-
-  export AWS_FUZZ_USE_CACHE=yes                     \
-         AWS_FUZZ_PRIVATE_IP=true                   \
-         AWS_FUZZ_USER="${USER}"                    \
-         AWS_FUZZ_CACHE_EXPIRY=0                    \
-         AWS_FUZZ_SSH_COMMAND_TEMPLATE="ssm {host}" \
-         AWS_FUZZ_REGIONS="${AWS_REGION}" 
-
-} || true
-
-#env_fuzz || true 
-to_debug flow && echo env:fuzz  || true
-
 # ---------------------------------------------------------
 # dirs, vars, & libs.
 # ---------------------------------------------------------
@@ -2047,55 +2095,6 @@ get_sso() { echo "${USER}" ;} || true
 # ---------------------------------------------------------
 
 
-
-## ----------------------------------------------------------------
-## AWS ENVIRONMENT VARS
-## ----------------------------------------------------------------
-# Qventus has a complicated set of AWS environment
-# variables used to standardize its AWS deployments. 
-# 
-# Changing some of these can have difficult ramifications
-# unless you know what you're doing. Where necessary, 
-# the Security Team has added notes to explain some of
-# the gotchas.  
-
-# Truth be told, it's best if you do not monkey with 
-# these too much unless you understand what you're doing. 
-# 
-#                        --- The QV Security Team 
-env_aws() { 
-
-  #source "${BT}/lib/aws" 
-  #aws_defaults
-
-  AWS_CONFIG="${BT_CONFIG}"
-  AWS_CREDS="${BT_CREDS}"
-  # aws files.
-  export AWS_CONFIG_FILE="${AWS_CONFIG}"                            \
-         AWS_SDK_LOAD_CONFIG=1                                      \
-         AWS_SHARED_CREDENTIALS_FILE="${AWS_CREDS}" 
-
-  # aws-sso-credential-process 
-  # when run on a headless system; credential_process captures 
-  # stdout and stderr, so the URL and code that are printed out 
-  # for use when the browser popup do not appear to the user.
-  export AWS_SSO_INTERACTIVE_AUTH=true
-
-  # AWS VARS - You should not need to touch these.
-  export AWS_VAULT_PL_BROWSER=com.google.chrome 
-  export AWS_DEFAULT_OUTPUT=json
-  export AWS_SSO_CREDENTIAL_PROCESS_DEBUG=true 
-  export AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_LOGIN_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_LOGIN_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_DEFAULT_REGION=${qv_gbl} 
-  export AWS_REGION=${qv_gbl}
-} || true
-
-#env_aws || true
 
 # SANITY FUNCTIONS
 # -----------------

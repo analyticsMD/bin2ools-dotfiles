@@ -10,14 +10,13 @@
         "cloudWatchEncryptionEnabled": true,
         "cloudWatchStreamingEnabled": false,
         "kmsKeyId": "",
-        "runAsEnabled": false,
+        "runAsEnabled": false, 
         "runAsDefaultUser": "",
-        "idleSessionTimeout": "",
-        "maxSessionDuration": "",
+        "idleSessionTimeout": "60",
+        "maxSessionDuration": "1440",
         "shellProfile": {
             "windows": "date",
-            "linux": "pwd;ls"
+            "linux": "hostnamectl | awk -F': ' '{print $2}' | head -n 1"
         }
     }
 }
-
