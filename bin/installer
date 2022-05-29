@@ -558,6 +558,9 @@ cp ${HOME}/.bin2ools-dotfiles/bin/b2 /usr/local/bin
 log "Your system is now bootstrapped!"
 
 
+echo -ne "shopt -s expand_aliases\n"
+echo -ne "shopt -s progcomp_alias\n"
+echo -ne alias bt=\"source \$\(b2\)\"\\n
 
 
 # check for github access (early on).

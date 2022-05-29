@@ -1,3 +1,4 @@
+#!/usr/bin/env /usr/local/bin/bash
 
 # shellcheck shell=bash
 
@@ -1897,7 +1898,7 @@ env_state()  {
 
 } || true
 
-env_state || true
+#env_state || true
 
 to_debug flow && echo env:cache || true
 
@@ -1929,7 +1930,7 @@ env_cache() {
   }
 } || true 
 
-env_cache || true
+#env_cache || true
 
 to_debug flow && echo env:set_team || true 
 
@@ -1942,9 +1943,12 @@ env_init() {
   [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
   to_debug env echo "env:init:BT ${BT}"
 
-  role=""
   # env_init is called by autologin. 
   # Something is wrong if we don't have an AWS ENV by now.
+  env_aws
+  env_state
+  env_cache
+  env_fuzz
   [[ -z "${AWS_CONFIG_FILE}" ]] && { echo "No aws config. Exiting..." ;}
 
   # ROLE, TEAM, ACCOUNT.
@@ -1956,14 +1960,14 @@ env_init() {
   role="$(cat "${AWS_CONFIG_FILE}"                           | \
           perl -nle "print if s/(${ARGV}\]|role_arn.*)/\1/;" | \
           grep -EA 1 "${ARGV}\]" | tail -n 1                 | \
-          perl -nle 'print if s/.*qv\-gbl\-([\w_\-]+)/\1/'  )"
+          perl -nle 'print if s/.*qv\-gbl\-([\w_\-]+)/\1/'   )"
   to_debug lgin echo role: $role
   # if request is not valid, report an error. 
   [[ -z "${role}" || "${role}" = *NONE* ]] && { 
     echo -e "${RED}FATAL${NC}: \"${ARGV}\" is not a configured destination."
-    echo -e "It is more likely a broken fault. "
+    echo -e "It is more likely a problem with your ENV vars."
     echo -e "Try rebuilding your aws config by running \"${BLUE}profiles${NC}\"".
-    exit !
+    return
   }
  
   to_debug env && echo DEFAULT_ROLE: "${DEFAULT_ROLE}"
@@ -2026,7 +2030,7 @@ env_fuzz() {
 
 } || true
 
-env_fuzz || true 
+#env_fuzz || true 
 to_debug flow && echo env:fuzz  || true
 
 # ---------------------------------------------------------
@@ -2042,6 +2046,56 @@ get_sso() { echo "${USER}" ;} || true
 # libs
 # ---------------------------------------------------------
 
+
+
+## ----------------------------------------------------------------
+## AWS ENVIRONMENT VARS
+## ----------------------------------------------------------------
+# Qventus has a complicated set of AWS environment
+# variables used to standardize its AWS deployments. 
+# 
+# Changing some of these can have difficult ramifications
+# unless you know what you're doing. Where necessary, 
+# the Security Team has added notes to explain some of
+# the gotchas.  
+
+# Truth be told, it's best if you do not monkey with 
+# these too much unless you understand what you're doing. 
+# 
+#                        --- The QV Security Team 
+env_aws() { 
+
+  #source "${BT}/lib/aws" 
+  #aws_defaults
+
+  AWS_CONFIG="${BT_CONFIG}"
+  AWS_CREDS="${BT_CREDS}"
+  # aws files.
+  export AWS_CONFIG_FILE="${AWS_CONFIG}"                            \
+         AWS_SDK_LOAD_CONFIG=1                                      \
+         AWS_SHARED_CREDENTIALS_FILE="${AWS_CREDS}" 
+
+  # aws-sso-credential-process 
+  # when run on a headless system; credential_process captures 
+  # stdout and stderr, so the URL and code that are printed out 
+  # for use when the browser popup do not appear to the user.
+  export AWS_SSO_INTERACTIVE_AUTH=true
+
+  # AWS VARS - You should not need to touch these.
+  export AWS_VAULT_PL_BROWSER=com.google.chrome 
+  export AWS_DEFAULT_OUTPUT=json
+  export AWS_SSO_CREDENTIAL_PROCESS_DEBUG=true 
+  export AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
+  export AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
+  export AWS_LOGIN_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
+  export AWS_LOGIN_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
+  export AWS_DEFAULT_SSO_START_URL=${qv_start_url} 
+  export AWS_DEFAULT_SSO_REGION=${qv_gbl} 
+  export AWS_DEFAULT_REGION=${qv_gbl} 
+  export AWS_REGION=${qv_gbl}
+} || true
+
+#env_aws || true
 
 # SANITY FUNCTIONS
 # -----------------
@@ -2072,7 +2126,7 @@ env_sanity() {
 
 } || true
 
-env_sanity || true
+#env_sanity || true
 
 to_debug flow && echo env:sanity || true
 
@@ -2184,57 +2238,6 @@ function _get() {
   #accounts = unrestricted
   # ${all_accounts[*]}
 } || true
-
-
-
-## ----------------------------------------------------------------
-## AWS ENVIRONMENT VARS
-## ----------------------------------------------------------------
-# Qventus has a complicated set of AWS environment
-# variables used to standardize its AWS deployments. 
-# 
-# Changing some of these can have difficult ramifications
-# unless you know what you're doing. Where necessary, 
-# the Security Team has added notes to explain some of
-# the gotchas.  
-
-# Truth be told, it's best if you do not monkey with 
-# these too much unless you understand what you're doing. 
-# 
-#                        --- The QV Security Team 
-env_aws() { 
-
-  #source "${BT}/lib/aws" 
-  #aws_defaults
-
-  AWS_CONFIG="${BT_CONFIG}"
-  AWS_CREDS="${BT_CREDS}"
-  # aws files.
-  export AWS_CONFIG_FILE="${AWS_CONFIG}"                            \
-         AWS_SDK_LOAD_CONFIG=1                                      \
-         AWS_SHARED_CREDENTIALS_FILE="${AWS_CREDS}" 
-
-  # aws-sso-credential-process 
-  # when run on a headless system; credential_process captures 
-  # stdout and stderr, so the URL and code that are printed out 
-  # for use when the browser popup do not appear to the user.
-  export AWS_SSO_INTERACTIVE_AUTH=true
-
-  # AWS VARS - You should not need to touch these.
-  export AWS_VAULT_PL_BROWSER=com.google.chrome 
-  export AWS_DEFAULT_OUTPUT=json
-  export AWS_SSO_CREDENTIAL_PROCESS_DEBUG=true 
-  export AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_LOGIN_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_LOGIN_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_DEFAULT_REGION=${qv_gbl} 
-  export AWS_REGION=${qv_gbl}
-} || true
-
-env_aws || true
 
 
 
