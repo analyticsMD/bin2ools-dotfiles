@@ -1669,7 +1669,6 @@ wipe () {
   rm -rf "${HOME}"/.aws/{sso,cli}/cache/* 
   rm -rf "${HOME}"/.awsume/cache/*
 
-  #regen_creds 
   awsume --unset > /dev/null 2>&1
   aws_profile --unset
 
@@ -1777,24 +1776,49 @@ sts() {
 
 
 
-function prompt_off() { unset PROMPT_COMMAND ;} || true
-function prompt_on() { export PROMPT_COMMAND="prompt" ;} || true
+ppt() { 
 
-function prompt() {
+  time="$(env | perl -nle 'print if s/ts?\=(.*)/\1/' | \
+          perl -pe 's/valid until //'                | \
+          ddiff -E -qf %Hh:%Mm:%Ss now)"
 
-  [[ -z "${BT}" ]] && echo "FATAL: BT var not set." && exit 1
-    # generate the next cache peek,
-    # and hence, the next prompt.
+  # construct a header.
+  if [[ "${t}" -ge 601 ]]; then
+    pr="${GREEN}${BT_TEAM}${NC}@${CYAN}${BT_ACCOUNT}${NC}"
+    tt="${GREEN}${time}${NC}"
+    pt="BT[${pr}|${tt}]\w\$ "
+  elif [[ "${t}" -ge 11 ]]; then
+    pr="${YELLOW}${BT_TEAM}${NC}@${CYAN}${BT_ACCOUNT}${NC}"
+    tt="${YELLOW}${time}${NC}]\$ "
+    pt="${PURPLE}BT${NC}[${pr}|${tt}]\w\$ "
+  elif [[ "${t}" -eq 0 ]]; then  
+    pr="${CYAN}unknown${NC}@${CYAN}${BT_ACCOUNT}${NC}"
+    tt="0h:00m:00s"
+    pt="${PURPLE}BT${NC}[${pr}]\w\$ "
+  elif [[ "${t}" -lt 0 ]]; then 
+    pr="${RED}${BT_TEAM}${NC}@${BT_ACCOUNT}"
+    tt=''
+    pt="${PURPLE}BT${NC}[${pr}]\w\$ "
+  else 
+    tt=''
+    pt="${PURPLE}BT${NC}[--]\w\$ "
+  fi
 
-    PS1="$(_prompt)" 
-    export PS1
-} || true
+  [[ -n "${time}" ]] && { 
+      bt="$(echo "${pt}" | perl -pe 's/\n//g')"
+  } 
+  export PS1="${bt}"
+}
 
-function _prompt() { 
-    LOGO="$(printf '%b' "\(${GREEN}BT${NC}\)")"
-    echo="${LOGO}"
-} || true 
 
+prompt_off() { unset PROMPT_COMMAND; 
+               export PS1='(BT)\w\$ ';}
+
+prompt_on() { PROMPT_COMMAND=ppt ;}
+
+to_debug flow && sleep 0.5 && echo "stgs:arg_parsing"  || true
+
+account="${1:-"prod"}"
 
 # Takes a packaged virtual env, devops-sso-util, 
 # by default, and finds all the tools installed 
@@ -2254,7 +2278,7 @@ function _get() {
 # are a bit slow).
 #
 aws_profile () {
-  DEFAULT_ROLE="qventus"
+  DEFAULT_ROLE="prod-${BT_TEAM}"
   ARGV="${1:-"${DEFAULT}"}"  
   if [ "$ARGV" = "--help" ] || [ "$1" = "-h" ]; then
     echo "USAGE:"
@@ -2360,7 +2384,7 @@ aws_defaults() {
 aws_defaults || true
 
 to_debug flow && echo env:aws_profile  || true
-aws_profile qventus || true
+aws_profile "${DEFAULT_ROLE}" || true
 
 
 # unattended login
@@ -2469,7 +2493,7 @@ autologin() {
     X="$(gdate --utc -d "0 + ${t} seconds" +"%Hh:%Mm:%Ss")"
   } 
   to_debug lgin echo "ts:$ts, t:$t, X:${X} R:${BT_ROLE}"
-  export "ts=${ts} t=${t} X=${X} R=${BT_ROLE}" 
+  export ts=${ts} t=${t} X=${X} R=${BT_ROLE} 
 
   arn=unset
   [[ "${chain}" =~ Successful ]] && {

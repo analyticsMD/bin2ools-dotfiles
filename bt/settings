@@ -113,24 +113,6 @@ export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
 
 
 
-
-function prompt_off() { unset PROMPT_COMMAND ;}
-function prompt_on() { export PROMPT_COMMAND="prompt" ;}
-
-function prompt() {
-  # generate the next cache peek,
-  # and hence, the next prompt.
-
-  PS1="$(_prompt)"
-  export PS1
-}
-
-to_debug flow && sleep 0.5 && echo "stgs:arg_parsing"  || true
-
-account="${1:-"prod"}"
-
-
-
 # -----------------------------------------------------------------
 # SHELL LOADER 
 # -----------------------------------------------------------------
