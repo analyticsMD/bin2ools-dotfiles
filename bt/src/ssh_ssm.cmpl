@@ -5,5 +5,5 @@ _complete_ssh_hosts () {
         COMPREPLY=( $(compgen -W "${comp_ssh_hosts}" -- $cur))
         return 0
 } 
-complete -F _complete_ssh_hosts ssh_over_ssm
+complete -F _complete_ssh_hosts ssm_ssh ssh
 

@@ -164,4 +164,4 @@ complete -W "
   wellspan-ingestion \
   wellspan-qval \
   wildfire \
-" ssm ssh_over_ssm ssm.bash
+" ssm ssh_over_ssm

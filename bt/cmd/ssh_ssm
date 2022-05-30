@@ -1,0 +1,43 @@
+#!/usr/bin/env  /usr/local/bin/bash
+# shellcheck shell=bash disable=SC1083 format=SC1083
+
+export LOADER=legacy
+
+export BT="${HOME}/.bt"
+. "${BT}/lib/utils.bash"
+. "${BT}/src/inst.arr"
+autologin 
+
+export DEFAULT_ACCOUNT="prod"
+export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+[[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;}
+
+# fall back to aws-sso-util when devops isn't available.
+export AWSLIB="devops"
+[[ ! -e "${HOME}/.local/bin/${AWSLIB}-sso-util}" ]] && {
+    export AWSLIB="aws"
+    export DEFAULT_AWSLIB="${AWSLIB}-sso-util"
+}
+
+[[ ! -f "${BT}"/cache/path_info ]] && {
+  "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
+}
+source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+
+
+h=${1:-NONE} id=NONE ip=NONE 
+[[ "${h}" =~ NONE ]] && { srch="$(aws-fuzzy --ip-only)" ;} || { srch=${h} ;}
+mapfile tmp -t < <(echo ${inst[@]}                | \
+                   perl -pe 's/,?%+/\n/g'         | \
+                   perl -lne "print if m/$srch,/" | \
+                   perl -pe 's/\"//g; s/,/\n/g'   )  
+id=${tmp[1]//$'\n'}
+h=${tmp[0]//$'\n'}
+ip=${tmp[2]//$'\n'}
+#echo id:"${id}" h:"${h}" ip:"${ip}"
+
+echo -ne "Connecting by ssh (over ssm) to ${PURPLE}${h}${NC} ... \n"
+#aws ssm start-session --target ${target}
+ssh -F ${BT}/cfg/ssh_over_ssm.conf ${h}
+
+

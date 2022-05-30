@@ -1783,19 +1783,19 @@ ppt() {
           ddiff -E -qf %Hh:%Mm:%Ss now)"
 
   # construct a header.
-  if [[ "${t}" -ge 601 ]]; then
+  if [[ "${ts}" -ge 601 ]]; then
     pr="${GREEN}${BT_TEAM}${NC}@${CYAN}${BT_ACCOUNT}${NC}"
     tt="${GREEN}${time}${NC}"
     pt="BT[${pr}|${tt}]\w\$ "
-  elif [[ "${t}" -ge 11 ]]; then
+  elif [[ "${ts}" -ge 11 ]]; then
     pr="${YELLOW}${BT_TEAM}${NC}@${CYAN}${BT_ACCOUNT}${NC}"
     tt="${YELLOW}${time}${NC}]\$ "
     pt="${PURPLE}BT${NC}[${pr}|${tt}]\w\$ "
-  elif [[ "${t}" -eq 0 ]]; then  
+  elif [[ "${ts}" -eq 0 ]]; then  
     pr="${CYAN}unknown${NC}@${CYAN}${BT_ACCOUNT}${NC}"
     tt="0h:00m:00s"
     pt="${PURPLE}BT${NC}[${pr}]\w\$ "
-  elif [[ "${t}" -lt 0 ]]; then 
+  elif [[ "${ts}" -lt 0 ]]; then 
     pr="${RED}${BT_TEAM}${NC}@${BT_ACCOUNT}"
     tt=''
     pt="${PURPLE}BT${NC}[${pr}]\w\$ "
