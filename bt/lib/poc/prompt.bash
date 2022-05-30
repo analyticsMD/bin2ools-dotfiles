@@ -174,21 +174,21 @@ ks() {
 }
 
 
-to_debug flow && echo pmpt:prompt_on
+#to_debug flow && echo pmpt:prompt_on
 
 # turn off the prompt 
 # -------------------
-function prompt_off() { unset PROMPT_COMMAND ;}
-function prompt_on() { export PROMPT_COMMAND="prompt" ;} 
+#function prompt_off() { unset PROMPT_COMMAND ;}
+#function prompt_on() { export PROMPT_COMMAND="prompt" ;} 
 
 
-function prompt() {
+#function prompt() {
   # generate the next cache peek, 
   # and hence, the next prompt.
-
-  PS1="$(_prompt)"
-  export PS1
-}
+#:
+  #PS1="$(_prompt)"
+  #export PS1
+#}
 
 
 # fast check: No audits required.
