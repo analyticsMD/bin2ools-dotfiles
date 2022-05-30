@@ -31,7 +31,7 @@ export LOADER=legacy
 
 # no need to source configs, when
 # we are running as a standalone app. 
-set_team || echo "${RED}FATAL${NC}: No Team set." 
+set_team 
 
 unset SOURCE_FILES
 export NOISE="quiet"

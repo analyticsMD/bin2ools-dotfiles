@@ -1,6 +1,11 @@
 #!/usr/bin/env /usr/local/bin/bash
 
 # shellcheck shell=bash
+# global settings
+# today, this is still prod, but will change very soon.
+#
+export DEFAULT_ACCOUNT="prod"   
+#export DEFAULT_ROLE="${DEFAULT_ACCOUNT}"-"${BT_TEAM}"
 
 b2() { export BT="${HOME}/.bt" ;} || true
 
@@ -811,6 +816,49 @@ get_team() {
   set_team && echo "${BT_TEAM}"  
 } || true
 
+aws_defaults() { 
+
+  # qv standards
+  export BT_CREDS="${HOME}/.aws/bt_creds"
+  export BT_CONFIG="${HOME}/.aws/bt_config"
+  export qv_gbl=us-west-2
+  export qv_start_url=https://qventus.awsapps.com/start
+
+  # For reliability, Bintools isolates its configs from the defaults.
+  export AWS_CONFIG_FILE="${BT_CONFIG}"            \
+         AWS_SHARED_CREDENTIALS_FILE=${BT_CREDS} \
+         AWS_SDK_LOAD_CONFIG=1
+
+  # aws-sso-credential-process 
+  # when run on a headless system; credential_process captures 
+  # stdout and stderr, so the URL and code that are printed out 
+  # for use when the browser popup do not appear to the user.
+  export AWS_SSO_INTERACTIVE_AUTH=true
+
+  # for configuring the devops-sso-util credential process.
+  export AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
+  export AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
+  export AWS_CONFIGURE_DEFAULT_SSO_REGION=${qv_gbl}
+  export AWS_CONFIGURE_DEFAULT_REGION=${qv_gbl}
+
+  export AWS_LOGIN_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
+  export AWS_LOGIN_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
+  export AWS_DEFAULT_SSO_START_URL=${qv_start_url} 
+  export AWS_DEFAULT_SSO_REGION=${qv_gbl}
+  export AWS_DEFAULT_REGION=${qv_gbl}
+  export AWS_SSO_CREDENTIAL_PROCESS_DEBUG=true
+  export AWS_SDK_LOAD_CONFIG=1   # for golang, terraform, e.g.
+                                 # which do not use ~/.aws/config
+
+  # You should not need to touch these.
+  export AWS_VAULT_PL_BROWSER=com.google.chrome 
+  export AWS_DEFAULT_OUTPUT=json
+  export AWS_DEFAULT_SSO_REGION=${qv_gbl} 
+  export AWS_DEFAULT_REGION=${qv_gbl} 
+  export AWS_REGION=${qv_gbl}
+
+} || true
+
 # -----------------------------------------------------------------
 # PATH SETTINGS
 # -----------------------------------------------------------------
@@ -1604,16 +1652,23 @@ set_team() {
 
   [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
 
+  aws_defaults   # required to find your team.
+
+  # set team cache
   [ ! -f "${BT}/cache/team_info" ] && { 
-    echo "${BT_TEAM}" > "${BT}/cache/team_info"    
+    [[ -n "${BT_TEAM}" ]] && ! [[ "${BT_TEAM}" =~ [^a-zA-Z0-9] ]] && { 
+      echo "setting team cache to ${BT_TEAM}"
+      echo "${BT_TEAM}" > "${BT}/cache/team_info"    
+    }
   } 
+
   # Unset cache if improperly set.
   [ -f "${BT}/cache/team_info" ] && { 
     team="$(cat "${BT}/cache/team_info")"
-    [[ -z "${team}"           || \
-       "${team}" = *NONE*     || \
-       "${team}" = *[\ \-\_\:\!\|\&]* ]] && { 
-      # cached var not proper.  Flush team cache.
+    [[ -z "${team}"              || \
+       "${team}" =~ NONE         || \
+       "${team}" =~ [^a-zA-Z0-9] ]] && { 
+        echo -ne "${YELLOW}WARNING${NC}: Team var not proper.  Flushing team cache."
       unset BT_TEAM
       rm -rf "${BT}/cache/team_info"
       return 
@@ -1625,29 +1680,24 @@ set_team() {
       perl -nle "print if s/.*aws_team_([\w_\-]+).*/\1/;" | tail -n 1)"
 
   # aws config has (seemingly) valid info. 
-  [[ -n "${team}"                     && \
-     ! "${team}" = *NONE*             && \
-     ! "${team}" = *[\ \-\_\:\!\|\&]* ]] && { 
+  if [[ -n "${team}" ]] && \
+     ! [[ "${team}" =~ [^a-zA-Z0-9] ]]; then
+
     BT_TEAM="${team}" 
     export BT_TEAM="${BT_TEAM}" 
-    # cache not present. Populate.    
+    # Cache not present. Populate.    
     echo "${BT_TEAM}" > "${BT}/cache/team_info"
-    return 
-  }  
+    to_debug prof && echo "env:set_team succeeded - team is: ${BT_TEAM}"
 
-  to_debug prof && echo "env:set_team succeeded - team is: ${BT_TEAM}"
-  
-  # Otherwise, fail loudly. 
-  # Warn the user to fix the problem.
-  rm -rf "${BT}/cache/team_info"
-  echo -e "----------------------------" 
-  echo -e "${RED}FATAL${NC}: team var not set." 
-  echo -e "Please rerun \'${PURPLE}~/.bt/gen/profiles${NC}\'"
-  echo -e "from the command line."
-  echo -e "----------------------------" 
+  else 
+    # Otherwise, warn the user to fix the problem.
+    echo -e BT_TEAM: "${BT_TEAM}"
+    echo -e             ^ ^ ^ ^ 
+    echo -e ${YELLOW}WARNING${NC}: Examine carefully. 
+    echo -e This subsystem has noted it is not correct.
+  fi  
 
-} || true
-
+} 
 
 to_debug flow && echo api:wipe || true
 
@@ -1714,7 +1764,6 @@ map_tools() {
     to_debug bt_ && echo ${PATH}| tr ':' '\n' | \
         perl -lne 'print if s/(.*\/b2).*/\1/g;'
 
-
     # -----------------------------------------------------
     # scan pipx for installed toolsets.
     # -----------------------------------------------------
@@ -1727,7 +1776,6 @@ map_tools() {
     done
     echo -ne "loaded toolsets: ${CYAN}${toolsets[@]}${NC}\n"
     shopt -u extglob
-
 
     # -----------------------------------------------------
     # export toolset "map" functions 
@@ -1777,42 +1825,41 @@ sts() {
 
 
 ppt() { 
-
-  time="$(env | perl -nle 'print if s/ts?\=(.*)/\1/' | \
-          perl -pe 's/valid until //'                | \
-          ddiff -E -qf %Hh:%Mm:%Ss now)"
-
+  t="$(echo "${ts}" | ddiff -E -qf %S now)"
+  X="$(gdate --utc -d "0 + ${t} seconds" +"%Hh:%Mm:%Ss")"
+  pr= tt= pt= 
   # construct a header.
-  if [[ "${ts}" -ge 601 ]]; then
-    pr="${GREEN}${BT_TEAM}${NC}@${CYAN}${BT_ACCOUNT}${NC}"
-    tt="${GREEN}${time}${NC}"
-    pt="BT[${pr}|${tt}]\w\$ "
-  elif [[ "${ts}" -ge 11 ]]; then
+  if [[ -n "${t}" ]] && ! [[ "${t}" =~ [^0-9] ]] && [[ "${t}" -ge 601 ]]; then
     pr="${YELLOW}${BT_TEAM}${NC}@${CYAN}${BT_ACCOUNT}${NC}"
-    tt="${YELLOW}${time}${NC}]\$ "
-    pt="${PURPLE}BT${NC}[${pr}|${tt}]\w\$ "
-  elif [[ "${ts}" -eq 0 ]]; then  
-    pr="${CYAN}unknown${NC}@${CYAN}${BT_ACCOUNT}${NC}"
-    tt="0h:00m:00s"
-    pt="${PURPLE}BT${NC}[${pr}]\w\$ "
-  elif [[ "${ts}" -lt 0 ]]; then 
-    pr="${RED}${BT_TEAM}${NC}@${BT_ACCOUNT}"
+    tt="${GREEN}${X}${NC}"
+    pt="${GRAY}BT${NC}[${pr}|${tt}]\w\$ "
+  elif [[ -n "${t}" ]] && ! [[ "${t}" =~ [^0-9] ]] && [[ "${t}" -ge 11 ]]; then
+    pr="${YELLOW}${BT_TEAM}${NC}@${CYAN}${BT_ACCOUNT}${NC}"
+    tt="${YELLOW}${X}${NC}"
+    pt="${GRAY}BT${NC}[${pr}|${tt}]\w\$ "
+  elif [[ -z "${t}" ]] || [[ "${t}" -eq 0 ]]; then  
+    pr="${CYAN}unset${NC}@${CYAN}${BT_ACCOUNT}${NC}"
+    tt="${GRAY}0h:00m:00s${NC}"
+    pt="${GRAY}BT${NC}[${pr}]\w\$ "
+  elif [[ -n "${t}" && "${t}" = \-[0-9]+ && "${t}" -lt 0 ]]; then 
+    pr="${RED}${BT_TEAM}${NC}@${RED}${BT_ACCOUNT}${NC}"
     tt=''
     pt="${PURPLE}BT${NC}[${pr}]\w\$ "
   else 
+    pr=''
     tt=''
-    pt="${PURPLE}BT${NC}[--]\w\$ "
+    pt="${PURPLE}BT${NC}[${GRAY}--${NC}]\w\$ "
   fi
 
-  [[ -n "${time}" ]] && { 
-      bt="$(echo "${pt}" | perl -pe 's/\n//g')"
+  static='(BT)\w\$ '
+  __bt=$static
+  [[ -n "${t}" ]] && { 
+      __bt="$(echo "${pt//'\n'}")"
   } 
-  export PS1="${bt}"
+  export PS1="${__bt}"
 }
 
-
-prompt_off() { unset PROMPT_COMMAND; 
-               export PS1='(BT)\w\$ ';}
+prompt_off() { unset PROMPT_COMMAND; export PS1="$static" ;}
 
 prompt_on() { PROMPT_COMMAND=ppt ;}
 
@@ -2026,7 +2073,6 @@ to_debug flow && echo env:init || true
 env_init() { 
 
   # Initialize our most important ENV vars:
-  # BT:
   [[ -z "${BT}" ]] && { BT="${HOME}/.bt"; export BT="${BT}" ;}
   to_debug env echo "env:init:BT ${BT}"
 
@@ -2050,38 +2096,39 @@ env_init() {
           perl -nle 'print if s/.*qv\-gbl\-([\w_\-]+)/\1/'   )"
   to_debug lgin echo role: $role
   # if request is not valid, report an error. 
-  [[ -z "${role}" || "${role}" = *NONE* ]] && { 
-    echo -e "${RED}FATAL${NC}: \"${ARGV}\" is not a configured destination."
-    echo -e "It is more likely a problem with your ENV vars."
-    echo -e "Try rebuilding your aws config by running \"${BLUE}profiles${NC}\"".
+  [[ -z "${role}" || "${role}" == *- || "${role}" = *NONE* ]] && { 
+    echo -e "${RED}FATAL${NC}: \"${role}\" is not a configured destination."
+    echo -e "Try rebuilding your aws config by running \"${CYAN}profiles${NC}\"".
     return
   }
  
   to_debug env && echo DEFAULT_ROLE: "${DEFAULT_ROLE}"
   [[ "${role}" == "${DEFAULT_ROLE}" ]] && {  
-
     export BT_ROLE="${DEFAULT_ROLE}"
-
-    # need to validate BT_TEAM var a bit further.
-        team="$(cat "${BT}/cache/team_info")"
-        [[ ! "${team}" = *NONE* && -n "${team}" ]] && { 
-          # cache worked.
-          BT_TEAM="${team}" 
-          export BT_TEAM="${BT_TEAM}"
-        } || { 
-          # cache did not work. Warn the user to fix the problem.
-          rm -rf "${BT}/cache/team_info"
-          echo "----------------------------" 
-          echo "FATAL: team not set." 
-          echo "Please run 'profiles' again."
-          echo "From the command line."
-          echo "----------------------------" 
-        }
-  } || { 
-        # cache not present. Populate.    
-        echo "${BT_TEAM}" > "${BT}/cache/team_info"
   }
-   
+
+  # need to validate BT_TEAM.
+  set_team
+  if [ -f "${BT}/cache/team_info" ]; then
+    team="$(cat "${BT}/cache/team_info")"
+  else 
+    team="NONE"
+  fi
+
+  if ! [[ "${team}" =~ NONE         ]] && 
+     ! [[ "${team}" =~ [^a-zA-Z0-9] ]] &&
+       [[ -n "${team}"              ]]; then 
+    # cache worked.
+    BT_TEAM="${team}" 
+    export BT_TEAM="${BT_TEAM}"
+  else  
+    # cache did not work. Warn the user to fix the problem.
+    rm -rf "${BT}/cache/team_info"
+    echo -e "----------------------------" 
+    echo -e "${YELLOW}WARNING${NC}: team not set." 
+    echo -e "Please run 'profiles' again."
+    echo -e "----------------------------" 
+  fi 
 
   # account needs more vetting. 
   declare -a ROLE
@@ -2279,7 +2326,7 @@ function _get() {
 #
 aws_profile () {
   DEFAULT_ROLE="prod-${BT_TEAM}"
-  ARGV="${1:-"${DEFAULT}"}"  
+  ARGV="${1:-"${DEFAULT_ROLE}"}"  
   if [ "$ARGV" = "--help" ] || [ "$1" = "-h" ]; then
     echo "USAGE:"
     echo "aws_profile              <- print out current value"
@@ -2338,50 +2385,7 @@ aws_profile () {
 
 to_debug flow && echo env:aws_defaults || true
 
-aws_defaults() { 
-
-  # qv standards
-  export BT_CREDS="${HOME}/.aws/bt_creds"
-  export BT_CONFIG="${HOME}/.aws/bt_config"
-  export qv_gbl=us-west-2
-  export qv_start_url=https://qventus.awsapps.com/start
-
-  # For reliability, Bintools isolates its configs from the defaults.
-  export AWS_CONFIG_FILE="${BT_CONFIG}"            \
-         AWS_SHARED_CREDENTIALS_FILE=${BT_CREDS} \
-         AWS_SDK_LOAD_CONFIG=1
-
-  # aws-sso-credential-process 
-  # when run on a headless system; credential_process captures 
-  # stdout and stderr, so the URL and code that are printed out 
-  # for use when the browser popup do not appear to the user.
-  export AWS_SSO_INTERACTIVE_AUTH=true
-
-  # for configuring the devops-sso-util credential process.
-  export AWS_CONFIGURE_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_CONFIGURE_DEFAULT_SSO_REGION=${qv_gbl}
-  export AWS_CONFIGURE_DEFAULT_REGION=${qv_gbl}
-
-  export AWS_LOGIN_SSO_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_LOGIN_SSO_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_DEFAULT_SSO_START_URL=${qv_start_url} 
-  export AWS_DEFAULT_SSO_REGION=${qv_gbl}
-  export AWS_DEFAULT_REGION=${qv_gbl}
-  export AWS_SSO_CREDENTIAL_PROCESS_DEBUG=true
-  export AWS_SDK_LOAD_CONFIG=1   # for golang, terraform, e.g.
-                                 # which do not use ~/.aws/config
-
-  # You should not need to touch these.
-  export AWS_VAULT_PL_BROWSER=com.google.chrome 
-  export AWS_DEFAULT_OUTPUT=json
-  export AWS_DEFAULT_SSO_REGION=${qv_gbl} 
-  export AWS_DEFAULT_REGION=${qv_gbl} 
-  export AWS_REGION=${qv_gbl}
-
-} || true
-
-aws_defaults || true
+#aws_defaults || true
 
 to_debug flow && echo env:aws_profile  || true
 aws_profile "${DEFAULT_ROLE}" || true
@@ -2414,15 +2418,17 @@ autologin() {
       export AWS_SHARED_CREDENTIAL_FILE="${HOME}/.aws/bt_creds"
 
   # set team
-  set_team || echo "${RED}FATAL${NC}: No Team set."
-  
-  [[ "${BT_TEAM}" = *NONE* || -z "${BT_TEAM}" ]] && { 
+  set_team 
+  if [[ -z "${BT_TEAM}"              ]] || \
+     [[ "${BT_TEAM}" =~ [^a-zA-Z0-9] ]] || \
+     [[ "${BT_TEAM}" = *NONE*        ]]; then
      echo -ne "${RED}FATAL${NC}: Missing Team var. \n"
      echo -ne "Please rerun: ${PURPLE}~/.bt/gen/profiles${NC} and \n"
      echo -ne "try again.\n\n"
      exit 1
-  }
+  fi 
 
+  export DEFAULT_ROLE="${DEFAULT_ACCOUNT}"-"${BT_TEAM}"
   # set account (or use default.)
   export DEFAULT_ACCOUNT="prod"
   [[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;}
@@ -2445,7 +2451,7 @@ autologin() {
   to_debug lgin echo raw check output: "${raw}"
 
   sso="$(echo "${raw}" | \
-      perl -nle 'print if s/.*(valid until [\w\-\:\ ]+|fix|expired).*/\1/')"
+      perl -nle 'print if s/.*valid until ([\w\-\:\ ]+|fix|expired).*/\1/')"
 
   to_debug lgin echo sso: $sso
   to_debug lgin echo "BT_ROLE: ${BT_ROLE} BT_ACCOUNT: ${BT_ACCOUNT} BT_TEAM: ${BT_TEAM}" 
@@ -2458,7 +2464,7 @@ autologin() {
      "${sso}" = expired* ]] && { 
     cmd="$("${DEFAULT_AWSLIB}" login --profile "${BT_TEAM}")" 
    status="$(echo "$cmd" | perl -nle \
-            'print if s/.*(valid until [\w\-\:\ ]+)/$1/')"
+            'print if s/.*valid until ([\w\-\:\ ]+)/$1/')"
   }
 
   to_debug lgin echo status_cmd: $cmd
@@ -2477,19 +2483,17 @@ autologin() {
   #  chain="$("${DEFAULT_AWSLIB}" login --profile "${BT_ROLE}")" 
   #  status="$(echo "$chain" | perl -nle 'print if m/Successful/')"
   #}
-  
+ 
   # Whicn login - SSO or IAM ? 
-  [[ "${status}" == "unset" || "${sso}" =~ valid ]] && { 
+  [[ -n "${sso}" ]] && { 
     ts="$sso"
   } || { 
     ts="${status}"
   }
-  
-  t="$(echo "${ts}" | \
-      perl -pe 's/valid until //' | \
-      ddiff -E -qf %S now)"
+ 
+  t="$(echo "${ts}" | ddiff -E -qf %S now)"
 
-  [[ "$t" -gt 0 ]] && { 
+  [[ -n "$t" && "$t" =~ [0-9]+ && "$t" -gt 0 ]] && { 
     X="$(gdate --utc -d "0 + ${t} seconds" +"%Hh:%Mm:%Ss")"
   } 
   to_debug lgin echo "ts:$ts, t:$t, X:${X} R:${BT_ROLE}"

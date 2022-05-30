@@ -57,7 +57,7 @@ bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 
 
 to_debug flow && sleep 0.5 && echo "stgs:cache" || true
-set_team || true
+set_team 
 
 [[ ! -f "${BT}"/cache/path_info ]] && {
   "${BT}/utils/path" -s 2>/dev/null | tee "${BT}/cache/path_info"
@@ -90,7 +90,7 @@ export AWSLIB="devops"
 
 to_debug flow && sleep 0.5 && echo "stgs:autologin"
 
-set_team || echo "${RED}FATAL${NC}: No Team set."
+set_team 
 
 # Team account defaults to prod, for now.
 export DEFAULT_ACCOUNT="prod"

@@ -1,1 +1,81 @@
-/usr/local/etc/bash_completion.d/ssm
+#!/usr/bin/env  /usr/local/bin/bash
+# shellcheck shell=bash disable=SC1083 format=SC1083
+
+LOADER=legacy
+export BT="${HOME}/.bt"
+. "${BT}/lib/utils.bash"
+
+export LOADER=legacy
+
+. ${HOME}/.bt/lib/utils.bash
+
+# no need to source configs, when
+# we are running as a standalone app.
+#env_init
+set_team 
+
+export DEFAULT_ACCOUNT="prod"
+export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+[[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;}
+
+
+# fall back to aws-sso-util when devops isn't available.
+export AWSLIB="devops"
+[[ ! -e "${HOME}/.local/bin/${AWSLIB}-sso-util}" ]] && {
+    export AWSLIB="aws"
+    export DEFAULT_AWSLIB="${AWSLIB}-sso-util"
+}
+
+[[ ! -f "${BT}"/cache/path_info ]] && {
+  "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
+}
+source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+autologin 
+
+hn="${1:-}" #echo hn: ${hn}
+[[ "${hn}" == '' ]] && unset "${hn}"
+declare -A inst_map # fully populated inst_map array.
+
+if [[ -f "${BT}/src/inst_map.src" ]]; then 
+  . "${BT}/src/inst_map.src"
+elif [[ "${BT_LAUNCH_DIR}/lib/inst_map.src" ]]; then
+  . "${BT_LAUNCH_DIR}/lib/inst_map.src"
+else 
+  "FATAL: Could not find instance map."
+fi
+
+id=NONE cmd=NONE ip=NONE 
+# use fuzzy matching if no host is supplied.
+[ -z "${hn}" ] && { 
+  ip="$("${HOME}"/.local/bin/aws-fuzzy --ip-only)" 
+  srch="${ip}"
+ 
+  for rec in ${inst_map[@]}; do 
+    [[ "${rec}" =~ ${srch} ]] && { 
+      mapfile tmp -t < <(echo ${rec} | tr , '\n')  
+      id="${tmp[1]}" hn="${tmp[0]}" ip="${tmp[2]}" && break 
+    }
+  done 
+  echo host: "$(echo "$hn" | perl -pe 's/\n//g')" recognized. 
+
+  cmd="aws ssm start-session --target ${srch}"
+  echo -en connecting to: \"${CYAN}${hn}${NC}\"
+  echo cmd: ${cmd}
+} 
+
+srch="$(echo ${hn} | perl -pe 's/\n//g')"
+for rec in ${inst_map[@]}; do 
+  [[ "${rec}" =~ ${srch} ]] && { 
+    mapfile tmp -t < <(echo ${rec} | tr , '\n')  
+    id="${tmp[1]}" hn="${tmp[0]}" ip="${tmp[2]}" && break 
+  }
+done
+
+echo -e host: "$(echo "$hn" | \
+    perl -pe 's/\n//g')" ${PURPLE}recognized.${NC} 
+cmd="aws ssm start-session --target ${id}"
+echo -en connecting to: ${CYAN}"$(echo "$hn" | \
+    perl -pe 's/\n//g')"${NC}
+#echo cmd: ${cmd}
+
+${cmd}
