@@ -174,8 +174,8 @@ escape() { printf '%s' "${1//\'/\'}" ;}
     rm "${HOME}"/.bt 
     ln -s "${HOME}/.bin2ools-dotfiles/bt" "${HOME}/.bt"
 } 
-ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2rds)" rds
-ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2ssm)" ssm
+ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2rds)" ~/.bt/cmd/rds
+ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2ssm)" ~/.bt/cmd/ssm
 
 
 # Given a list of scripts in the dotfiles repo, run the first one that exists
@@ -557,12 +557,18 @@ cp ${HOME}/.bin2ools-dotfiles/bin/b2 /usr/local/bin
 
 log "Your system is now bootstrapped!"
 
-
-echo -ne "shopt -s expand_aliases\n"
-echo -ne "shopt -s progcomp_alias\n"
-echo -ne alias bt=\"source \$\(b2\)\"\\n
-
-
+{
+  touch ~/.bash_profile   
+  echo -ne "\n\n# --------------------------\n"
+  echo -ne     "# BIN2OOLS entries.         \n"
+  echo -ne     "# --------------------------\n"
+  echo -ne     "shopt -s expand_aliases\n"
+  echo -ne     "shopt -s progcomp_alias\n"
+  echo -ne     "_bt() { export BT=\"\${HOME}/.bt\"; . \"\${HOME}/.bt/settings\"; prompt_on ;}\n"
+  echo -ne     "alias bt=\"_bt; . \$(b2)\"\n"
+  echo -ne     "# --------------------------\n"
+} >> ~/.bash_profile 
+  
 # check for github access (early on).
 # ssh git@github.com
 # ----------------------
