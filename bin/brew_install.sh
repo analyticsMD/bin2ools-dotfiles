@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env  /usr/local/bin/bash
+ 
+#make: *** No targets specified and no makefile found.  Stop.
 
 # We don't need return codes for "$(command)", only stdout is needed.
 # Allow `[[ -n "$(command)" ]]`, `func "$(command)"`, pipes, etc.
@@ -10,6 +12,20 @@ abort() {
   printf "%s\n" "$@" >&2
   exit 1
 }
+
+mkdir -p /usr/local/Cellar
+export HOMEBREW_CELLAR=/usr/local/Cellar
+
+# for bottles) unless there's already a Cellar in HOMEBREW_REPOSITORY or the
+# user has specified HOMEBREW_CELLAR explicitly.
+if [[ -z "${HOMEBREW_CELLAR}" ]];  then
+    if [[ -d "/usr/local/Cellar" ]];  then
+    	HOMEBREW_CELLAR="/usr/locacl/Cellar"
+    else
+	    HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
+    fi
+fi
+
 
 # Fail fast with a concise message when not using bash
 # Single brackets are needed here for POSIX compatibility
