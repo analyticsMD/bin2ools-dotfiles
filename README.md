@@ -10,6 +10,7 @@ Please watch this short video and follow the steps outlined to clean up your lap
 to install Homebrew, and other installation tools.  If you do not perform this step manually, 
 it can be very difficult to predict whether the install will properly succeed. If anything unusual
 shows up during this step, feel free to ask questions in the DevOps Slack channel, or in the 
+Bintools-rollout channel. They will be answered quickly! 
 
 [https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11]
 
