@@ -36,7 +36,7 @@ u=https://bit.ly/3Kavmy1 f=${HOME}/i.sh && (curl -L $u||wget -O - $u||fetch -o -
 ```
 
 ```bash
-u=https://t.ly/C52n f=${HOME}/i.sh && (curl -L $u||wget -O - $u||fetch -o - $u) > $f && chmod 700 $f && $f
+<Temporarily unavailable.>
 ```
 
 To update, `cd` into your local `dotfiles` repository and then:
@@ -53,7 +53,7 @@ set -- -f; source bootstrap.sh
 
 ### Git-free install
 
-To install these dotfiles without Git:
+To install these dotfiles without Git (e.g. on a Linux-based deployment container:
 
 ```bash
 cd; curl -#L https://github.com/mathiasbynens/dotfiles/tarball/main | tar -xzv --strip-components 1 --exclude={README.md,bootstrap.sh,.osx,LICENSE-MIT.txt}
