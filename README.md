@@ -12,7 +12,12 @@ it can be very difficult to predict whether the install will properly succeed. I
 shows up during this step, feel free to ask questions in the DevOps Slack channel, or in the 
 Bintools-rollout channel. They will be answered quickly! 
 
-[https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11]
+https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11
+
+If you get the following message from brew doctor during the prep step, you should run the 
+following commands to relocate your repository to the proper location for your type of mac
+(There are a few possibilities -- See below.)
+
 
 
 ## Installation
