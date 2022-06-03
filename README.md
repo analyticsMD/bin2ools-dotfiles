@@ -2,6 +2,8 @@
 
 ![Screenshot of my shell prompt](docs/bintools.png)
 
+https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11
+
 ## Installation
 
 []()  **Warning:** If you want to give bintools-dotfiles a try, you should first review the code, and remove things you don’t want or need. These scripts and settings are included to make your life easier, but don't use them blindly, especially if you have strong opinions.  Use at your own risk!
