@@ -5,16 +5,16 @@
 
 # PREPARING TO INSTALL BINTOOLS
 
-Please watch this short video and follow the steps outlined.  If you do not 
-perform this step manually, it will be very difficult to predict whether the 
-install will succeed.  
+Please watch this short video and follow the steps outlined to clean up your laptop and prepare 
+to install Homebrew, and other installation tools.  If you do not perform this step manually, 
+it can be very difficult to predict whether the install will properly succeed.  
 
 [https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11]
 
 
 ## Installation
 
-[]()  **Warning:** If you want to give bintools-dotfiles a try, you should first review the code, and remove things you don’t want or need. These scripts and settings are included to make your life easier, but don't use them blindly, especially if you have strong opinions.  Use at your own risk!
+[]()  **Warning:** See above if you have not yet given bintools-dotfiles a try.  You should first review the short video subject above, which will help you understand important PREP steps before accepting to build Bin2ools on your PowerBook mac. These scripts and settings are included to make your life easier, but don't use them blindly, especially if you have strong opinions.  Use at your own risk!
 
 ### Using Git and the bootstrap script
 
