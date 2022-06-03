@@ -1,4 +1,5 @@
 # bin2ools-dotfiles
+The installation repository for Bintools and related packages.  
 
 ![Screenshot of my shell prompt](docs/bintools.png)
 
