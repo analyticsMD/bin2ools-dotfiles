@@ -2,7 +2,15 @@
 
 ![Screenshot of my shell prompt](docs/bintools.png)
 
-https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11
+
+# PREPARING TO INSTALL BINTOOLS
+
+Please watch this short video and follow the steps outlined.  If you do not 
+perform this step manually, it will be very difficult to predict whether the 
+install will succeed.  
+
+[https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11]
+
 
 ## Installation
 
