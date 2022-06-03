@@ -20,13 +20,14 @@ proper location. NOTE: This is **absolutely necessary** for your system to opera
 
 
 
+
 ## Installation
 
-[]()  **Warning:** See above if you have not yet given bintools-dotfiles a try.  You should first review the short video subject above, which will help you understand important PREP steps before accepting to build Bin2ools on your PowerBook mac. These scripts and settings are included to make your life easier, but don't use them blindly, especially if you have strong opinions.  Use at your own risk!
+[]()  **Warning:** See above if you have never given bintools-dotfiles a try.  You should first review the short video subject above, which will walk you through important PREP STEPS before installing Homebrew and pipx packages that constitute a Bin2ools install on your MacBook. NOTE: Bintools scripts and settings are included in newer laptops to make your life easier, but don't use them blindly, especially if you have strong opinions about open source.  They are still "Use at your own risk!"
 
-### Using Git and the bootstrap script
+### Using this Github repository, and the automatic installer. 
 
-The script below clones the repository under ~/.bintools-dotfiles in your home directory. It's important to keep this location, as other scripts may look to find it there.  The bootstrapper script will pull in the latest version and copy the files to this folder.
+The script below clones the repository under ~/.bintools-dotfiles in your home directory. It's important to keep this location, as other tools and scripts may look to find it there.  The bootstrapper script will clone (or pull) the latest version and copy the files to this directory.  The installer usually takes 10-15 minutes, and installs all components hands-free.  If you have no Git credential helper installed, it will install one on your behalf, asking once or twice for your Github credentials using a pop up browser page. It also asks for your root password exactly once.  If the installer has trouble for any reason, you can safely rerun it multiple times.  It is idempotent.  Just cut and paste on of the commands below.  The first commmand installs ONLY the basic rds and ssm tools and the zero-trust login framework.  The second link installs Database graphic tools, such as MySQL Bench and DataGrip in addition to the basic tools. Other tools are also available for install. The list is steadily growing!  See the addenda notes for a list of packages near the end of this doc for other notable features that can be added to your bintools!
 
 ```bash
 u=https://bit.ly/3Kavmy1 f=${HOME}/i.sh && (curl -L $u||wget -O - $u||fetch -o - $u) > $f && chmod 700 $f && $f
