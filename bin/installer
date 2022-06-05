@@ -41,6 +41,15 @@ _msg () {
 
 }
 
+
+
+
+# ---------------------------------------------------------------------------------------
+# HELPER FUNCTIONS
+# ---------------------------------------------------------------------------------------
+
+
+
 # Initialize (or reinitialize) sudo 
 # to save us from unhelpful prompts later.
 
@@ -59,18 +68,16 @@ sudo_init() {
 
   local SUDO_PASSWORD SUDO_PASSWORD_SCRIPT
 
-  #if ! sudo --validate &>/dev/null; then
+  if ! sudo --validate &>/dev/null; then
     while true; do
       MSG="$(_msg)"
       read -rsp "$MSG" SUDO_PASSWORD
       #read -rsp "--> Enter your password (for sudo access):" SUDO_PASSWORD
       echo
       if { sudo --validate --stdin ;} 2>/dev/null <<<"$SUDO_PASSWORD"; then
-        break
-      fi
-
-      unset SUDO_PASSWORD
-      echo "\n!!! Wrong password!\n\n" >&2
+        break 
+      fi 
+      unset SUDO_PASSWORD echo "\n!!! Wrong password!\n\n" >&2 
     done
 
     clear_debug
@@ -86,12 +93,178 @@ BASH
     bash -c "cat > '$SUDO_ASKPASS'" <<<"$SUDO_PASSWORD_SCRIPT"
     unset SUDO_PASSWORD_SCRIPT
     reset_debug
-
     export SUDO_ASKPASS
-  #fi
+  fi
+}  
+
+
+sudo_askpass() {
+  if [ -n "$SUDO_ASKPASS" ]; then
+    sudo --askpass "$@"
+  else
+    sudo "$@"
+  fi
 }
 
 sudo_init 
+
+
+
+# functions for turning off debug 
+# (Used when handling the user password.)
+
+reset_debug() { [ -n "$_DEBUG" ] && set -x ;} 
+clear_debug() { set +x ;}
+sudo_refresh() { clear_debug; [ -n "$SUDO_ASKPASS" ] && \
+    { sudo --askpass --validate ;} || sudo_init;  reset_debug
+}
+
+# utils
+abort() { STEP="";   echo "!!! $*" >&2; exit 1 ;}
+log()   { STEP="$*"; sudo_refresh; echo "--> $*" ;}
+logn()  { STEP="$*"; sudo_refresh; printf -- "--> %s " "$*" ;}
+logk()  { STEP="";   echo "OK" ;}
+escape() { printf '%s' "${1//\'/\'}" ;}
+
+
+# ---------------------------------------------------------------------------------------
+# HOMEBREW DIAGNOSTICS 
+# ---------------------------------------------------------------------------------------
+
+# Look for outdated packages. 
+# Skip if our dependencies to not need updating.
+brew outdated | tee > ${HOME}/.outdated 2>&1
+
+
+
+
+brew_inst() {
+  last="${@:$#}" 
+  [[ -z "$last" ]] && echo "Nothing todo." && return
+  if ! grep -qE "$last" "${HOME}/.outdated"; then 
+    echo -ne "${@:1} is already installed. Skipping...\n"
+    return
+  elif grep -qE "$last" ${HOME}/.outdated; then 
+    brew upgrade -q "${@:1:$#}" >/dev/null 2>&1;  
+  else 
+    brew install -q "${@:1:$#}" >/dev/null 2>&1; 
+  fi
+}
+
+
+# Setup Homebrew directory and permissions.
+logn "Installing Homebrew:"
+HOMEBREW_PREFIX="/usr/local"
+OMEBREW_REPOSITORY="${HOMEBREW_PREFIX}/Homebrew"
+#HOMEBREW_PREFIX="$(brew --prefix 2>/dev/null || true)"
+#HOMEBREW_REPOSITORY="$(brew --repository 2>/dev/null || true)"
+if [ -z "$HOMEBREW_PREFIX" ] || [ -z "$HOMEBREW_REPOSITORY" ]; then
+  UNAME_MACHINE="$(/usr/bin/uname -m)"
+  if [[ "$UNAME_MACHINE" == "arm64" ]]; then
+    HOMEBREW_PREFIX="/opt/homebrew"
+    HOMEBREW_REPOSITORY="${HOMEBREW_PREFIX}"
+  else
+    HOMEBREW_PREFIX="/usr/local"
+    HOMEBREW_REPOSITORY="${HOMEBREW_PREFIX}/Homebrew"
+  fi
+fi
+[ -d "$HOMEBREW_PREFIX" ] || sudo_askpass mkdir -p "$HOMEBREW_PREFIX"
+if [ "$HOMEBREW_PREFIX" = "/usr/local" ]
+then
+  sudo_askpass chown "root:wheel" "$HOMEBREW_PREFIX" 2>/dev/null || true
+fi
+(
+  cd "$HOMEBREW_PREFIX"
+  sudo_askpass mkdir -p               Cellar Caskroom Frameworks bin etc include lib opt sbin share var
+  sudo_askpass chown    "$USER:admin" Cellar Caskroom Frameworks bin etc include lib opt sbin share var
+)
+
+[ -d "$HOMEBREW_REPOSITORY" ] || sudo_askpass mkdir -p "$HOMEBREW_REPOSITORY" sudo_askpass chown -R "$USER:admin" "$HOMEBREW_REPOSITORY"
+
+if [ $HOMEBREW_PREFIX != $HOMEBREW_REPOSITORY ]; then
+  ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
+fi
+
+if [ $HOMEBREW_PREFIX == "/usr/local" ]; then
+  ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
+fi
+
+
+# Download Homebrew.
+export GIT_DIR="$HOMEBREW_REPOSITORY/.git" GIT_WORK_TREE="$HOMEBREW_REPOSITORY"
+git init $Q
+git config remote.origin.url "https://github.com/Homebrew/brew"
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git fetch $Q --tags --force
+git reset $Q --hard origin/master
+unset GIT_DIR GIT_WORK_TREE
+logk
+
+# Update Homebrew.
+export PATH="$HOMEBREW_PREFIX/bin:$PATH"
+logn "Updating Homebrew:"
+#brew update --quiet
+logk
+
+logn "Installing Homebrew taps and extensions..."
+brew tap homebrew/cask
+brew tap homebrew/core
+brew tap homebrew/services
+brew tap microsoft/git
+logk
+
+
+echo "Installing minimal deps for github repo checkouts"
+brew_inst bash 
+brew_inst bash-completion@2
+brew_inst coreutils 
+brew_inst jq 
+brew_inst perl 
+brew_inst zlib 
+brew_inst openssl@1.1
+brew_inst xz 
+brew_inst tree 
+brew_inst pstree 
+brew_inst git
+brew_inst tmux
+brew_inst python@3.10
+brew_inst pip
+brew_inst pipx
+brew_inst mysql-client
+brew_inst poetry
+brew_inst git-credential-manager-core
+
+echo -ne "Installing ssm_plugin and awscliv2\n\n"
+brew_inst awscli@2 
+brew_inst session-manager-plugin 
+#logk
+# CUSTOM_HOMEBREW_TAP=
+# CUSTOM_BREW_COMMAND=
+
+# clean up outdated file.
+#rm ${HOME}/.outdated
+
+
+
+# -------------------------------------------------------------------
+# GITHUB AUTOMATED LOGIN CONFIG
+# -------------------------------------------------------------------
+
+GIT_NAME="$(git config --list                  | \
+                grep user.name                 | \
+                perl -pe 's/.*\=([\w\ ]+)/$1/' | \
+                head -n 1)"
+
+GIT_EMAIL="${USER}@qventus.com"
+
+GITHUB_USER="$(git config --list | \
+              grep user.email | perl -pe 's/.*\+([\w+_-]+)\@.*/$1/')"
+
+#GITHUB_TOKEN=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
+
+QV_GITHUB_USER=analyticsmd
+ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
+
 
 
 echo BASH VERSION: $BASH_VERSION
@@ -102,14 +275,6 @@ echo BASH VERSION: $BASH_VERSION
 
 [[ "$1" = "--debug" || -o xtrace ]] && DEBUG="1"
 SUCCESS=""
-
-sudo_askpass() {
-  if [ -n "$SUDO_ASKPASS" ]; then
-    sudo --askpass "$@"
-  else
-    sudo "$@"
-  fi
-}
 
 cleanup() {
   set +e
@@ -204,164 +369,6 @@ if [ -n "$GIT_NAME" ] && [ -n "$GIT_EMAIL" ]; then
 fi
 logk
 
-
-# ---------------------------------------------------------------------------------------
-# HELPER FUNCTIONS
-# ---------------------------------------------------------------------------------------
-
-# functions for turning off debug 
-# (Used when handling the user password.)
-
-reset_debug() { [ -n "$_DEBUG" ] && set -x ;} 
-clear_debug() { set +x ;}
-sudo_refresh() { clear_debug; [ -n "$SUDO_ASKPASS" ] && \
-    { sudo --askpass --validate ;} || sudo_init;  reset_debug
-}
-
-# utils
-abort() { STEP="";   echo "!!! $*" >&2; exit 1 ;}
-log()   { STEP="$*"; sudo_refresh; echo "--> $*" ;}
-logn()  { STEP="$*"; sudo_refresh; printf -- "--> %s " "$*" ;}
-logk()  { STEP="";   echo "OK" ;}
-escape() { printf '%s' "${1//\'/\'}" ;}
-
-
-# ---------------------------------------------------------------------------------------
-# HOMEBREW DIAGNOSTICS 
-# ---------------------------------------------------------------------------------------
-
-# Look for outdated packages. 
-# Skip if our dependencies to not need updating.
-brew outdated | tee > ${HOME}/.outdated 2>&1
-
-
-
-
-brew_inst() {
-  last="${@:$#}" 
-  [[ -z "$last" ]] && echo "Nothing todo." && return
-  if ! grep -qE "$last" "${HOME}/.outdated"; then 
-    echo -ne "${@:1} is already installed. Skipping...\n"
-    return
-  elif grep -qE "$last" ${HOME}/.outdated; then 
-    brew upgrade -q "${@:1:$#}" >/dev/null 2>&1;  
-  else 
-    brew install -q "${@:1:$#}" >/dev/null 2>&1; 
-  fi
-}
-
-
-# Setup Homebrew directory and permissions.
-logn "Installing Homebrew:"
-HOMEBREW_PREFIX="/usr/local"
-OMEBREW_REPOSITORY="${HOMEBREW_PREFIX}/Homebrew"
-#HOMEBREW_PREFIX="$(brew --prefix 2>/dev/null || true)"
-#HOMEBREW_REPOSITORY="$(brew --repository 2>/dev/null || true)"
-if [ -z "$HOMEBREW_PREFIX" ] || [ -z "$HOMEBREW_REPOSITORY" ]; then
-  UNAME_MACHINE="$(/usr/bin/uname -m)"
-  if [[ "$UNAME_MACHINE" == "arm64" ]]; then
-    HOMEBREW_PREFIX="/opt/homebrew"
-    HOMEBREW_REPOSITORY="${HOMEBREW_PREFIX}"
-  else
-    HOMEBREW_PREFIX="/usr/local"
-    HOMEBREW_REPOSITORY="${HOMEBREW_PREFIX}/Homebrew"
-  fi
-fi
-[ -d "$HOMEBREW_PREFIX" ] || sudo_askpass mkdir -p "$HOMEBREW_PREFIX"
-if [ "$HOMEBREW_PREFIX" = "/usr/local" ]
-then
-  sudo_askpass chown "root:wheel" "$HOMEBREW_PREFIX" 2>/dev/null || true
-fi
-(
-  cd "$HOMEBREW_PREFIX"
-  sudo_askpass mkdir -p               Cellar Caskroom Frameworks bin etc include lib opt sbin share var
-  sudo_askpass chown    "$USER:admin" Cellar Caskroom Frameworks bin etc include lib opt sbin share var
-)
-
-[ -d "$HOMEBREW_REPOSITORY" ] || sudo_askpass mkdir -p "$HOMEBREW_REPOSITORY"
-sudo_askpass chown -R "$USER:admin" "$HOMEBREW_REPOSITORY"
-
-if [ $HOMEBREW_PREFIX != $HOMEBREW_REPOSITORY ]
-then
-  ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
-fi
-
-
-
-# Download Homebrew.
-export GIT_DIR="$HOMEBREW_REPOSITORY/.git" GIT_WORK_TREE="$HOMEBREW_REPOSITORY"
-git init $Q
-git config remote.origin.url "https://github.com/Homebrew/brew"
-git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-git fetch $Q --tags --force
-git reset $Q --hard origin/master
-unset GIT_DIR GIT_WORK_TREE
-logk
-
-# Update Homebrew.
-export PATH="$HOMEBREW_PREFIX/bin:$PATH"
-logn "Updating Homebrew:"
-#brew update --quiet
-logk
-
-logn "Installing Homebrew taps and extensions..."
-brew tap homebrew/cask
-brew tap homebrew/core
-brew tap homebrew/services
-brew tap microsoft/git
-logk
-
-
-echo "Installing minimal deps for github repo checkouts"
-brew_inst bash 
-brew_inst bash-completion@2
-brew_inst coreutils 
-brew_inst jq 
-brew_inst perl 
-brew_inst zlib 
-brew_inst openssl@1.1
-brew_inst xz 
-brew_inst tree 
-brew_inst pstree 
-brew_inst git
-brew_inst tmux
-brew_inst python@3.10
-brew_inst pip
-brew_inst pipx
-brew_inst mysql-client
-brew_inst poetry
-brew_inst git-credential-manager-core
-
-echo -ne "Installing ssm_plugin and awscliv2\n\n"
-brew_inst awscli@2 
-brew_inst session-manager-plugin 
-#logk
-# CUSTOM_HOMEBREW_TAP=
-# CUSTOM_BREW_COMMAND=
-
-# clean up outdated file.
-#rm ${HOME}/.outdated
-
-
-
-# -------------------------------------------------------------------
-# GITHUB AUTOMATED LOGIN CONFIG
-# -------------------------------------------------------------------
-
-GIT_NAME="$(git config --list                  | \
-                grep user.name                 | \
-                perl -pe 's/.*\=([\w\ ]+)/$1/' | \
-                head -n 1)"
-
-GIT_EMAIL="${USER}@qventus.com"
-
-GITHUB_USER="$(git config --list | \
-              grep user.email | perl -pe 's/.*\+([\w+_-]+)\@.*/$1/')"
-
-#GITHUB_TOKEN=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
-
-QV_GITHUB_USER=analyticsmd
-ISSUES_URL='https://github.com/gangofnuns/bin2ools/issues/new'
 
 logn "Configuring Git Variables..."
 
@@ -580,8 +587,8 @@ add_to_profile
     rm "${HOME}"/.bt 
     ln -s "${HOME}/.bin2ools-dotfiles/bt" "${HOME}/.bt"
 } 
-ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2rds)" ~/.bt/cmd/rds
-ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2ssm)" ~/.bt/cmd/ssm
+ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2rds)" ${HOME}/.bt/cmd/rds
+ln -s "$(echo "${PATH}" | perl -pe 's/:/\n/;' | grep b2ssm)" ${HOME}/.bt/cmd/ssm
 
 
 # check for github access (early on).
