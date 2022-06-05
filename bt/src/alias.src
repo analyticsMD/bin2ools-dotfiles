@@ -1,5 +1,10 @@
 alias sso="devops-sso-util login && aws_profile qventus"
 
+# Needed to fool homebrew into believing our packages 
+# are installed under /usr/local/Cellar.
+alias brew=/usr/local/bin/brew
+
+
 params["region"]="${AWS_DEFAULT_SSO_REGION}"
 # test the imported profile (the fast way).
 if [[ -n "${profile[@]}" ]]; then

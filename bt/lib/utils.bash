@@ -894,32 +894,7 @@ to_debug flow && echo "utils:usage" || true
 usage() { echo "Usage: <more instructions here...>"; } || true
 
 
-
-
-to_debug flow && echo "utils:stash" || true
-stash() { 
-
-  this="${1:-"${AWS_SHARED_CREDENTIALS_FILE}"}"
-  base="$(basename "$this")"
-  dt="$(gdate +%s)"
-
-  [ -z "${BT_STASH}" ] && { 
-    echo "No BT_STASH dir present."
-    return 1
-  } 
-  cp "${this}" "${BT_STASH}/${base}.${dt}" 
-} || true 
-
-
 to_debug flow && echo "utils:expired"
-# Are the current credentials expired? 
-# Returns True if expired, a unix era time if still valid.
-expired() { 
-  aws sts get-caller-identity > /dev/null to_err
-  [ $? -eq 254 ] && echo "expired" 
-  date
-} || true 
-
 
 # ---------------------------------------
 # when passing SQL to the command-line,
@@ -1728,6 +1703,8 @@ wipe () {
   aws-whoami >/dev/null 2>&1 || echo "no identities left."
   "${DEFAULT_AWSLIB}" check >/dev/null 2>&1
   echo "all cached sessions removed."
+  # also wipe local session counter.
+  unset t ts X 
 } || true
 
 
@@ -1738,9 +1715,6 @@ unset_profile() {
   aws_profile --unset
   unset AWSUME_PROFILE AWSUME_DEFAULT_PROFILE AWS_PROFILE AWS_DEFAULT_PROFILE
 } || true
-
-
-to_debug flow && echo api:autologin || true
 
 
 
@@ -2397,11 +2371,15 @@ autologin() {
   [[ -z "${BT}" ]] && echo "FATAL: BT var not set." && exit 1
 
   # get path. 
-  # try cache.
+  # try cache first.
   [[ ! -f "${BT}"/cache/path_info ]] && {
     "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
   }
   source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+
+  # fail loudly if path isn't getting set.
+  PATH_FAIL="$(echo ${PATH} | perl -pe 's/:/\n/g' | grep "\.local/bin")"
+  [ -z "${PATH_FAIL}" ] && echo -e "${RED}FATAL${NC}: Bin2ools PATH not set."
 
   # fall back to aws-sso-util when devops isn't available.
   export AWSLIB="devops"
@@ -2450,26 +2428,47 @@ autologin() {
   raw="$("${DEFAULT_AWSLIB}" check 2>&1)" 
   to_debug lgin echo raw check output: "${raw}"
 
-  sso="$(echo "${raw}" | \
-      perl -nle 'print if s/.*valid until ([\w\-\:\ ]+|fix|expired).*/\1/')"
+  sso="$(echo "${raw}" | tail -n 1 | \
+      perl -nle 'print if s/.*(20\d\d-\d\d-\d\dT\d\d:\d\d:\d\dZ|fix|expired).*/\1/')"
 
-  to_debug lgin echo sso: $sso
+  to_debug lgin echo sso: ${sso}
   to_debug lgin echo "BT_ROLE: ${BT_ROLE} BT_ACCOUNT: ${BT_ACCOUNT} BT_TEAM: ${BT_TEAM}" 
 
-  # refresh just the sso token (12 hour lifespan).
-  # collect the status, which is your expire time.
-  status=unset
+  # Refresh just the sso token (12 hour lifespan). Collect the new expire time. 
+  # NOTE: Format can be different for iam.
+  case "${sso}" in 
 
-  [[ "${sso}" = fix*     || \
-     "${sso}" = expired* ]] && { 
-    cmd="$("${DEFAULT_AWSLIB}" login --profile "${BT_TEAM}")" 
-   status="$(echo "$cmd" | perl -nle \
-            'print if s/.*valid until ([\w\-\:\ ]+)/$1/')"
-  }
+      expired)
+        cmd="$("${DEFAULT_AWSLIB}" login --profile "${BT_TEAM}")" 
+        ts="$(echo "$cmd" | perl -nle \
+              'print if m/20\d\d-\d\d-\d\dT\d\d:\d\d:\d\dZ/')"
+        ;; 
 
-  to_debug lgin echo status_cmd: $cmd
-  to_debug lgin echo status: $status
-  # this should fail hard for multi-account.
+      fix)  
+        cmd="$("${DEFAULT_AWSLIB}" login --force-refresh --profile "${BT_TEAM}")" 
+        ts="$(echo "$cmd" | perl -nle \
+            'print if s/.* (20\d\d-\d\d-\d\d \d\d\:\d\d.*)/\1/')"
+        ;;
+
+      *) ts="${sso}"
+         ;;
+
+  esac
+
+  to_debug lgin && echo -ne "VARS: cmd: |$cmd| ts: |$ts| sso: |$sso|\n"
+  [[ -z "${ts}" ]] && echo -e "${YELLOW}WARNING${NC}: Timestamp not parsed." 
+
+  t="$(echo "${ts}" | ddiff -E -qf %S now)"
+  to_debug lgin echo ts: $ts sso: $sso cmd: $cmd
+
+  [[ -n "$t" && "$t" =~ [0-9]+ && "$t" -gt 0 ]] && { 
+    X="$(gdate --utc -d "0 + ${t} seconds" +"%Hh:%Mm:%Ss")"
+  } 
+  to_debug lgin echo "ts:$ts, t:$t, X:${X} R:${BT_ROLE}"
+  export ts=${ts} t=${t} X=${X} R=${BT_ROLE} 
+
+  # Fail hard if setting BT_ROLE fails, as might be
+  # the case with new accounts in multi-account.
   if aws_profile "${BT_ROLE}" >/dev/null 2>&1; then 
      to_debug lgin echo profile set to: ${BT_ROLE}   
   else 
@@ -2478,48 +2477,7 @@ autologin() {
     return
   fi
 
-  #chain=unset
-  #[[ "${chain}" == "unset" ]] && { 
-  #  chain="$("${DEFAULT_AWSLIB}" login --profile "${BT_ROLE}")" 
-  #  status="$(echo "$chain" | perl -nle 'print if m/Successful/')"
-  #}
- 
-  # Whicn login - SSO or IAM ? 
-  [[ -n "${sso}" ]] && { 
-    ts="$sso"
-  } || { 
-    ts="${status}"
-  }
- 
-  t="$(echo "${ts}" | ddiff -E -qf %S now)"
-
-  [[ -n "$t" && "$t" =~ [0-9]+ && "$t" -gt 0 ]] && { 
-    X="$(gdate --utc -d "0 + ${t} seconds" +"%Hh:%Mm:%Ss")"
-  } 
-  to_debug lgin echo "ts:$ts, t:$t, X:${X} R:${BT_ROLE}"
-  export ts=${ts} t=${t} X=${X} R=${BT_ROLE} 
-
-  arn=unset
-  [[ "${chain}" =~ Successful ]] && {
-    arn="$(aws sts get-caller-identity --profile "${BT_ROLE}" 2>&1 | \
-      jq -r '.Arn' | cut -d':' -f 5-6 | cut -d'/' -f 1-2)"
-      # (prints some informative stats about the session.)
-    echo -e "LOGIN: $arn"
-  }
-  to_debug lgin echo in: $arn
-  
-  # construct a header.
-  if [[ "${t}" -ge 601 ]]; then
-    echo -e login: ${GREEN}${BT_ACCOUNT}${NC} expires: ${GREEN}${X}${NC}"\n"
-  elif [[ "${t}" -ge 11 ]]; then
-    echo -e login: ${YELLOW}${BT_ACCOUNT}${NC} expires soon: ${YELLOW}${X}${NC}"\n"
-  elif [[ "${t}" -eq 0 ]]; then  
-    echo -e login: ${CYAN}unknown${NC}."\n"
-  elif [[ "${t}" -lt 0 ]]; then 
-    echo -e ${RED}expired${NC}."\n"
-  else 
-      :
-  fi
+  ppt  # build a dynamic prompt.
   return
 }
 to_debug flow && echo api:autologin.end || true

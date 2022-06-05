@@ -14,18 +14,13 @@ abort() {
 }
 
 mkdir -p /usr/local/Cellar
-export HOMEBREW_CELLAR=/usr/local/Cellar
 
 # for bottles) unless there's already a Cellar in HOMEBREW_REPOSITORY or the
 # user has specified HOMEBREW_CELLAR explicitly.
-if [[ -z "${HOMEBREW_CELLAR}" ]];  then
     if [[ -d "/usr/local/Cellar" ]];  then
-    	HOMEBREW_CELLAR="/usr/locacl/Cellar"
-    else
+    	HOMEBREW_PREFIX="/usr/local"
 	    HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
     fi
-fi
-
 
 # Fail fast with a concise message when not using bash
 # Single brackets are needed here for POSIX compatibility
@@ -555,17 +550,17 @@ then
   fi
 fi
 
-if [[ -d "${HOMEBREW_PREFIX}" && ! -x "${HOMEBREW_PREFIX}" ]]
-then
-  abort "$(
-    cat <<EOABORT
-The Homebrew prefix ${tty_underline}${HOMEBREW_PREFIX}${tty_reset} exists but is not searchable.
-If this is not intentional, please restore the default permissions and
-try running the installer again:
+#if [[ -d "${HOMEBREW_PREFIX}" && ! -x "${HOMEBREW_PREFIX}" ]]
+#then
+#  abort "$(
+#    cat <<EOABORT
+#The Homebrew prefix ${tty_underline}${HOMEBREW_PREFIX}${tty_reset} exists but is not searchable.
+#If this is not intentional, please restore the default permissions and
+#try running the installer again:
     sudo chmod 775 ${HOMEBREW_PREFIX}
-EOABORT
-  )"
-fi
+#EOABORT
+#  )"
+#fi
 
 if [[ -z "${HOMEBREW_ON_LINUX-}" ]]
 then

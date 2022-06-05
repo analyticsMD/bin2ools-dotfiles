@@ -6,17 +6,16 @@
 # 1.) Tarball.  github vs fastgit.
 # 
 # 
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall.sh)"
 
-#export HOMEBREW_BREW_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/brew/tarball/master"
-export      HOMEBREW_BREW_GIT_REMOTE="https://github.com/Homebrew/brew/tarball/master"
+export HOMEBREW_BREW_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/brew/tarball/master"
+#export      HOMEBREW_BREW_GIT_REMOTE="https://github.com/Homebrew/brew/tarball/master"
 
-#export HOMEBREW_CORE_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/brew/tarball/master"
-export HOMEBREW_CORE_GIT_REMOTE="https://github.com/Homebrew/brew/tarball/master"
+export HOMEBREW_CORE_GIT_REMOTE="https://hub.fastgit.xyz/Homebrew/brew/tarball/master"
+#export HOMEBREW_CORE_GIT_REMOTE="https://github.com/Homebrew/brew/tarball/master"
 
 # Try api install as well.
-
-#/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-#/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 
 echo download...
 time { 
