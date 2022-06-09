@@ -1639,7 +1639,7 @@ set_team() {
 
   # Unset cache if improperly set.
   [ -f "${BT}/cache/team_info" ] && { 
-    team="$(cat "${BT}/cache/team_info")"
+    team="$(/bin/cat "${BT}/cache/team_info")"
     [[ -z "${team}"              || \
        "${team}" =~ NONE         || \
        "${team}" =~ [^a-zA-Z0-9] ]] && { 
