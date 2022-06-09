@@ -235,6 +235,11 @@ fi
 logk
 
 # HOMEBREW DIAGNOSTICS and INSTALLS.
++if [ $HOMEBREW_PREFIX == $HOMEBREW_REPOSITORY ]
++then
++  ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
++fi
+
 
 # Look for outdated packages. 
 # Skip if our dependencies to not need updating.
@@ -287,6 +292,10 @@ then
   ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
 fi
 
+if [ $HOMEBREW_PREFIX == $HOMEBREW_REPOSITORY ]
+then
+  ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
+fi
 
 
 # Download Homebrew.
@@ -570,14 +579,28 @@ echo -ne alias bt=\"source \$\(b2\)\"\\n
 # ----------------------
 # update bash_profile
 
-[[ "$arch" =~ x86 ]] && ARCH_DIR=/usr/local/etc/bash_completion
-echo "[ -f "${ARCH_DIR}" ] && . /usr/local/etc/bash_completion" >> ~/.bash_profile
+#[[ "$arch" =~ x86 ]] && ARCH_DIR=/usr/local/etc/bash_completion
+#echo "[ -f "${ARCH_DIR}" ] && . /usr/local/etc/bash_completion" >> ~/.bash_profile
 
 # Enhanced file path completion in bash - https://github.com/sio/bash-complete-partial-path
 [ -s "$HOME/.config/bash-complete-partial-path/bash_completion" ] && {
      source "$HOME/.config/bash-complete-partial-path/bash_completion"
      _bcpp --defaults
  }    
+
+if ! `grep BIN2OOLS ~/.bash_profile`; then 
+
+    echo -ne # --------------------------
+    echo -ne # BIN2OOLS entries.
+    echo -ne # --------------------------
+    shopt -s expand_aliases
+    shopt -s progcomp_alias
+    _bt() { export BT="${HOME}/.bt"; . "${HOME}/.bt/settings"; prompt_on ;}
+    alias bt="_bt; . $(b2)"
+    echo -ne # --------------------------
+    export PATH="/usr/local/sbin:$PATH"
+    
+fi
 
 
 # Enhanced file path completion in bash - 
