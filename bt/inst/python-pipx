@@ -50,5 +50,5 @@ pipx ensurepath
 
 pipx list
 echo "LAST pipx command!"
-pipx completions
+#pipx completions
 
