@@ -36,7 +36,7 @@ u=https://bit.ly/3Kavmy1 f=${HOME}/i.sh && (curl -L $u||wget -O - $u||fetch -o -
 ```
 
 ```bash
-<Temporarily unavailable.>
+GUI TOOLS <Temporarily unavailable due to a lack of DataGrip an PyCHarm licenses.>
 ```
 
 
