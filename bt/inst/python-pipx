@@ -31,12 +31,12 @@ echo -ne     "--------------------------\n\n"
 # NOTE: experimental.
 pipx install -f aws-fuzzy-finder
 
-pipx uninstall devops-sso-util || true
+#pipx uninstall devops-sso-util || true
 #pipx uninstall bin2ools-ssm || true
 #pipx uninstall bin2ools-rds || true
 
-opts="-f --include-apps --include deps "
-pipx install $opt./devops-sso-util-4.27.1.tar.gz
+opts="-f --include-deps "
+pipx install $opts ./devops-sso-util-4.27.1.tar.gz
 
 opts="-f --include-apps --include-deps "
 pipx inject $opts devops-sso-util ./b2rds-0.6.20.tar.gz
