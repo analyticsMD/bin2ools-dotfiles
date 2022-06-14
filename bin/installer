@@ -235,14 +235,14 @@ fi
 logk
 
 # HOMEBREW DIAGNOSTICS and INSTALLS.
-if [ $HOMEBREW_PREFIX == $HOMEBREW_REPOSITORY ]; then
-  ln -fs "${HOMEBREW_REPOSITORY}/bin/brew" "${HOMEBREW_PREFIX}/bin/brew"
+if [[ $HOMEBREW_PREFIX == $HOMEBREW_REPOSITORY ]]; then
+  ln -fs "${HOMEBREW_REPOSITORY}/bin/brew" "${HOMEBREW_PREFIX}/bin/brew" >/dev/null 2>&1
 fi
 
 
 # Look for outdated packages. 
 # Skip if our dependencies to not need updating.
-brew outdated | tee > ${HOME}/.outdated 2>&1
+$(which brew) outdated | tee > ${HOME}/.outdated 2>&1
 
 brew_inst() {
   last="${@:$#}" 
@@ -288,12 +288,12 @@ sudo_askpass chown -R "$USER:admin" "$HOMEBREW_REPOSITORY"
 
 if [ $HOMEBREW_PREFIX != $HOMEBREW_REPOSITORY ]
 then
-  ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
+  ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew" >/dev/null 2>&1
 fi
 
-if [ $HOMEBREW_PREFIX == $HOMEBREW_REPOSITORY ]
+if [[ -n $HOMEBREW_PREFIX && $HOMEBREW_PREFIX == $HOMEBREW_REPOSITORY ]]
 then
-  ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
+  ln -sf "$HOMEBREW_REPOSITORY/bin/brew" "$HOMEBREW_PREFIX/bin/brew" >/dev/null 2>&1
 fi
 
 
@@ -566,11 +566,6 @@ cp ${HOME}/.bin2ools-dotfiles/bin/b2 /usr/local/bin
 log "Your system is now bootstrapped!"
 
 
-echo -ne "shopt -s expand_aliases\n"
-echo -ne "shopt -s progcomp_alias\n"
-echo -ne alias bt=\"source \$\(b2\)\"\\n
-
-
 # check for github access (early on).
 # ssh git@github.com
 # ----------------------
@@ -582,10 +577,10 @@ echo -ne alias bt=\"source \$\(b2\)\"\\n
 #echo "[ -f "${ARCH_DIR}" ] && . /usr/local/etc/bash_completion" >> ~/.bash_profile
 
 # Enhanced file path completion in bash - https://github.com/sio/bash-complete-partial-path
-[ -s "$HOME/.config/bash-complete-partial-path/bash_completion" ] && {
-     source "$HOME/.config/bash-complete-partial-path/bash_completion"
-     _bcpp --defaults
- }    
+#[ -s "$HOME/.config/bash-complete-partial-path/bash_completion" ] && {
+#     source "$HOME/.config/bash-complete-partial-path/bash_completion"
+#     _bcpp --defaults
+# }    
 
 # Enhanced file path completion in bash - 
 # https://github.com/sio/bash-complete-partial-path
@@ -596,11 +591,13 @@ echo -ne alias bt=\"source \$\(b2\)\"\\n
 #    source "${HOME}/.config/partial-path/bash_completion"
 #    _bcpp --defaults
 #}
-#!/bin/bash
+
 
 touch ${HOME}/.bash_profile
-if `! grep BIN2OOLS ~/.bash_profile`; then
-
+REF="$(cat ${HOME}/.bash_profile | \
+       perl -lne 'print if m/BIN2OOLS/' | wc -l)"
+echo REF: $REF
+if [[ "${REF}" -eq 0 ]]; then  
   {
     echo -ne "# --------------------------\n"
     echo -ne "# BIN2OOLS entries.\n"
@@ -613,3 +610,7 @@ if `! grep BIN2OOLS ~/.bash_profile`; then
     export PATH="/usr/local/sbin:$PATH"
   } >> ${HOME}/.bash_profile
 fi
+
+# Diagnoistic screen
+curl -sL https://raw.githubusercontent.com/dylanaraps/neofetch/master/neofetch | bash
+
