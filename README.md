@@ -11,18 +11,18 @@ to install Homebrew, and other installation tools.  If you do not perform this s
 difficult to guarantee the install will succeed.  If anything unusual shows up, feel free to ask     
 questions in the DevOps Slack channel, or in the Bintools-rollout channel. They will be answered quickly! 
 
-https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11
+[https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11](_)
 
 IMPORTANT: If you get the following message from brew doctor during the prep step, you should run the 
 following commands, which will uninstall your Homebrew packages completely, and reinstall them in the
 proper location. NOTE: This is **absolutely necessary** for your system to operate properly, moving forward. 
 
-
+&nbsp; &nbsp; 
 
 
 ## Installation
 
-[]()  **Warning:** See above if this is your first time installing Bintools.  Be sure to review the short video.  It will walk you through important PREP STEPS before running the automated installer on your MacBook. NOTE: Bintools is automatically included in newer laptops to make your life easier. 
+**Warning:** See above if this is your first time installing Bintools.  Be sure to review the short video.  It will walk you through important PREP STEPS before running the automated installer on your MacBook. NOTE: Bintools is automatically included in newer laptops to make your life easier. 
 
 ### Using this Github repository, and the automatic installer. 
 
