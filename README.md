@@ -23,7 +23,7 @@ proper location. NOTE: This is **absolutely necessary** for your system to opera
 
 ## Installation
 
-[]()  **Warning:** See above if you have never given bintools-dotfiles a try.  You should first review the short video subject above, which will walk you through important PREP STEPS before installing Homebrew and pipx packages that constitute a Bin2ools install on your MacBook. NOTE: Bintools scripts and settings are included in newer laptops to make your life easier, but don't use them blindly, especially if you have strong opinions about open source.  They are still "Use at your own risk!"
+[]()  **Warning:** See above if this is your first time installing Bintools.  Be sure to review the short video.  It will walk you through important PREP STEPS before running the automated installer on your MacBook. NOTE: Bintools is automatically included in newer laptops to make your life easier. 
 
 ### Using this Github repository, and the automatic installer. 
 
