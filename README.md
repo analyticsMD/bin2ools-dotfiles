@@ -7,12 +7,12 @@ The installation repository for Bintools and related packages.
 # PREPARING TO INSTALL BINTOOLS
 
 Please watch this short video and follow the steps outlined to clean up your laptop and prepare 
-to install Homebrew, and other installation tools.  If you do not perform this step manually, 
-it can be very difficult to predict whether the install will properly succeed. If anything unusual
-shows up during this step, feel free to ask questions in the DevOps Slack channel, or in the 
-Bintools-rollout channel. They will be answered quickly! 
+to install Homebrew, and other installation tools.  If you do not perform this step, it can be      
+difficult to guarantee the install will succeed. If anything unusual shows up during this step,     
+feel free to ask questions in the DevOps Slack channel, or in the Bintools-rollout channel. 
+They will be answered quickly! 
 
-[https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11]
+[https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11](prepwork)
 
 IMPORTANT: If you get the following message from brew doctor during the prep step, you should run the 
 following commands, which will uninstall your Homebrew packages completely, and reinstall them in the
