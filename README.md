@@ -11,7 +11,7 @@ to install Homebrew, and other installation tools.  If you do not perform this s
 difficult to guarantee the install will succeed.  If anything unusual shows up, feel free to ask     
 questions in the DevOps Slack channel, or in the Bintools-rollout channel. They will be answered quickly! 
 
-![prepwork](https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11)
+https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11
 
 IMPORTANT: If you get the following message from brew doctor during the prep step, you should run the 
 following commands, which will uninstall your Homebrew packages completely, and reinstall them in the
