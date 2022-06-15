@@ -12,7 +12,7 @@ it can be very difficult to predict whether the install will properly succeed. I
 shows up during this step, feel free to ask questions in the DevOps Slack channel, or in the 
 Bintools-rollout channel. They will be answered quickly! 
 
-https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11
+[https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11]
 
 IMPORTANT: If you get the following message from brew doctor during the prep step, you should run the 
 following commands, which will uninstall your Homebrew packages completely, and reinstall them in the
