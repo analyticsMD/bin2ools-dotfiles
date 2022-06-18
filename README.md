@@ -4,35 +4,36 @@ The installation repository for Bintools and related packages.
 ![Screenshot of my shell prompt](docs/bintools.png)
 
 
-# PREPARING TO INSTALL BINTOOLS
+# PREP
 
-Please watch this short video and follow the steps outlined to clean up your laptop and prepare     
-to install Homebrew, and other installation tools.  If you do not perform this step, it can be      
-difficult to guarantee the install will succeed.  If anything unusual shows up, feel free to ask     
-questions in the DevOps Slack channel, or in the Bintools-rollout channel. They will be answered quickly! 
+Run this command on your laptop and do everything it tells you to!
 
+```brew doctor```
+
+If anything unusual shows up, feel free to ask questions in the DevOps Slack channel,     
+or in the Bintools-rollout channel in Slack. They will be answered quickly! 
+
+Instructional video:
 https://www.loom.com/share/8b0fee43baf24488a6a114aac075be11
-
-IMPORTANT: If you get the following message from brew doctor during the prep step, you should run the 
-following commands, which will uninstall your Homebrew packages completely, and reinstall them in the
-proper location. NOTE: This is **absolutely necessary** for your system to operate properly, moving forward. 
 
 &nbsp; &nbsp; 
 
-
 ## Installation
 
-**Warning:** See above if this is your first time installing Bintools.  Be sure to review the short video.  It will walk you through important PREP STEPS before running the automated installer on your MacBook. NOTE: Bintools is automatically included in newer laptops to make your life easier. 
+**Warning:** See **PREP section** above if this is your first time installing Bintools.  
 
-### Using this Github repository, and the automatic installer. 
-
-The script below clones the repository under ~/.bintools-dotfiles in your home directory. It's important to keep this location, as other tools and scripts may look to find it there.  The bootstrapper script will clone (or pull) the latest version and copy the files to this directory.  The installer usually takes 10-15 minutes, and installs all components hands-free.  If you have no Git credential helper installed, it will install one on your behalf, asking once or twice for your Github credentials using a pop up browser page. It also asks for your root password exactly once, and will produce an Okta credential popup upon completion, so you can perform your first login.  
-
-If the installer has trouble for any reason, you can safely rerun it multiple times.  It is idempotent.  Just cut and paste one of the commands below.  The first commmand installs ONLY the basic rds and ssm tools and the zero-trust login framework.  The second link installs Database graphic tools, such as MySQL Bench and DataGrip in addition to the basic tools. Other tools are also available for install. The list is steadily growing!  See the addenda notes for a list of packages near the end of this doc for other notable features that can be added to your bintools!
+Cut-and-paste the following one-liner into your bash shell, on your laptop.
 
 ```bash
 u=https://bit.ly/3Kavmy1 f=${HOME}/i.sh && (curl -L $u||wget -O - $u||fetch -o - $u) > $f && chmod 700 $f && $f
 ```
+
+### Using this Github repo. 
+
+The script above clones the repository under ~/.bintools-dotfiles in your home directory. It's important to keep this location, as other tools and scripts may look to find it there.  The bootstrapper script will clone (or pull) the latest version and copy the files to this directory.  The installer usually takes 10-15 minutes, and installs all components hands-free.  If you have no Git credential helper installed, it will install one on your behalf, asking once or twice for your Github credentials using a pop up browser page. It also asks for your root password exactly once, and will produce an Okta credential popup upon completion, so you can perform your first login.  
+
+If the installer has trouble for any reason, you can safely rerun it multiple times.  It is idempotent.  Just cut and paste one of the commands below.  The first commmand installs ONLY the basic rds and ssm tools and the zero-trust login framework.  The second link installs Database graphic tools, such as MySQL Bench and DataGrip in addition to the basic tools. Other tools are also available for install. The list is steadily growing!  See the addenda notes for a list of packages near the end of this doc for other notable features that can be added to your bintools!
+
 
 ```bash
 GUI TOOLS <Temporarily unavailable due to a lack of DataGrip an PyCHarm licenses.>
