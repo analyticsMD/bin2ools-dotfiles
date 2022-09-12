@@ -1,54 +1,85 @@
 #!/usr/bin/env /usr/local/bin/bash
 
-export BT="${HOME}/.bt"
-. ${BT}/settings
-. ${BT}/src/inst.arr
+# TODO: add fields: private_ip_address: public_ip_address
 
-#BT_DEBUG="gen"
+# TODO: write library functions
+#       -- lib     - create lib dir, add to tools, and settings.
+#       -- refresh - (func) unsets AWS_ session vars, then reruns 'sso'. 
+#       -- sso     - if run without args, drops you to a shell with creds (or fails loudly)
+#                  - if run with args, acts as a wrapper, passing request to a subshell.
+#                  - checks current timestamp (see sso util) to see if we need to re-up.
+#                  - if stale, or expired, creates new.  (Looks for running ecs credential agent)
+#                  - loads 'AWS_' (separate routine) - gets these from 'settings' file.
+#                  - loads  
 
-# regenerate inst array, if not present.
-# 
-[[ "${#inst[@]}" -le 3 ]] && { 
-  # Queries aws for a list of all instances. 
-  # Caches them as an associative array in a 
-  # local file.
-  # 
-  cache_inst
-  # creates: fully populated inst_map array.
-  get_inst
+export BT=${HOME}/.bt
+. ${BT}/lib/utils.bash
+. ${BT}/src/inst_map.src
+#BT_DEBUG=yes
 
-} 
+autologin 
 
+# regenerate inst_map array, if not present.
+#
 [[ "${#inst_map[@]}" -lt 2 ]] && {
-  echo "FATAL: Could not generate inst_map array." \
-  && exit 1
-}  
+  # Queries aws for a list of all instances.
+  # Caches them as an associative array in a
+  # local file in the generate.d dir.
+  #
+  cache_inst_json
+  # creates: fully populated inst_map array.
+  get_inst_json
+}
 
-### ----------------------------------------------------
-### Print a bash completion file, for sourcing. 
-### ----------------------------------------------------
-SSM_CMPL=${BT}/src/ssm.cmpl
-cat ${BT}/inst/txt/bt_bash_header                  > $SSM_CMPL
-echo -ne '\n\ncomplete -W "\n'                    >> $SSM_CMPL
-for i in `printf '%s\n' ${!inst[@]} | sort`; do
-  printf '  %s \\\n' $i                           >> $SSM_CMPL
-done
-echo -ne "\" ssm ssm.bash ssh_over_ssm\n"                  >> $SSM_CMPL
-echo done.
+#to_debug env: $(env | grep AWS_)
 
-debug inst 
-debug declare -p inst
+INSTANCES="$(aws ec2 describe-instances \
+    --filters Name=tag-key,Values=Name \
+    --query 'Reservations[*].Instances[*].{
+               Instance:InstanceId,
+               Name:Tags[?Key==`Name`]|[0].Value,
+               PrivAddr:PrivateIpAddress,
+               KeyName:KeyName
+           }' \
+    --output json \
+    --region us-west-2 | \
+    jq -r '.[][] | 
+              (.Name)+"|"+
+              (.Instance)+"|"+
+              (.PrivAddr)+"|"+
+              (.KeyName)+"|"+
+              (.PubAddr)' \
+           )"
 
-### ----------------------------------------------------
-### Queue Spider-Man Theme Song...
-### ----------------------------------------------------
-SSM_SRC=${BT}/src/ssm.src
-cat ${BT}/inst/txt/bt_header                       > $SSM_SRC
-while IFS= read l; do
-  region=${AWS_CONFIGURE_SSO_DEFAULT_SSO_REGION}
-  host=$(echo $l | awk -F, '{print $1}')
-  instance=$(echo $l | awk -F, '{print $2}')
-  echo alias $host=\"aws ssm start-session \
-    --target "${instance}" \
-    --region ${region}\" >> "${SSM_SRC}"
-done< <(printf "%s\n" ${inst[@]} | grep '%' | sort) 
+SRC="${BT}/cfg/ssm.json"
+
+[ ! -d "${BT}/src" ] && \
+echo "FATAL: ${BT}/src does not exist." && die
+
+cat ${BT}/inst/txt/bt_header               > $SRC
+echo -ne "\n\n###  records found: " | tee -a $SRC
+echo -ne "${INSTANCES}" | wc -l     | tee -a $SRC
+echo -ne "\n\n"                     | tee -a $SRC
+
+[ ! -d "${BT}/gen" ] && \
+echo "FATAL: ${BT}/gen dir not found." && die
+
+# print file.
+region=us-west-2
+while IFS="|" read -r name id private_ip key_name; do
+  tee -a $SRC <<-EOF
+  Host ${name}
+    Hostname ${private_ip}
+    ForwardAgent "yes"
+    User "ec2-user"
+    IdentityFile ~/.ssh/${key_name}
+    StrictHostKeyChecking no
+    ProxyCommand sh -c "aws ssm start-session \
+      --document-name AWS-StartSSHSession     \
+      --parameters 'portNumber=22'            \
+      --region ${region}                      \
+      --target ${id}"
+
+EOF
+done< <(echo "${INSTANCES}" | tr -s ' ' _ | sort)
+

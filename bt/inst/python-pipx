@@ -1,7 +1,11 @@
 #!/usr/bin/env /usr/local/bin/bash
 
 export BT="${HOME}/.bt"
-. ${BT}/settings
+. "${BT}/settings"
+. "${BT}/lib/utils.bash"
+
+PEXEC="$(get_python_exec)"
+export PYTHONEXECUTABLE=${PEXEC}
 
 # put your Git mirror of Homebrew/homebrew-core here
 #export HOMEBREW_BREW_GIT_REMOTE="https://git.com/Homebrew/brew"
@@ -9,7 +13,7 @@ export BT="${HOME}/.bt"
 
 # use string equality when comparing values t
 
-source <( echo "$("${BT}"/cmd/_path -s 2>/dev/null)" )
+source <( echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 
 echo -ne "\n\n----------------------------------\n"
 echo -ne     "installing pipx deps...           \n"
@@ -39,7 +43,7 @@ opts="-f --include-deps "
 pipx install $opts ./devops-sso-util-4.27.1.tar.gz
 
 opts="-f --include-apps --include-deps "
-pipx inject $opts devops-sso-util ./b2rds-0.6.20.tar.gz
+pipx inject $opts devops-sso-util ./b2rds-0.6.21.tar.gz
 pipx inject $opts devops-sso-util ./b2ssm-0.6.16.tar.gz
 
 #$u/$p$g=b2ssm&ssm_complete&ssm_generate&ssm_local

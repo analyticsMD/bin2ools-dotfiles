@@ -3,15 +3,15 @@
 # prompt.py
 # ---------------------------------------------------
 # A mini-executable for pushing out a dynamic prompt
-# in bash / zsh.  
+# in bash / zsh.
 
 # ----------------------------------------------------
 # BT shared libs for python.
 # ----------------------------------------------------
-import configparser          # ini manipulation
-import json                  # json manipulation
-import pyjq as jq            # json manipulation
-import gzip, base64, hashlib # crypto.
+import configparser  # ini manipulation
+import json  # json manipulation
+import pyjq as jq  # json manipulation
+import gzip, base64, hashlib  # crypto.
 import re, math
 
 # ----------------------------------------------------
@@ -31,35 +31,36 @@ from os import path, chdir, getenv
 from os.path import join
 
 from cache import get_latest_peek
-from data  import *
+from data import *
 from prompt import *
 
 # --------------------------------------------------------
 # Trigger the next prompt cycle.
 # --------------------------------------------------------
 
+
 def next_prompt():
 
     """
-    Generates a new peek with the latest cache_data, 
-    then performs either a fast update (env_sync) or a 
+    Generates a new peek with the latest cache_data,
+    then performs either a fast update (env_sync) or a
     rigorous one (cache_audit).
     """
     peek = get_latest_peek()
     bt_encode(peek)
-    #print(f"this: {peek}")
+    # print(f"this: {peek}")
 
-    #(next_peek, next_sig) =
+    # (next_peek, next_sig) =
     try:
         this_sig = getenv(BT_SIG)
     except:
         IndexError, cache_audit(next_peek)
         # no previous peek. Force cache_audit.
         cache_audit(next_peek)
-    #except: BTParseError
+        # except: BTParseError
         if next_sig == this_sig:
             (this_sig, this_peek) = env_sync(next_peek)
-            env_update(this_sig, this_peek) # updates env. 
+            env_update(this_sig, this_peek)  # updates env.
         print(f"caught logging error.")
     finally:
         if this_sig != next_sig:
@@ -69,9 +70,9 @@ def next_prompt():
 
 
 def export_prompt():
-    """Export ascii colorized text for new prompt.
-    """
+    """Export ascii colorized text for new prompt."""
     pass
+
 
 def build_prompt(peek_obj):
     """
@@ -89,14 +90,13 @@ def build_prompt(peek_obj):
     such as zsh.
     """
 
-    #--  pulls the role, and expire from the latest peek:
+    # --  pulls the role, and expire from the latest peek:
 
-    #--  uses the qventus profile, e.g. 
+    # --  uses the qventus profile, e.g.
     #    'sso', '[team]', '[acct-team]', or [acct-guild-team]
     #    does not reflect other profiles.
 
-    #--  Changes prompt color as status approaches expired. 
-
+    # --  Changes prompt color as status approaches expired.
 
     """
     NOTES: 
@@ -112,4 +112,3 @@ def build_prompt(peek_obj):
     """
 
     next_prompt()
-

@@ -11,27 +11,14 @@
 #                  - if stale, or expired, creates new.  (Looks for running ecs credential agent)
 #                  - loads 'AWS_' (separate routine) - gets these from 'settings' file.
 #                  - loads  
-
+domain="cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com" 
+DATA_DIR="${HOME}/.bt/data/json/aws"
 export BT=${HOME}/.bt
-. ${BT}/lib/bt
-. ${BT}/src/inst_map.src
+. ${BT}/lib/utils.bash
 #BT_DEBUG=yes
 
-autologin prod
-
-# regenerate inst_map array, if not present.
-#
-[[ "${#inst_map[@]}" -lt 2 ]] && {
-  # Queries aws for a list of all instances.
-  # Caches them as an associative array in a
-  # local file in the generate.d dir.
-  #
-  cache_inst
-  # creates: fully populated inst_map array.
-  get_inst
-}
-
-#to_debug env: $(env | grep AWS_)
+autologin 
+echo .
 
 INSTANCES="$(aws ec2 describe-instances \
     --filters Name=tag-key,Values=Name \
@@ -42,19 +29,20 @@ INSTANCES="$(aws ec2 describe-instances \
                KeyName:KeyName
            }' \
     --output json \
-    --region us-west-2 | \
-    jq -r '.[][] | 
-              (.Name)+"|"+
-              (.Instance)+"|"+
-              (.PrivAddr)+"|"+
-              (.KeyName)+"|"+
-              (.PubAddr)' \
-           )"
+    --region "us-west-2" | \
+             jq '[ .[] | INDEX(.Name) ]' | \
+             tee "${DATA_DIR}/ssm.json")"
+echo ..
+
+CLUSTERS="$(cat ${DATA_DIR}/rds.json |  \
+            jq '.[] | INDEX(.endpoint)' | perl -pe 's/\.\":/\":/g')"
+echo ...
+
 
 SRC="${BT}/cfg/ssh_over_ssm.conf"
 
-[ ! -d "${BT}/src" ] && \
-echo "FATAL: ${BT}/src does not exist." && die
+#[ ! -d "${BT}/src" ] && \
+#echo "FATAL: ${BT}/src does not exist." && die
 
 cat ${BT}/inst/txt/bt_header               > $SRC
 echo -ne "\n\n###  records found: " | tee -a $SRC
@@ -65,8 +53,16 @@ echo -ne "\n\n"                     | tee -a $SRC
 echo "FATAL: ${BT}/gen dir not found." && die
 
 # print file.
-region=us-west-2
+[[ "${AWS_DEFAULT_REGION}" == "us=west-2" ]] && { 
+    export AWS_DEFAULT_REGION=us-west-2
+    export region="${AWS_DEFAULT_REGION}"
+}
+
+method=AWS-StartSSHSession 
+parameters="portNumber=22"
+echo ....
 while IFS="|" read -r name id private_ip key_name; do
+  echo Hi. 
   tee -a $SRC <<-EOF
   Host ${name}
     Hostname ${private_ip}
@@ -75,11 +71,46 @@ while IFS="|" read -r name id private_ip key_name; do
     IdentityFile ~/.ssh/${key_name}
     StrictHostKeyChecking no
     ProxyCommand sh -c "aws ssm start-session \
-      --document-name AWS-StartSSHSession     \
-      --parameters 'portNumber=22'            \
+      --document-name ${method}               \
+      --parameters \'${parameters}\'          \
       --region ${region}                      \
       --target ${id}"
 
 EOF
-done< <(echo "${INSTANCES}" | tr -s ' ' _ | sort)
 
+done< <(cat ${ssm_json} | jq -r)
+echo .....
+
+for k in "$(cat ${AWS_JSON}/rds.json         | \
+   jq -r ' to_entries[].value                |
+           to_entries[].value                |
+           to_entries                        |
+           map("\(.key)=\(.value|tostring)") | .[]')"; do
+ 
+   # perl -pe 's/[\%\,\|,\..]//g')"; do 
+
+  echo "got: $k"
+  export "${k}"
+  if [[ "${k}" !~ ^endpoint\= ]] && { 
+      export "${k}" && continue
+      method=AWS-StartPortForwardingSessionToRemoteHost
+      parameters="portNumber=3306","localPortNumber=${port}","host=${endpoint}.${domain}"
+   
+      tee -a $SRC <<-EOF
+      Host ${name}
+      Hostname ${private_ip}
+      ForwardAgent "yes"
+      User "ec2-user"
+      IdentityFile ~/.ssh/${key_name}
+      StrictHostKeyChecking no
+      ProxyCommand sh -c "aws ssm start-session \
+        --document-name ${method}               \
+        --parameters \'${parameters}\'          \
+        --region ${region}                      \
+        --target ${id}"
+  EOF
+
+done 
+
+#cat ~/.bt/data/json/aws/rds.json | jq -r 'to_entries[].value | to_entries[].value | to_entries|map("\(.key)=\(.value|tostring)") | .[]' | perl -pe 's/[\%\,\|,\..]//g'
+    

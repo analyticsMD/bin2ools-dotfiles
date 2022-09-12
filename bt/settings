@@ -5,8 +5,9 @@
 export BT="${HOME}/.bt"
 . "${BT}/lib/utils.bash" 
 
-env_init
-
+# Pythons forked will use this var.
+PEXEC="$(get_python_exec)"
+export PYTHONEXECUTABLE=${PEXEC}
 
 # -----------------------------------------------------------------
 # DEBUGGING
@@ -48,6 +49,11 @@ bt_settings() { [[ "${BT_SETTINGS}" = *$1* ]] && >&2 "${@:2}" ;} || true
 # preconfigured dotfiles (from ~/.bin2ools-dotfiles) or add your own.
 
 
+export DEFAULT_ACCOUNT="prod"
+[[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;} 
+export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+
+
 
 
 # -----------------------------------------------------------------
@@ -79,7 +85,7 @@ export AWSLIB="devops"
 [[ ! -e "${DEFAULT_AWSLIB}" ]] && { 
     export AWSLIB="aws" 
     export DEFAULT_AWSLIB="${HOME}/.local/bin/${AWSLIB}-sso-util" 
-} || true
+} 
 
 
 
@@ -89,7 +95,8 @@ export AWSLIB="devops"
 
 
 to_debug flow && sleep 0.5 && echo "stgs:autologin"
-
+aws_defaults
+env_init
 set_team 
 
 # Team account defaults to prod, for now.
@@ -99,10 +106,7 @@ export DEFAULT_ACCOUNT="prod"
 [[ -z "${BT_TEAM}"    ]] && export BT_TEAM="$(cat "${HOME}/cache/team_info")"
 [[ -z "${BT_ROLE}"    ]] && export BT_ROLE="${BT_ACCOUNT}"-"${BT_TEAM}" 
 
-autologin "${BT_ROLE}" || true
-
-
-export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+autologin "${BT_ROLE}" 
 
 
 
@@ -139,7 +143,6 @@ export LOADER="legacy"
 
 export NOISE="quiet"
 export SOURCE_FILES="no"
-
 
 
 [[ "${SOURCE_FILES}" =~ "yes" ]] && { 

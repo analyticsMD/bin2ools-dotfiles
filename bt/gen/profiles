@@ -5,6 +5,10 @@
 export BT="${HOME}/.bt"
 . ${BT}/lib/utils.bash
 
+# Pythons forked will use this var.
+PEXEC="$(get_python_exec)"
+export PYTHONEXECUTABLE=${PEXEC}
+
 # -----------------------------------------------------------------
 # DEBUGGING
 # -----------------------------------------------------------------
@@ -58,7 +62,7 @@ source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 export AWSLIB="devops"
 # fall back to aws-sso-util when devops isn't available.
 [[ ! -e "${DEFAULT_AWSLIB}" ]] && { 
-    export AWSLIB="aws" 
+    #export AWSLIB="aws" 
     export DEFAULT_AWSLIB="${HOME}/.local/bin/${AWSLIB}-sso-util" 
 } || true
 
@@ -80,6 +84,7 @@ export DEFAULT_ACCOUNT="prod"
 [[ -z "${BT_TEAM}"    ]] && export BT_TEAM="$(cat "${HOME}/cache/team_info")"
 [[ -z "${BT_ROLE}"    ]] && export BT_ROLE="${BT_ACCOUNT}"-"${BT_TEAM}" 
 
+bt
 autologin "${BT_ROLE}" || true
 
 export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
@@ -240,6 +245,7 @@ for i in ${accounts[@]}; do
 done
 
 
+autologin
 
 set default to new default 'prod-${BT_TEAM}'
 aws_profile "${BT_ROLE}"

@@ -1,0 +1,87 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# TODO: add fields: private_ip_address: public_ip_address
+
+# TODO: write library functions
+#     -- lib     - create lib dir, add to tools, and settings.
+#     -- refresh - (func) unsets AWS_ session vars, then reruns 'sso'. 
+#     -- sso     - if run without args, drops you to a shell with creds (or fails loudly)
+#                - if run with args, acts as a wrapper, passing request to a subshell.
+#                - checks current timestamp (see sso util) to see if we need to re-up.
+#                - if stale, or expired, creates new.  (Looks for running ecs credential agent)
+#                - loads 'AWS_' (separate routine) - gets these from 'settings' file.
+#                - loads  
+region=us-west-2
+
+export BT=${HOME}/.bt
+. ${BT}/lib/utils.bash
+. ${BT}/src/inst_map.src
+#BT_DEBUG=yes
+
+autologin
+
+# regenerate inst_map array, if not present.
+#
+[[ "${#inst_map[@]}" -lt 2 ]] && {
+  # Queries aws for a list of all instances.
+  # Caches them as an associative array in a
+  # local file in the generate.d dir.
+  #
+  cache_inst
+  # creates: fully populated inst_map array.
+  get_inst
+}
+
+#to_debug env: $(env | grep AWS_)
+
+#INSTANCES="$(aws ec2 describe-instances \
+#    --filters Name=tag-key,Values=Name \
+#    --query 'Reservations[*].Instances[*].{
+#               Instance:InstanceId,
+#               Name:Tags[?Key==`Name`]|[0].Value,
+#               PrivAddr:PrivateIpAddress,
+#               KeyName:KeyName
+#           }' \
+#    --output json \
+#    --region us-west-2 | \
+#    jq -r '.[][] | 
+#              (.Name)+"|"+
+#              (.Instance)+"|"+
+#              (.PrivAddr)+"|"+
+#              (.KeyName)+"|"+
+#              (.PubAddr)' \
+#           )"
+#echo -ne INSTANCES: ${INSTANCES}
+
+SRC="${BT}/cfg/ssh_ssm.conf"
+RDS_DATA="${BT}/data/json/aws/rds.json"
+[ ! -d "${BT}/src" ] && \
+echo "FATAL: ${BT}/src does not exist." && die
+[ ! -d "${BT}/gen" ] && \
+echo "FATAL: ${BT}/gen dir not found." && die
+
+cat ${BT}/inst/txt/bt_header                     > $SRC
+echo -ne "\n\n###  records found: $i\n\n" | tee -a $SRC
+
+i=
+for c in $(cat ${RDS_DATA} | jq -r '.cluster | to_entries[].key' | sort); do
+  (( i++ ))    
+  jq -r ".cluster.\"$c\""
+done
+exit
+
+  tee -a $SRC <<-EOF
+  Host ${name}
+    Hostname ${private_ip}
+    ForwardAgent "yes"
+    User "ec2-user"
+    IdentityFile ~/.ssh/${key_name}
+    StrictHostKeyChecking no
+    ProxyCommand sh -c "aws ssm start-session \
+      --document-name AWS-StartSSHSession     \
+      --parameters 'portNumber=22'            \
+      --region ${region}                      \
+      --target ${id}"
+
+EOF
+

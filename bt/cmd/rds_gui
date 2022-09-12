@@ -1,0 +1,416 @@
+#!/usr/bin/env /usr/local/bin/bash
+bt_cluster=${1}
+
+# rds_gui
+# -------
+# A wrapper For spawning GUIs like MySQL Workbench, 
+# DBeaver, DataGrip, and PyCharm, while passing in 
+# connection params.
+
+# usage: 
+# rds_gui CLUSTER <optional_args>
+
+echo bt_cluster: ${bt_cluster}
+
+unset SOURCE_FILES
+export BT="${HOME}/.bt"
+. ${BT}/lib/utils.bash 
+. ${BT}/settings
+aws_defaults
+env_init
+set_team 
+
+#poetry="$(which poetry)"
+
+[[ -z "${BT_ROLE}" ]] && export BT_ROLE="${DEFAULT_ROLE}"
+autologin "${BT_ROLE}" 
+
+usage () {
+    echo " usage "
+    echo " -----"
+    echo " -P (ssm|ssh) - tunnel protocol."
+    echo " -d debug     - add debugging output."
+    echo " -f file      - file to write token into. (optional)"
+    echo ' -g (dbeaver|
+               pycharm|
+              datagrip|
+             workbench) - which GUI config to spawn (if any).'
+    echo " -h help      - print this message."
+    echo " -j json      - Push generator results to a json file."
+    echo " -k key_path  - key path to write (if any)"
+    echo " -o <file|->  - Write token to stdout (or file, if any)."
+    echo " -p <paste>   - get-and-paste a login token to the mac pasteboard"
+    echo " -t team      - OKTA_team account. (NO default: <team>)"
+    echo " -u user      - OKTA_user account. (Default: dba_guild)"
+    echo " -v variable  - export GUI_variable. (Default: dba_guild)"
+    exit 1
+}
+
+default_arg() { if [ -z "$OPTARG" ]; then 
+    die "No arg for --$OPT option" && usage; fi; 
+}
+
+# lib/utils
+export BT=${HOME}/.bt
+. "${BT}/lib/utils.bash"
+
+while getopts P:d:f:g:h:j:k:o:p:t:u:v:-: OPT; do
+
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+        OPT="${OPTARG%%=*}"       # extract long option name
+        OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#=}"      # if long option, remove assigning `=`
+    fi
+
+    case "$OPT" in
+        d | debug    )    debug=true         ;;
+        h | help     )    usage=true         ;;
+        f | file     )    file="$OPTARG"     ;;
+        g | gui      )    gui="$OPTARG"      ;;
+        j | json     )    json="$OPTARG"     ;; 
+        k | ssm_key  )    ssm_key="$OPTARG"  ;;
+        o | out      )    out="$OPTARG"      ;;
+        p | port     )    port="$OPTARG"     ;;
+        P | protocol )    protocol="$OPTARG" ;;
+        t | team     )    team="$OPTARG"     ;;
+        u | user     )    user="$OPTARG"     ;;
+        v | var      )    var="$OPTARG"      ;;
+        ??* )             die "Illegal option --$OPT" ;;  # bad long option
+        \? )              exit 2 ;;  # bad short option (error reported via getopts)
+    esac
+done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+set_tunnel_user() { 
+    echo ec2-user
+} 
+
+set_ssh_keypath() { 
+    echo "${HOME}/.ssh/ec2-user.pem" 
+} 
+
+declare -a ssm_keypath
+ssm_keypath+=( devops bt "${bt_cluster}" "${bt_iam_user}" )
+#ssm_keypath+=( devops bt rds "${bt_user}" "${bt_team}" )
+#ssm_keypath+=( "${bt_account}" "${bt_cluster}" "${bt_iam_user}" )
+#/devops/bt/rds/${home}/arch/prod/demo-a-amd/dba_guild
+#/devops/bt/demo-a-amd/dba_guild
+
+
+# get all default vars
+get_defaults() { 
+    export bt_region=us-west-2
+    export bt_account="${DEFAULT_ACCOUNT}"
+    export bt_team="${BT_TEAM}"   
+    export bt_user="${BT_USER}"
+    export bt_iam_user="$(set_iam_user)"
+    export bt_ssh_user="$(set_tunnel_user)"
+    export bt_ssh_keypath="$(set_ssh_keypath)"
+    export bt_out="ssm"       # (ssm|file|pbcopy|var|-)
+    declare -a ssm_keypath
+    ssm_keypath+=( devops bt rds "${bt_user}" "${bt_team}" )
+    ssm_keypath+=( "${bt_account}" "${bt_cluster}" "${bt_iam_user}" )
+    export bt_out_ssm_keypath="$(join_by '/' ${ssm_keypath[@]} )"
+    export bt_out_file="${HOME}/tmp/bt_out"
+    export bt_out_var="bt_var"
+    export bt_gui="dbv"       # (dbv|wb|dg)
+    export bt_tunnel="ssm"    # (ssm|ssh)
+    export bt_json="${BT}/data/json/aws/rds.json"
+}
+
+get_defaults 
+
+get_settings() { 
+    export bt_cluster="${1}" 
+    [ -z "${bt_cluster}" ] && { 
+        echo "${RED}FATAL${NC}: No cluster set."   
+        exit 1
+    }
+    export bt_host="$(cat ${bt_json} | jq -r ".cluster.\"${bt_cluster}\".host")"
+    export bt_host_ip="$(cat ${bt_json} | jq -r ".cluster.\"${bt_cluster}\".ip")"
+    export bt_endpoint="$(cat ${bt_json} | jq -r ".cluster.\"${bt_cluster}\".endpoint")"
+    export bt_port="$(cat ${bt_json} | jq -r ".cluster.\"${bt_cluster}\".port")"
+    export bt_instance="$(cat ${bt_json} | jq -r ".cluster.\"${bt_cluster}\".instance" | perl -pe 's/%//g')"
+} 
+
+get_settings ${bt_cluster}
+
+verify_settings() { 
+
+    # check dependencies
+    yq_ver="$(yq -V | awk '{print $NF}' | cut -d'.' -f 1)"
+    [[ "${yq_ver}" -ne 4 ]] && { 
+        echo "${RED}FATAL:${NC} yq must be v4." ;
+        code=1
+    }  
+
+    # check vars
+    declare -a critical_vars=()
+    critical_vars+=( bt_cluster bt_region bt_account bt_team )
+    critical_vars+=( bt_user bt_iam_user bt_ssh_user bt_ssh_keypath )
+    critical_vars+=( bt_out bt_gui bt_tunnel bt_json bt_host_ip )
+    for v in ${critical_vars[@]}; do
+        this="\$${v}"
+        [[ -z "${this}" ]] && { 
+            echo "${RED}FATAL:${NC} No \$${v} var." ;
+            code=1
+        } 
+    done 
+
+    # check rds data file. 
+    [ ! -f "${bt_json}" ] && { 
+        echo "${RED}FATAL:${NC} No rds.json file." ;
+        code=1
+    } 
+
+    # report anything bad or missing.
+    [[ -z "${code}" ]] && { 
+        echo "Exiting due to above errors."
+        exit 1 
+    }
+} 
+
+#verify_settings
+
+echo Generate token
+
+### generate a new ssm token 
+TOKEN="$(aws rds generate-db-auth-token \
+         --hostname "${bt_endpoint}"    \
+         --port 3306                    \
+         --username "${bt_iam_user}")"
+
+export BT_TOKEN="${TOKEN}"
+echo TOKEN: ${TOKEN}
+### create new tunnel
+
+# generate ssh mini-config
+tmp_ssh_config="$(get_tmppath)"
+cat << EOF > "${tmp_ssh_config}"
+
+Host ${bt_host} ${bt_cluster}
+  Hostname "${bt_host_ip}"
+  ForwardAgent "yes"
+  User "${bt_ssh_user}"
+  IdentityFile "${bt_ssh_keypath}"
+  StrictHostKeyChecking no
+  ProxyCommand /usr/local/bin/bash -c "aws ssm start-session --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters \"portNumber=3306\",\"localPortNumber=3314\",\"host=${bt_endpoint}\" --region ${bt_region} --target ${bt_instance}"
+##[thedacare-amd]=thedacare-app-container%i-0c2f478a4dbcc04aa%thedacare%3333%thedacare-amd.cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com
+
+EOF
+
+echo fork tunnel subprocess
+
+### -- start tunnel. Fork into background. 
+echo ssh -tt -F "${tmp_ssh_config}" "${bt_cluster}" 
+( ssh -A -tt -F "${tmp_ssh_config}" "${bt_cluster}" ) &
+
+
+
+### spawn the gui tool
+### -- build the config
+### -- fork it; background it. 
+
+
+echo login protocols
+echo /${bt_out_ssm_keypath}
+### EXPERIMENT WITH LOGIN
+### 
+### write token to ssm keys 
+
+
+#status="$(aws secretsmanager create-secret \
+#    --name "/${bt_out_ssm_keypath}" \
+#J    --secret-string "${BT_TOKEN}"
+#)"
+#    --secret-string "{\"user\":\"dba_guild\",\"password\":\"${BT_TOKEN}\"}"
+
+status="$(aws secretsmanager put-secret-value \
+    --secret-id "/${bt_out_ssm_keypath}" \
+    --secret-string "${BT_TOKEN}"
+)"
+
+BT_TOKEN="$(aws secretsmanager get-secret-value \
+            --secret-id "/${bt_out_ssm_keypath}"
+)"
+
+echo "${BT_TOKEN}" | pbcopy
+
+echo "TOKEN:\n"
+echo "${BT_TOKEN}"
+
+#/Applications/MySQLWorkbench.app/Contents/MacOS/MySQLWorkbench --query demo-a-amd
+
+
+
+# -- can we configure dbeaver to fetch the ssm key?
+# -- can we export the token in a var that dbeaver can see? 
+# -- can we copy the generated key to the pasteboard, and past it? 
+#    (workbench)
+# -- test all three methods on all 4 platforms (try pycharm as well).. 
+
+# launch mysql 
+
+#ssm_keypath+=( devops bt rds "${bt_user}" "${bt_team}" )
+BT_TOKEN
+
+# -----------
+# parse args.
+# -----------
+
+help=false
+# returns sourceable arrays for rds and mysql params
+arg_parse() { 
+  declare -a rds_args=() || echo "No rds args."  # rds args (before the -- )
+  declare -a mysql_args=() || echo "No mysql args."  # mysql args (after the -- )
+  source <(parse_rds_args "${args[@]}")
+  
+  to_debug rds && echo mysql_args: "${mysql_args[@]}" >&3
+  to_debug rds && echo rds_args: "${rds_args[@]}"   >&3
+} 
+
+arg_parse
+
+iam_user=restricted  # default
+
+#debug echo instance: ${instance}
+[[ "$help" == true ]] && usage
+
+# Determine default RDS IAM user, based on team. 
+iam_user=restricted    # default
+[[ -n "$(find_in primary | grep "${BT_TEAM}")" ]] && ((is_primary++))
+[[ -n "${is_primary}" ]] && iam_user=dba_guild          # guild role
+[[ -z "${is_primary}" ]] && iam_user="team-${BT_TEAM}"  # team role
+
+
+# ---------------------------------------------
+# Ensure we have an active session and a role.
+# ---------------------------------------------
+
+# TUNNEL METHODS
+# --------------
+# We have three interchangeable methods for spawning
+# tunnels to RDS clusters. We prefer the 'pure ssm' 
+# method because of its simplicity. There are occasionally
+# reasons for selecting another, such as the need to 
+# multiplex connections, as when scanning, or updating 
+# many clusters at once. 
+#
+# Pure RDS method...
+# ------------------
+# Spawn a socat traffic forwarder on the designated
+# host for the cluster. Connect to the forwarder 
+# using ssm port forwarding, then let socat forward 
+# traffic to the designated RDS cluster. 
+
+# Requires: 
+# ---------
+# -- ssm policy access to the host
+# -- port forwarding privileges on the host
+# -- command privileges on the host
+# -- RDS IAM credentials for an iam_user.
+# 
+# TODO: Fork additional managed subshells to 
+# handle tunnel persistence, and LogForwarding capability. 
+
+
+[[ "${BT_CLUSTER}" == "NONE" ]] && { 
+  echo "You must select an RDS cluster to connect with." && \
+  echo "Use tab completion to select a cluster name."    && \
+  exit 1
+}
+
+# Set up a forking, multiplexing,
+# connection forwarder for encrypted RDS sessions.
+
+# start the cycle of acquiring a tunnel. 
+# --------------------------------------
+to_debug rds && echo -e "${GREEN}M${NC}: Spinning up a tunnel for ${CLUSTER}". >&3
+
+# Fork and detach a process to act autonomously as a tunnel manager.  
+# Before the fork, you must first duplicate stdout to the parent. 
+
+method=ssm
+
+# --------------------------------
+# Determine iam_user
+# --------------------------------
+iam_user="$(set_iam_user)"
+to_debug rds echo -e "${CYAN}T${NC}: iam_user is: ${iam_user}" >&3 
+
+# Pulling out all the stops to spawn
+# an independent process. MacOS isn't helping. 
+# 1.) double fork
+# 2.) new session
+# 3.) close all filehandles: 
+#     stdin, stdout, stderr, fd3, fd5
+# 4.) run with nohup
+
+TNL=( ${BT_LAUNCH_DIR}/rds_tunnel "${BT_CLUSTER}" )
+echo -ne "\n\n${GREEN}M${NC}: -----------------------------------\n"
+echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${BT_CLUSTER}. \n"
+echo -ne     "${GREEN}M${NC}: -----------------------------------\n\n"
+${TNL[@]} <&- & 
+
+# wait for tunnel. 
+# 
+# shellcheck disable=SC2015
+[[ -z "${bt_port}" ]] && echo "FATAL: port not set." && exit
+
+# get ready for response.
+# ----------------------------------------------------
+# get an RDS IAM login token 
+# ----------------------------------------------------
+tmppath="$(get_tmppath)"  
+to_debug rdsc && echo ${PURPLE}C${NC}: GETTING TOKEN: "${bt_endpoint}"
+to_debug rdsc && echo ${PURPLE}C${NC}: vars: "${iam_user}" "${bt_endpoint}"  "${tmppath}" >&5
+
+TOKEN="$(aws rds generate-db-auth-token \
+         --hostname "${bt_endpoint}" \
+         --port 3306                    \
+         --username "${iam_user}")"
+
+to_debug rdsc && echo token fingerprint: "${BT_TOKEN:(-7)}"  >&5
+
+
+# write a temp file for mysql client config. 
+# -----------------------------------------------
+{ 
+  # for global opts.
+  echo -ne "\n[client]\n"
+  echo -ne "user=\"${iam_user}\"\npassword=\"${BT_TOKEN}\"\n"
+  echo -ne "host=\"127.0.0.1\"\nport=\"${bt_port}\"\n"
+  echo -ne "protocol=\"TCP\"\nbind-address=\"127.0.0.1\"\n"
+  echo -ne "connect_timeout=\"30\"\n"
+  echo -ne "ssl-ca=\"${BT}/certs/rds-combined-ca-bundle.pem\"\n\n"
+} > "${HOME}/tmp/rds.cfg"  2>/dev/null
+
+
+# -------------------
+# reprocess mysql args.
+# -------------------
+# NOTE: This includes decoding in-line SQL.
+arg_parse() { 
+  declare -a mysql_args
+  cfg_args+=( --defaults-extra-file="${tmppath}.cfg" )
+  source <( reprocess_mysql_args ${mysql_args[@]} )
+} arg_parse # ------------------------ # build the mysql command
+# ------------------------
+export LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN=y
+
+# ---------------------------------
+# ready for tunnel. Start polling.
+# ----------------------------------
+# (Blocks until a proxy tunnel is available.)
+#
+to_debug rdst && echo -ne ${PURPLE}C${NC}: repolling  >&5
+repoll "${bt_port}" && sleep 0.1 && echo -ne "\n\n"
+
+# run the mysql client 
+to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
+#loader_addpath /usr/local/Cellar/mysql/8.0.29/bin
+#loader_flag mysql
+mysql --defaults-extra-file="${HOME}/tmp/rds.cfg"
+
+ 
