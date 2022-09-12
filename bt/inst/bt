@@ -1,0 +1,112 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+LOADER=legacy
+export BT="${HOME}/.bt"
+. "${BT}/lib/utils.bash"
+
+export LOADER=legacy
+
+. ${HOME}/.bt/lib/utils.bash
+
+set_team
+
+export DEFAULT_ACCOUNT="prod"
+export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+[[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;}
+
+
+# fall back to aws-sso-util when devops isn't available.
+export AWSLIB="devops"
+[[ ! -e "${HOME}/.local/bin/${AWSLIB}-sso-util}" ]] && {
+    export AWSLIB="aws"
+    export DEFAULT_AWSLIB="${AWSLIB}-sso-util"
+}
+
+[[ ! -f "${BT}"/cache/path_info ]] && {
+  "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
+}
+source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+
+toolsets="$(echo "${PATH}" | perl -pe 's/:/\n/g' | \
+      perl -nle 'print if m/\/b2/' | wc -l)"
+
+[[ -n "${toolsets}" ]] && {
+    echo -e "You have ${CYAN}${good}${NC} bintools installed."
+} || {
+    echo -e "${YELLOW}\$PATH${NC} is stale.\nPlease rerun the path tool."
+}
+
+export BT="${HOME}/.bt"               # expand your thinkscape.
+. "${BT}/settings"                    # set a goal.
+. "${BT}/lib/utils.bash"
+
+# expose a list of installed tools and toolsets.
+
+shopt -s expand_aliases
+
+tmppath="$(gmktemp)"
+
+{
+
+    SRC="$(dirname "$(echo "${PATH}"        | \
+           perl -pe 's/:/\n/g'              | \
+           grep -E 'devops|aws)-sso-util\/' | \
+           grep '\/b2'                      | \
+           perl -pe 's/^\/Users\/[\w_\-+]+(.*)/\$\{HOME\}\1/' | \
+           head -n 1 )"                       \
+    )"
+    echo -ne export SRC="${SRC}\n\n"
+    declare -a features=( "generate" "complete" "local" )
+
+    . <("${HOME}"/.bt/utils/path -s 2>/dev/null)
+
+    for ds in $( echo "${PATH}" | perl -pe 's/:/\n/g' | grep '\/b2'); do
+
+        ts="$(basename "${ds}")"            # toolset
+        t="$(echo "${ts}" | perl -pe 's/^b2//')"  # tool
+        #echo tool: ${t} toolset: ${ts}
+
+        for f in ${features[@]}; do
+            [[ "${f}" == "complete" ]] && s="source " || s=" "
+
+            echo -ne "${t}_${f}() { ${s}\${SRC}/${ts}/${t}_${f} \${@} ;}\n\n"
+            echo -ne "declare -fx ${t}_${f}\n\n"
+
+            echo -ne "ln -fs \${SRC}/${ts}/${t}_${f}" "\${HOME}/.local/bin/${t}_${f}\n\n"
+        done
+
+        echo -ne export SRC="${SRC}\n\n"
+        export SRC="${SRC}"
+
+        echo -ne "ln -fs \${SRC}/${ts}/${t}_local \${HOME}/.local/bin/${t}_local\n\n"
+        echo pushd "${HOME}/.local/bin" >/dev/null
+        echo -ne "ln -fs \${SRC}/${ts}/${t}_local \${HOME}/.local/bin/${t}\n\n"
+        echo popd >/dev/null
+
+        echo -ne "${t}() { \${SRC}/${ts}/${t}_local \${@} ;} \n\n"
+        echo -ne "${t}_complete\n\n"
+        echo -ne "declare -fx ${t}_complete\n"
+        echo -ne "declare -fx ${t}\n"
+
+   done
+
+. rds_complete >/dev/null 2>&1
+. ssm_complete >/dev/null 2>&1
+
+} > "${tmppath}" 2>/dev/null
+
+#cat "${tmppath}"
+
+source "${tmppath}"
+
+autologin
+
+# Explicitly exec the exported functions
+# By the time we get here they are already
+# exported in the BASH ENV.
+#. <(. ${HOME}/.local/bin/ssm_complete)
+#. <(. ${HOME}/.local/bin/rds_complete)
+
+
+#rm "${tmppath}"
+
