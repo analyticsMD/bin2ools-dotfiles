@@ -1,0 +1,94 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+
+. <(${HOME}/.bt/utils/path -s -x 2>/dev/null)  # find a better path.
+
+toolsets="$(echo "${PATH}" | perl -pe 's/:/\n/g' | \
+      perl -nle 'print if m/\/b2/' | wc -l)"
+
+export BT="${HOME}/.bt"
+. <(cat "${BT}/lib/utils.bash" >/dev/null 2>&1 )
+. <(cat "${BT}/settings" >/dev/null 2>&1 )
+
+tmppath="$(gmktemp)" 
+
+{ 
+    echo "#!/usr/bin/env /usr/local/bin/bash"
+
+    SRC="$(dirname "$(echo "${PATH}"        | \
+           perl -pe 's/:/\n/g'              | \
+           grep -E 'devops|aws)-sso-util\/' | \
+           grep '\/b2'                      | \
+           perl -pe 's/^\/Users\/[\w_\-+]+(.*)/\$\{HOME\}\1/' | \
+           head -n 1 )"                       \
+    )"
+    echo -ne export SRC="${SRC}\n\n"
+    declare -a features=( "generate" "complete" "local" ) 
+
+    . <("${HOME}"/.bt/utils/path -s -x 2>/dev/null)
+
+    for ds in $( echo "${PATH}" | perl -pe 's/:/\n/g' | grep '\/b2'); do  
+        
+        ts="$(basename "${ds}")"            # toolset
+        t="$(echo "${ts}" | perl -pe 's/^b2//')"  # tool
+        #echo tool: ${t} toolset: ${ts}
+
+        for f in ${features[@]}; do 
+            [[ "${f}" == "complete" ]] && s="source " || s=" "
+
+            echo -ne "${t}_${f}() { ${s}\${SRC}/${ts}/${t}_${f} \${@} ;}\n\n"
+            echo -ne "declare -fx ${t}_${f}\n\n"
+                        
+            echo -ne "ln -fs \${SRC}/${ts}/${t}_${f}" "\${HOME}/.local/bin/${t}_${f}\n\n"
+        done
+
+        echo -ne export SRC="${SRC}\n\n"
+        export SRC="${SRC}"
+        
+        echo -ne "ln -fs \${SRC}/${ts}/${t}_local \${HOME}/.local/bin/${t}_local\n\n"
+        echo pushd "${HOME}/.local/bin" >/dev/null
+        echo -ne "ln -fs \${SRC}/${ts}/${t}_local \${HOME}/.local/bin/${t}\n\n" 
+        echo popd >/dev/null
+
+        echo -ne "${t}() { \${SRC}/${ts}/${t}_local \${@} ;} \n\n"
+        echo -ne "${t}_complete\n\n"
+        echo -ne "declare -fx ${t}_complete\n"
+        echo -ne "declare -fx ${t}\n"
+
+    done
+
+
+toolsets="$(echo "${PATH}" | perl -pe 's/:/\n/g' | \
+      perl -nle 'print if m/\/b2/' | wc -l)"
+
+#[[ -n "${toolsets}" ]] && { 
+ #   echo -e "You have ${CYAN}${good}${NC} bintools installed."
+#} || {  
+ #   echo -e "Your ${YELLOW}\$PATH${NC} is stale.\nPlease rerun the path tool."
+#}
+
+export BT="${HOME}/.bt"         
+. <(cat "${BT}/lib/utils.bash" >/dev/null 2>&1)
+. <(cat "${BT}/settings" >/dev/null 2>&1)       
+
+# expose a list of installed tools and toolsets. 
+
+echo "shopt -s expand_aliases"
+echo "shopt -s progcomp_alias"
+
+    # Explicitly exec the exported functions
+    # By the time we get here they are already
+    # exported in the BASH ENV. 
+echo    . \${HOME}/.local/bin/ssm_complete
+echo    . \${HOME}/.local/bin/rds_complete
+
+alias bt="source ${tmppath}"
+
+} > "${tmppath}" 2>/dev/null
+
+chmod u+x "${tmppath}"
+echo -ne "${tmppath}\n"
+
+# cleanup
+#rm "${tmppath}"
+
