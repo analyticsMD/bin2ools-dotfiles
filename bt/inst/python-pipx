@@ -53,6 +53,29 @@ pipx inject $opts devops-sso-util ./b2ssm-0.6.16.tar.gz
 pipx ensurepath
 
 pipx list
-echo "LAST pipx command!"
+#echo "LAST pipx command!"
 #pipx completions
+
+[[ ! -e "${HOME}/.bash_profile" || \
+   ! $(grep -sq BIN2OOLS "${HOME}/.bash_profile") ]] && { 
+ 
+  echo adding bash_profile. 
+  ${HOME}/.bash_profile << 'HERE_DOC'
+
+export PATH="$PATH:${HOME}/.local/bin"
+# --------------------------
+# BIN2OOLS entries.
+# --------------------------
+shopt -s expand_aliases
+shopt -s progcomp_alias
+_bt() { export BT="${HOME}/.bt"; . "${HOME}/.bt/settings"; prompt_on ;}
+alias bt="_bt; . $(b2)"
+# --------------------------
+
+HERE_DOC
+
+} || { 
+  echo Skipping bash_profile. 
+} 
+
 
