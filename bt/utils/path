@@ -289,7 +289,7 @@ umask 0022
   [[ -n "${mode}" || -n "${cached}" ]] && {  
 
     umask 0077
-    "${BT}"/cmd/path -s | tee         \
+    "${BT}"/utils/path -s | tee         \
     "${BT}/cache/path_info.${mode}" > \
     "${BT}/cache/path_info" &&        \
     chmod u+x "${BT}/cache/path_info" \

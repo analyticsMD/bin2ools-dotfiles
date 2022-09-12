@@ -1,5 +1,9 @@
 #!/usr/bin/env /usr/local/bin/bash
 
+[[ ! -e ${HOME}/.bin2tools-dotfiles ]] && { 
+
+} 
+ln -fs ${HOME}/.bin2tools-dotfiles/bt ${HOME}/.bt
 
 . <(${HOME}/.bt/utils/path -s -x 2>/dev/null)  # find a better path.
 
@@ -10,7 +14,7 @@ export BT="${HOME}/.bt"
 . <(cat "${BT}/lib/utils.bash" >/dev/null 2>&1 )
 . <(cat "${BT}/settings" >/dev/null 2>&1 )
 
-tmppath="$(gmktemp)" 
+tmppath="$(/usr/local/bin/gmktemp)" 
 
 { 
     echo "#!/usr/bin/env /usr/local/bin/bash"
