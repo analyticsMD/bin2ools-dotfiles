@@ -1,9 +1,12 @@
 #!/usr/bin/env /opt/homebrew/bin/bash
 
 #export BASH5="$(which bash)"
+echo PATH="$PATH"
 
 export BT="${HOME}/.bt"
 . "${BT}/settings"
+echo PATH="$PATH"
+echo which ddiff
 . "${BT}/lib/utils.bash"
 
 PEXEC="$(get_python_exec)"
@@ -16,6 +19,8 @@ export PYTHONEXECUTABLE=${PEXEC}
 # use string equality when comparing values t
 
 source <( echo "$("${BT}"/utils/path -s 2>/dev/null)" )
+echo PATH="$PATH"
+
 
 echo -ne "\n\n----------------------------------\n"
 echo -ne     "installing pipx deps...           \n"

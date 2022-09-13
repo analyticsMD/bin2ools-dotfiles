@@ -115,6 +115,7 @@ declare -a order=( "PIPX_SPACE"           \
   declare -a pipx_space=()
   pipx_space+=( "${HOME}/.local/bin"    )
   pipx_space+=( "${HOME}/.local/pipx"   )
+  pipx_space+=( "/opt/homebrew/bin"     )             # alt loc for homebrew
   pipx_space+=( "${HOME}/Library/Python/3.10/bin" )   # poetry
   pipx_space+=( "${HOME}/.poetry/bin"   )
 
