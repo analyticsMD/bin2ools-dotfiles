@@ -1,0 +1,113 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+#LOADER=legacy
+. ./lib/utils.bash && loader <<< cmds
+
+script_info "${BASH_SOURCE[0]}"
+
+#BT_DEBUG=gen
+
+# Caches instances as an associative array in a local file. 
+#
+cache_inst() { 
+
+  [[ -z "${BT_TEAM}" || "${BT_TEAM}" == NONE ]] && {   
+
+  BT_TEAM="$(devops-sso-util roles                | \
+            awk '{print $3}'                      | \ 
+            perl -pe 's/aws_team_//'              | \
+            perl -pe 's/(Account|QVAdmin|Team|master)//')" 
+  } 
+
+  [[ -z "${BT_TEAM}" ]] && echo "FATAL: No team var." && exit 1
+ 
+  declare -a tmp
+  tmp+=( "$(aws ec2 describe-instances \
+          --output json \
+          --region us-west-2 \
+          --filters Name=tag-key,Values=Name \
+          --query 'Reservations[*].Instances[*].{
+                   Instance:InstanceId,
+                   Name:Tags[?Key==`Name`]|[0].Value,
+                   PrivAddr:PrivateIpAddress,
+                   KeyName:KeyName,
+                   PubAddr:PublicIpAddress
+                 }' | \
+          jq -r '.[][]|
+                (.Name|gsub(" "; "_"))+","+
+                (.Instance)+","+
+                (.PrivAddr)+","+
+                (.KeyName)+","+
+                (.PubAddr)+"%"
+        ')" )
+
+
+    ### build an associative array of hosts and descriptors.
+    ### ----------------------------------------------------
+    mkdir -p "${HOME}/tmp"
+    tmppath="$(gmktemp -p "${HOME}"/tmp inst_map.XXXXXXXXXXXX)"
+    echo -ne 'declare -A inst_map=( ' > "$tmppath" 
+    while IFS= read -r l; do 
+      while IFS=',' read -r n i ip k pp; do
+        s="[\"$n\"]=\"$n|$i|$ip|$k|$pp\""
+        bash -c "echo -ne $(printf ' %q' "$s ")" >> "${tmppath}"
+        to_debug gen && echo "wrote: $s"
+      done 
+    done < <(printf '%s\n' "${tmp[@]}" | sort)
+    echo -ne ")\n" >> "$tmppath"
+    mv "$tmppath" "${BT_LAUNCH_DIR}/inst_map.src"
+}
+
+# Once the cache is written (see cache_inst, above)
+# this function will instantiate the associative array
+# with all instance and container values. 
+# 
+# returns: associative array: inst_map 
+# 
+get_inst() {  
+
+  declare -A inst_map
+  inst_file="${BT_LAUNCH_DIR}/inst_map.src"
+  inst_size=$(cat "${BT_LAUNCH_DIR}"/inst_map.src | wc -c)
+
+  # inst_file is considered stale if older 
+  # than 1 week, or smaller than 200 bytes.  
+  [[ "$(( $(date +"%s") - $(gstat -c "%Y" "${inst_file}") ))" -gt 604800 || \
+     "${inst_size}" -lt 200 ]] && { 
+    echo "Instance cache is stale. Refreshing...."
+    cache_inst "$@"
+  }
+
+  # shellcheck disable=SC1090,SC1094 
+  { 
+    debug echo file contents: "$(cat "${inst_file}")"
+    source <(cat "${inst_file}")
+    echo -ne sourced contents: "${#inst_map[@]}" hosts
+  }
+} 
+
+# TODO: jsonify
+# regenerate inst_map array, if not present.
+#
+#[[ "${#inst_map[@]}" -lt 2 ]] && {
+
+  # Query aws for a list of all instances.
+  # Cache them as an associative array in a
+  # local file in this dir.
+  #cache_inst
+  # creates: inst_map.src
+  #get_inst
+
+#}
+
+declare -A inst_map
+source <(cat "${BT_LAUNCH_DIR}/inst_map.src")
+
+[[ "${#inst_map[@]}" -lt 2 ]] && {
+  echo "FATAL: Could not generate inst_map array." \
+  && exit 1
+}
+
+echo done!
+to_debug declare -p inst_map
+

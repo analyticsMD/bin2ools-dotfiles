@@ -34,48 +34,40 @@ autologin
 
 hn="${1:-}" #echo hn: ${hn}
 [[ "${hn}" == '' ]] && unset "${hn}"
-declare -A inst_map # fully populated inst_map array.
 
-if [[ -f "${BT}/src/inst_map.src" ]]; then 
-  . "${BT}/src/inst_map.src"
-elif [[ "${BT_LAUNCH_DIR}/lib/inst_map.src" ]]; then
-  . "${BT_LAUNCH_DIR}/lib/inst_map.src"
+[[ ! -e "${SSM_JSON}" ]] && { unset SSM_JSON ;}
+
+if [[ -z "${SSM_JSON}" ]]; then 
+    export SSM_JSON="${HOME}/.bt/data/json/aws/ssm.json"
+elif [[ "${BT_LAUNCH_DIR}/data/json/aws/ssm.json" ]]; then
+    export SSM_JSON="${BT_LAUNCH_DIR}/.bt/data/json/aws/ssm.json" 
 else 
-  "FATAL: Could not find instance map."
+  echo "FATAL: Could not find ssm.json map" && exit 1
 fi
 
-id=NONE cmd=NONE ip=NONE 
-# use fuzzy matching if no host is supplied.
-[ -z "${hn}" ] && { 
-  ip="$("${HOME}"/.local/bin/aws-fuzzy --ip-only)" 
-  srch="${ip}"
- 
-  for rec in ${inst_map[@]}; do 
-    [[ "${rec}" =~ ${srch} ]] && { 
-      mapfile tmp -t < <(echo ${rec} | tr , '\n')  
-      id="${tmp[1]}" hn="${tmp[0]}" ip="${tmp[2]}" && break 
-    }
-  done 
-  echo host: "$(echo "$hn" | perl -pe 's/\n//g')" recognized. 
+echo "ssm.json file: ${SSM_JSON}"
+host=NONE id=NONE cmd=NONE ip=NONE 
 
-  cmd="aws ssm start-session --target ${srch}"
-  echo -en connecting to: \"${CYAN}${hn}${NC}\"
-  echo cmd: ${cmd}
-} 
+declare -a tmp
+[ -n "${hn}" ] && {  
+    mapfile tmp -t < <(                                      \
+        jq -r --arg hn "$hn"                                 \
+            '.[][]|select (.Name == $hn)
+                  | .Name,.Instance,.PrivAddr' < ${SSM_JSON} 
+    )
+} || { 
+    # use fuzzy matching if no host is supplied.
+    ip="$("${HOME}"/.local/bin/aws-fuzzy --ip-only)" 
+    mapfile tmp -t < <(                                      \
+        jq -r --arg ip "$ip"                                 \
+            '.[][]|select (.PrivAddr == $ip)
+                  | .Name,.Instance,.PrivAddr' < ${SSM_JSON} 
+    )
+}
 
-srch="$(echo ${hn} | perl -pe 's/\n//g')"
-for rec in ${inst_map[@]}; do 
-  [[ "${rec}" =~ ${srch} ]] && { 
-    mapfile tmp -t < <(echo ${rec} | tr , '\n')  
-    id="${tmp[1]}" hn="${tmp[0]}" ip="${tmp[2]}" && break 
-  }
-done
-
-echo -e host: "$(echo "$hn" | \
-    perl -pe 's/\n//g')" ${PURPLE}recognized.${NC} 
+host="${tmp[0]}" id="${tmp[1]}" ip="${tmp[2]}"
+echo -en connecting to: \"${CYAN}${host}${NC}\"
 cmd="aws ssm start-session --target ${id}"
-echo -en connecting to: ${CYAN}"$(echo "$hn" | \
-    perl -pe 's/\n//g')"${NC}
-#echo cmd: ${cmd}
+#echo using cmd: ${cmd}
 
 ${cmd}

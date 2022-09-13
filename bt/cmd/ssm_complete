@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+
+############################################################################
+#                                                                          #
+# WARNING: This file is dynamically generated as part of BINTOOLS.         #
+#          Changes made here are likely to be overwritten without notice.  # 
+#          ----------------------------------------------------------------#
+#          To make changes to this document, find the corresponding        #
+#          generator script under ${BT}/utils/gen and edit the             # 
+#          appropriate sections.                                           #
+#                                                                          #
+# NOTE:    In a pinch, you can also rename this file by prepending one or  # 
+#          more underscores (_) and it will be preserved.                  #
+#                                                                          #
+############################################################################
+
+
+
+
+complete -W "
+  Great_scott!!_Hackathon_Q4_2021 \
+  Test_for_SF \
+  airflow-master \
+  airflow-test \
+  aws-backup \
+  bmc-app-container \
+  bmc-app-cron \
+  bmc-ingestion \
+  bmc-qval \
+  bsmhealth-app-container \
+  bsmhealth-app-cron \
+  bsmhealth-ingestion \
+  bsmhealth-qval \
+  cnc-metricbeat \
+  cnc-metricbeat-02 \
+  cnc-test-dushyant \
+  common-ingestion \
+  common-vpn-mongodb \
+  common-vpn-pritunl \
+  common-vpn-pritunl-02 \
+  conehealth-app-container \
+  conehealth-app-cron \
+  conehealth-ingestion \
+  conehealth-qval \
+  demo-a-app-container \
+  demo-a-web \
+  demo-b-app-container \
+  demo-b-web \
+  demo-c-app-container \
+  demo-c-web \
+  demo-d-app-container \
+  demo-d-web \
+  demo-e-app-container \
+  demo-e-web \
+  demo-f-app-container \
+  demo-f-web \
+  demo3 \
+  dignity-app-container \
+  dignity-app-cron \
+  dignity-ingestion-02 \
+  dignity-ingestion-web-vpn \
+  dignity-qval \
+  dushyant_test \
+  emory-app-container \
+  emory-app-cron \
+  emory-ingestion-web \
+  emory-mirth-db \
+  emory-mirth-new \
+  emory-qval \
+  fairview-app-container \
+  fairview-app-cron \
+  fairview-ingestion \
+  fairview-ingestion-healtheast \
+  fairview-innovareus \
+  fairview-innovareus-dev \
+  fairview-qval \
+  honorhealth-app \
+  honorhealth-app-new \
+  honorhealth-ingestion \
+  honorhealth-qval \
+  jenkins-master \
+  kaiser-app-container \
+  kaiser-app-cron \
+  kaiser-ingestion \
+  kaiser-qval \
+  keckmedicine-app-container \
+  keckmedicine-app-cron \
+  keckmedicine-ingestion \
+  keckmedicine-qval \
+  mama-mirth \
+  marshfield-app \
+  marshfield-app-new \
+  marshfield-ingestion \
+  marshfield-qval \
+  medstar2-app-container-new \
+  medstar2-app-cron \
+  medstar2-ingestion \
+  medstar2-ingestion-01 \
+  medstar2-qval \
+  mercynet-app-container \
+  mercynet-app-cron \
+  mercynet-ingestion \
+  mercynet-qval \
+  mercynet-rhapsody \
+  mercynet-web \
+  natividad3-app-container \
+  natividad3-app-cron \
+  natividad3-ingestion \
+  natividad3-qval \
+  nexus \
+  nyp-app-container \
+  nyp-app-cron \
+  nyp-ingestion \
+  nyp-qval \
+  nyp-web \
+  qa-app-01-app \
+  qa-app-01-ingestion \
+  qa-app-02-app \
+  qa-app-02-ingestion \
+  qa-app-03-app \
+  qa-app-03-ingestion \
+  qa-app-04-app-container \
+  qa-app-04-app-cron \
+  qa-app-05-app-container \
+  qa-app-05-app-cron \
+  qa-automation-box \
+  qa-bastion \
+  qa-jenkins \
+  qventus-openvas-server \
+  saintlukes-app \
+  saintlukes-app-container \
+  saintlukes-ingestion \
+  saintlukes-qval \
+  staging-app \
+  staging-db \
+  staging-nat \
+  staging-web \
+  sutter-app-container \
+  sutter-app-cron \
+  sutter-ingestion \
+  sutter-mirth-2 \
+  sutter-qval \
+  temp-test \
+  test-for-inspector-public \
+  test_alb_connection \
+  thedacare-app-container \
+  thedacare-app-cron \
+  thedacare-ingestion \
+  thedacare-qval \
+  uams-app \
+  uams-app-container \
+  uams-ingestion \
+  uams-qval \
+  unitypoint-app-container \
+  unitypoint-app-cron \
+  unitypoint-ingestion \
+  unitypoint-qval \
+  uvahealth-app-container \
+  uvahealth-app-cron \
+  uvahealth-ingestion \
+  uvahealth-qval \
+  wellspan-app \
+  wellspan-app-new \
+  wellspan-ingestion \
+  wellspan-qval \
+  wildfire \
+" ssm ssh_over_ssm ssm.bash ssm_complete ssm_local
