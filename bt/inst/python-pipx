@@ -1,4 +1,6 @@
-#!/usr/bin/env /usr/local/bin/bash
+#!/usr/bin/env /opt/homebrew/bin/bash
+
+#export BASH5="$(which bash)"
 
 export BT="${HOME}/.bt"
 . "${BT}/settings"
@@ -57,10 +59,10 @@ pipx list
 #pipx completions
 
 [[ ! -e "${HOME}/.bash_profile" || \
-   ! $(grep -sq BIN2OOLS "${HOME}/.bash_profile") ]] && { 
+   $(grep -sq BIN2OOLS "${HOME}/.bash_profile") ]] && { 
  
   echo adding bash_profile. 
-  ${HOME}/.bash_profile << 'HERE_DOC'
+  cat ${HOME}/.bash_profile << 'HERE_DOC'
 
 export PATH="$PATH:${HOME}/.local/bin"
 # --------------------------
