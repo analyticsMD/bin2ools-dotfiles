@@ -15,7 +15,7 @@
 
 
 
-###  records found:      147
+###  records found:      145
 
 
   Host Golden-DB-Structures
@@ -170,7 +170,7 @@
     StrictHostKeyChecking no
     ProxyCommand sh -c "aws ssm start-session       --document-name AWS-StartSSHSession           --parameters 'portNumber=22'                  --region us-west-2                            --target i-050bb6429eb701373"
 
-  Host cnc-test-dushyant
+  Host cnc-test
     Hostname 10.102.4.126
     ForwardAgent "yes"
     User "ec2-user"
@@ -385,14 +385,6 @@
     IdentityFile ~/.ssh/centos
     StrictHostKeyChecking no
     ProxyCommand sh -c "aws ssm start-session       --document-name AWS-StartSSHSession           --parameters 'portNumber=22'                  --region us-west-2                            --target i-0413f347b20d022c4"
-
-  Host dushyant_test
-    Hostname 10.102.2.187
-    ForwardAgent "yes"
-    User "ec2-user"
-    IdentityFile ~/.ssh/ec2-user
-    StrictHostKeyChecking no
-    ProxyCommand sh -c "aws ssm start-session       --document-name AWS-StartSSHSession           --parameters 'portNumber=22'                  --region us-west-2                            --target i-0f4ef7525d8c1a49d"
 
   Host emory-app-container
     Hostname 10.102.22.31
@@ -905,14 +897,6 @@
     IdentityFile ~/.ssh/ec2-user
     StrictHostKeyChecking no
     ProxyCommand sh -c "aws ssm start-session       --document-name AWS-StartSSHSession           --parameters 'portNumber=22'                  --region us-west-2                            --target i-07dafefde6f16291e"
-
-  Host rasa-deployment
-    Hostname 10.33.5.132
-    ForwardAgent "yes"
-    User "ec2-user"
-    IdentityFile ~/.ssh/hobbit.pem
-    StrictHostKeyChecking no
-    ProxyCommand sh -c "aws ssm start-session       --document-name AWS-StartSSHSession           --parameters 'portNumber=22'                  --region us-west-2                            --target i-0c35941761754a499"
 
   Host saintlukes-app-container
     Hostname 10.102.40.61
