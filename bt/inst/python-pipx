@@ -53,7 +53,7 @@ pipx install $opts ./devops-sso-util-4.27.1.tar.gz
 
 opts="-f --include-apps --include-deps "
 pipx inject $opts devops-sso-util ./b2rds-0.6.21.tar.gz
-pipx inject $opts devops-sso-util ./b2ssm-0.6.20.tar.gz
+pipx inject $opts devops-sso-util ./b2ssm-0.6.21.tar.gz
 
 #$u/$p$g=b2ssm&ssm_complete&ssm_generate&ssm_local
 #$u/$p$g=b2rds&rds_complete&rds_generate&rds_local&dg&rds_refresh
