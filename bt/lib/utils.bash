@@ -49,7 +49,7 @@ to_debug flow && sleep 0.5 && echo rds:start || true
 
 get_src_dir() {
 
-    . <(~/.bt/utils/path -s 2>/dev/null)  # find a better path.
+    . <(${HOME}/.bt/utils/path -s 2>/dev/null)  # find a better path.
 
     SRC="$(dirname "$(echo "${PATH}"        | \
            perl -pe 's/:/\n/g'              | \

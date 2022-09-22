@@ -6,7 +6,7 @@ echo PATH="$PATH"
 export BT="${HOME}/.bt"
 . "${BT}/settings"
 echo PATH="$PATH"
-echo which ddiff
+
 . "${BT}/lib/utils.bash"
 
 PEXEC="$(get_python_exec)"
@@ -29,11 +29,11 @@ echo -ne     "----------------------------------\n\n"
 
 echo -ne "\n\ninstalling pipx packages.\n"
 
+pipx install aws-sso-util
+pipx install aws-whoami 
 pipx install awsume
 pipx inject  awsume awsume-console-plugin
 pipx inject  awsume awsume-default-profile-plugin
-pipx install aws-sso-util
-pipx install aws-whoami 
 
 echo -ne "\n\n--------------------------\n" 
 echo -ne     "python packages installed:\n" 

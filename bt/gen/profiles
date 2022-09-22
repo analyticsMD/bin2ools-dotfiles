@@ -75,7 +75,7 @@ export AWSLIB="devops"
 
 to_debug flow && sleep 0.5 && echo "prof:autologin"
 
-set_team || echo "${RED}FATAL${NC}: No Team set."
+set_team || echo "${YELLOW}WARNING${NC}: No Team set."
 
 # Team account defaults to prod, for now.
 export DEFAULT_ACCOUNT="prod"
