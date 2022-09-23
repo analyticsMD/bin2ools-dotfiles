@@ -4,9 +4,8 @@
 # global settings
 # today, this is still prod, but will change very soon.
 #
-export DEFAULT_ACCOUNT="prod"   
-export HOMEBREW_PYTHON="3.10"
-#export DEFAULT_ROLE="${DEFAULT_ACCOUNT}"-"${BT_TEAM}"
+export DEFAULT_ACCOUNT="prod" DEFAULT_TEAM="arch" BT_TEAM="arch"
+export HOMEBREW_PYTHON="3.10" DEFAULT_ROLE="${DEFAULT_ACCOUNT}"-"${BT_TEAM}"
 
 # set PYTHON env vars. 
 # (Helps avoid confusion on hosts with many pythons).
