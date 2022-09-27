@@ -77,10 +77,11 @@ export PATH="$PATH:${HOME}/.local/bin"
 # --------------------------
 # BIN2OOLS entries.
 # --------------------------
+shopt -s extglob
 shopt -s expand_aliases
 shopt -s progcomp_alias
-_bt() { export BT="${HOME}/.bt"; . "${HOME}/.bt/settings"; prompt_on ;}
-alias bt="_bt; . $(${HOME}/.bt/inst/b2)"
+_bt() { export BT="${HOME}/.bt"; . "${HOME}/.bt/settings"; prompt_on ;}¬
+alias bt="_bt; export F="$("${HOME}/.bt/inst/b2")"; [[ -n "${F}" && -f "${F}" ]] && {  . "${F}" ;}"
 # --------------------------
 
 HERE_DOC

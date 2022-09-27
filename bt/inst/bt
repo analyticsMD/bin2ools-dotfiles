@@ -58,7 +58,7 @@ tmppath="$(gmktemp)"
     echo -ne export SRC="${SRC}\n\n"
     declare -a features=( "generate" "complete" "local" )
 
-    . <("${HOME}"/.bt/utils/path -s 2>/dev/null)
+    . <("${HOME}"/.bt/utils/path -s 2>/dev/null)  2>/dev/null
 
     for ds in $( echo "${PATH}" | perl -pe 's/:/\n/g' | grep '\/b2'); do
 
@@ -97,7 +97,7 @@ tmppath="$(gmktemp)"
 
 #cat "${tmppath}"
 
-source "${tmppath}"
+source "${tmppath}" 2>/dev/null
 
 autologin
 

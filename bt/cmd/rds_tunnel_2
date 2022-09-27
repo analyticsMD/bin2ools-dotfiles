@@ -1,0 +1,86 @@
+#!/usr/bin/env /usr/local/bin/bash
+
+# ----------------------------
+# parse rds args
+# ----------------------------
+
+export LOADER=legacy
+unset SOURCE_FILES
+
+. ~/.bt/lib/utils.bash 
+
+funcs="$(declare -F | grep -v '\-f _' | wc -l )" && {
+    echo -e "Loaded ${CYAN}${funcs}${NC} functions."
+}
+
+# Team first, then other. 
+set_team 
+
+export DEFAULT_ACCOUNT="prod"
+export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
+[[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;}
+
+
+# fall back to aws-sso-util when devops isn't available.
+export AWSLIB="devops"
+[[ ! -e "${HOME}/.local/bin/${AWSLIB}-sso-util}" ]] && {
+    export AWSLIB="aws"
+    export DEFAULT_AWSLIB="${AWSLIB}-sso-util"
+}
+
+[[ ! -f "${BT}"/cache/path_info ]] && {
+    "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
+}
+source <(echo "$("${BT}"/utils/path -s -x 2>/dev/null)")
+#poetry="$(which poetry)"
+
+[[ -z "${BT_ROLE}" ]] && export BT_ROLE="${DEFAULT_ROLE}"
+autologin "${BT_ROLE}"
+
+# other, misc.
+unset SOURCE_FILES
+export NOISE="quiet"
+
+# -----------------------------------
+# Determine iam_user and tunnel user
+# -----------------------------------
+iam_user="$(set_iam_user)"
+to_debug rdst && echo -e "${CYAN}T${NC}: iam_user is: ${iam_user}"       >&3
+tunnel_user="$(set_tunnel_user)"
+to_debug rdst && echo -e "${CYAN}T${NC}: tunnel_user is: ${tunnel_user}" >&3
+
+[[ -z "${bt_endpoint}" ]] && echo -ne "FATAL: No endpoint set." && exit  >&3
+[[ -z "${bt_port}"     ]] && echo -ne "FATAL: No port set."     && exit  >&3 
+
+# pure_ssm method...
+
+# NOTE: This first process is fire-and-forget. 
+# It runs on another host, hence we can recheck 
+# its status through the aws cli, or through the 
+# event bus. We've captured the command id to, 
+# to track it, so we should be good. Moving on ...
+
+# ------------------------------------------------
+# phase 1: Spawn an ssm tunnel TO the jump host. 
+# ------------------------------------------------
+
+to_debug rdst && echo -e "${CYAN}T2${NC}: TUNNEL CMD2 - ssm tunnel"
+
+[[ "${BT_DEBUG}" =~ rdst ]] && unset silent || silent='>/dev/null 2>&1'
+
+declare -a TNL=()
+TNL=( aws ssm start-session ) 
+TNL+=( --target "${bt_instance}" ) 
+TNL+=( --document-name AWS-StartPortForwardingSessionToRemoteHost )
+TNL+=( --parameters )
+TNL+=( '{"portNumber":["3306"],"localPortNumber":["${bt_port}"],"host":["${bt_endpoint}:3306"]}' )
+
+
+[[ "${BT_DEBUG}" =~ rdst ]] && unset silent || silent='>/dev/null 2>&1'
+
+( tnl="$( "${TNL[@]}" )" ) &
+
+echo -ne "\n\n"                                                 >&5
+echo -ne "${CYAN}T${NC}: --------------------------------\n"    >&5
+echo -ne "${CYAN}T${NC}:  RDS contacted! (spawning shell)\n"    >&5
+echo -ne "${CYAN}T${NC}: --------------------------------\n\n"  >&5

@@ -1,4 +1,4 @@
-#!/usr/bin/env /opt/homebrew/bin/bash -i
+#!/usr/bin/env /usr/local/bin/bash -i
 # shellcheck shell=bash disable=SC1008
 
 

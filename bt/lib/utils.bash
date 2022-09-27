@@ -748,16 +748,16 @@ loader() (
 
 
 # Commands for the loader to exec, passed in as a variable.
-cmds() { 
+cmds() {
 
     shopt -s extglob
     cmds="$(                                                          \
-        ls -1d ${HOME}/.bt/@(lib|gen|src|cache)                     | \
+        ls -1d ${HOME}/.bt/@\(lib|gen|src|cache\)                   | \
             perl -pe "s/([\w_\-]+)/loader_addpath \1/;"               \
-        ls -1 ${HOME}/.bt/lib/@(utils|bt|env|rdslib|data|api)\.bash | \
+        ls -1 ${HOME}/.bt/lib/@\(utils|bt|env|rdslib|data|api\)\.bash | \
             perl -pe "s/([\w_\-]+)/includex \1/;" | sort -r           \
         loader_flag "$(which aws)"                                    \
-    )"    
+    )"
     shopt -u extglob 
     echo ${cmds}
 } || true
@@ -1885,7 +1885,7 @@ map_tools() {
     declare -a tools=( complete generate local )
     declare -a toolsets=()
     shopt -s extglob
-    for t in $(ls -1d ${T}!(*-*) ); do 
+    for t in $(ls -1d ${T}!\(*-*\) ); do 
         to_debug bt_ && echo found toolset: ${t}
         toolsets+=( "${t#*${T}}" )
     done
