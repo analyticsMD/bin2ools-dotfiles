@@ -1,4 +1,4 @@
-#!/usr/bin/env /usr/local/bin/bash
+#!/usr/bin/env /opt/homebrew/bin/bash
 
 # shellcheck shell=bash
 # global settings
@@ -10,13 +10,13 @@ export HOMEBREW_PYTHON="3.10" DEFAULT_ROLE="${DEFAULT_ACCOUNT}"-"${BT_TEAM}"
 # set PYTHON env vars. 
 # (Helps avoid confusion on hosts with many pythons).
 get_python_exec() { 
-    THIS_CELLAR=$(brew config 2> /dev/null | \
-             perl -nle 'print if s/^HOMEBREW_CELLAR: //')
-    [[ -z "${THIS_CELLAR}" || ! -d "${THIS_CELLAR}" ]] && { 
+    THIS_CELLAR="$(brew config 2> /dev/null | \
+                   perl -nle 'print if s/^HOMEBREW_CELLAR: //')"
+    [ -z "${THIS_CELLAR}" ] || [ ! -d "${THIS_CELLAR}" ] && { 
         echo "FATAL: Local Homebrew Cellar not found."
         echo "       Is Homebrew installed properly?"
         exit 1
-    } 
+    }
     # NOTE: BT always uses the latest patch release of 3.10. 
      
     THIS_PYTHON="$(ls ${THIS_CELLAR}/python@${HOMEBREW_PYTHON} | sort -rV | head -n 1)"

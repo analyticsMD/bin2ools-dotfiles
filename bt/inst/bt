@@ -6,7 +6,7 @@ export BT="${HOME}/.bt"
 
 export LOADER=legacy
 
-. ${HOME}/.bt/lib/utils.bash
+. "${HOME}"/.bt/lib/utils.bash
 
 set_team
 
@@ -21,6 +21,7 @@ export AWSLIB="devops"
     export AWSLIB="aws"
     export DEFAULT_AWSLIB="${AWSLIB}-sso-util"
 }
+exit
 
 [[ ! -f "${BT}"/cache/path_info ]] && {
   "${BT}"/utils/path -s 2>/dev/null | tee "${BT}/cache/path_info"
@@ -30,7 +31,7 @@ source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 toolsets="$(echo "${PATH}" | perl -pe 's/:/\n/g' | \
       perl -nle 'print if m/\/b2/' | wc -l)"
 
-good=2
+export good=2
 [[ -n "${toolsets}" ]] && {
     echo -e "You have ${CYAN}${good}${NC} bintools installed."
 } || {
