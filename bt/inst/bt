@@ -30,6 +30,7 @@ source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" )
 toolsets="$(echo "${PATH}" | perl -pe 's/:/\n/g' | \
       perl -nle 'print if m/\/b2/' | wc -l)"
 
+good=2
 [[ -n "${toolsets}" ]] && {
     echo -e "You have ${CYAN}${good}${NC} bintools installed."
 } || {
@@ -66,7 +67,7 @@ tmppath="$(gmktemp)"
         t="$(echo "${ts}" | perl -pe 's/^b2//')"  # tool
         #echo tool: ${t} toolset: ${ts}
 
-        for f in ${features[@]}; do
+        for f in "${features[@]}"; do
             [[ "${f}" == "complete" ]] && s="source " || s=" "
 
             echo -ne "${t}_${f}() { ${s}\${SRC}/${ts}/${t}_${f} \${@} ;}\n\n"

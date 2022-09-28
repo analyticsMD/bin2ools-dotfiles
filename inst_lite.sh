@@ -21,12 +21,10 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 [[ "${HOMEBREW_REPOSITORY}" == "/opt/homebrew" ]] && { 
     echo HOMEBREW_REPOSITORY: /opt/homebrew
-    LEGACY=/usr/local/bin
-    NEW=${HOMEBREW_REPOSITORY}/bin
+    export LEGACY=/usr/local/bin NEW=${HOMEBREW_REPOSITORY}/bin
 } || {
     echo HOMEBREW_REPOSITORY: ${HOMEBREW_REPOSITORY}
-    LEGACY=/opt/homebrew/bin
-    NEW=${HOMEBREW_REPOSITORY}/bin
+    export LEGACY=/opt/homebrew/bin NEW=${HOMEBREW_REPOSITORY}/bin
 } 
 
 sudo mkdir -p "${LEGACY}" "${NEW}"
