@@ -36,7 +36,7 @@ sudo mkdir -p "${LEGACY}" "${NEW}"
 } 
 
 [[ ! -f "${HOME}/.bash_profile"   ]] && \
-[[ ! $(grep -qsi bin2ools "${HOME}/.bash_profile") ]] { 
+[[ ! $(grep -qsi bin2ools "${HOME}/.bash_profile") ]] && { 
   TMP_PROFILE="${HOME}/.tmp_profile.$$"
   OLD_PROFILE="${HOME}/.bash_profile.$$"
   echo "$(${HOMEBREW_REPOSITORY}/bin/brew shellenv)" | tee "${TMP_PROFILE}"
