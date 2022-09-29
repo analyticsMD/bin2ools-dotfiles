@@ -67,9 +67,9 @@ pipx list
 #echo "LAST pipx command!"
 #pipx completions
 
-[[ ! -e "${HOME}/.bash_profile" || \
-   $(grep -sq BIN2OOLS "${HOME}/.bash_profile") ]] && { 
- 
+[[ ! -e "${HOME}/.bash_profile"                  || \
+   ! grep -sqi BIN2OOLS "${HOME}/.bash_profile") ]] \
+&& { 
   echo adding bash_profile. 
   cat ${HOME}/.bash_profile << 'HERE_DOC'
 
@@ -81,7 +81,7 @@ shopt -s extglob
 shopt -s expand_aliases
 shopt -s progcomp_alias
 _bt() { export BT="${HOME}/.bt"; . "${HOME}/.bt/settings"; prompt_on ;}¬
-alias bt="_bt; export F="$("${HOME}/.bt/inst/b2")"; [[ -n "${F}" && -f "${F}" ]] && {  . "${F}" ;}"
+alias bt='_bt; export F="$("${HOME}/.bt/inst/b2")"; [[ -n "${F}" && -f "${F}" ]] && {  . "${F}" ;}'
 # --------------------------
 
 HERE_DOC

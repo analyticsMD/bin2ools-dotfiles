@@ -11,29 +11,32 @@ rm -rf "${HOME}/.bt" "${HOME}/bintools" "${HOME}/.brew"
 ln -fs ~/.bin2ools-dotfiles/bt ~/.bt 
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+eval "$(brew shellenv)"
+export BREW_PATH="$(which brew | perl -pe 's/\/bin\/brew//')"
+export LEGACY=/usr/local/bin NEW=/opt/homebrew/bin
+declare -a links=( bash gmktemp )
 
-eval "$(/opt/homebrew/bin/brew shellenv)"
-
-[ -z "${HOMEBREW_REPOSITORY}" ] && {
-    echo -ne "WARNING: HOMEBREW_REPOSITORY not set. Using default."
-    export HOMEBREW_REPOSITORY="/opt/homebrew";
+[[ -z "${HOMEBREW_REPOSITORY}" && -z "${BREW_PATH}" ]] && {
+    echo -ne "FATAL: HOMEBREW_REPOSITORY not set. Did you install homebrew?"
+    exit
 }
 
-[[ "${HOMEBREW_REPOSITORY}" == "/opt/homebrew" ]] && { 
+sudo mkdir -p "${LEGACY}" "${NEW}"
+[[ "${HOMEBREW_REPOSITORY}" == "${LEGACY}" ]] && { 
+    echo HOMEBREW_REPOSITORY: /usr/local
+    for f in "${links[@]}"; do
+        ln -fs ${LEGACY}/bin/${f}  ${NEW}/bin/${f}
+    done
+} 
+[[ "${HOMEBREW_REPOSITORY}" == "${NEW}" ]] && { 
     echo HOMEBREW_REPOSITORY: /opt/homebrew
-    export LEGACY=/usr/local/bin NEW=${HOMEBREW_REPOSITORY}/bin
-} || {
-    echo HOMEBREW_REPOSITORY: ${HOMEBREW_REPOSITORY}
-    export LEGACY=/opt/homebrew/bin NEW=${HOMEBREW_REPOSITORY}/bin
+    for f in "${links[@]}"; do
+        ln -fs ${NEW}/bin/${f}  ${LEGACY}/bin/${f}
+    done
 } 
 
-sudo mkdir -p "${LEGACY}" "${NEW}"
-for f in $(echo gmktemp bash); do
-    echo linking legacy dir: "${LEGACY}/${f}"
-    sudo ln -fs "${NEW}/${f}" "${LEGACY}/${f}"
-done
-
-[[ ! -f "${HOME}/.bash_profile" ]] && { 
+[[ ! -f "${HOME}/.bash_profile"   ]] && \
+[[ ! $(grep -qsi bin2ools "${HOME}/.bash_profile") ]] { 
   TMP_PROFILE="${HOME}/.tmp_profile.$$"
   OLD_PROFILE="${HOME}/.bash_profile.$$"
   echo "$(${HOMEBREW_REPOSITORY}/bin/brew shellenv)" | tee "${TMP_PROFILE}"
