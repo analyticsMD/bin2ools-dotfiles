@@ -67,8 +67,8 @@ pipx list
 #echo "LAST pipx command!"
 #pipx completions
 
-[[ ! -e "${HOME}/.bash_profile"                  || \
-   ! grep -sqi BIN2OOLS "${HOME}/.bash_profile") ]] \
+[[ ! -e "${HOME}/.bash_profile"                    || \
+   ! $(grep -sqi BIN2OOLS "${HOME}/.bash_profile") ]] \
 && { 
   echo adding bash_profile. 
   cat ${HOME}/.bash_profile << 'HERE_DOC'
