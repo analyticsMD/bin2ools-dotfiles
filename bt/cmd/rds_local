@@ -186,7 +186,7 @@ ${TNL[@]} <&- &
 # 
 # shellcheck disable=SC2015
 [[ -z "${bt_port}" ]] && echo "FATAL: port not set." && exit
-
+echo bt_port: $bt_port
 # get ready for response.
 # ----------------------------------------------------
 # get an RDS IAM login token 
