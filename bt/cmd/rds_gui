@@ -54,7 +54,7 @@ default_arg() { if [ -z "$OPTARG" ]; then
 export BT=${HOME}/.bt
 . "${BT}/lib/utils.bash"
 
-while getopts P:d:f:g:h:j:k:o:p:t:u:v:-: OPT; do
+while getopts :P:f:g:j:k:o:p:t:u:v:-:hd OPT; do
 
     # support long options: https://stackoverflow.com/a/28466267/519360
     if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
@@ -81,6 +81,9 @@ while getopts P:d:f:g:h:j:k:o:p:t:u:v:-: OPT; do
     esac
 done
 shift $((OPTIND-1)) # remove parsed options and args from $@ list
+
+#debug echo instance: ${instance}
+if [[ "${usage}" == true ]]; then usage; fi
 
 set_tunnel_user() { 
     echo ec2-user
@@ -259,7 +262,6 @@ BT_TOKEN
 # parse args.
 # -----------
 
-help=false
 # returns sourceable arrays for rds and mysql params
 arg_parse() { 
   declare -a rds_args=() || echo "No rds args."  # rds args (before the -- )
@@ -274,8 +276,6 @@ arg_parse
 
 iam_user=restricted  # default
 
-#debug echo instance: ${instance}
-[[ "$help" == true ]] && usage
 
 # Determine default RDS IAM user, based on team. 
 iam_user=restricted    # default
