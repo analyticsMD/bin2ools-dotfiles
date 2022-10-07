@@ -19,6 +19,7 @@ export BT="${HOME}/.bt"
 aws_defaults
 env_init
 set_team 
+exec 3>&1 5>&1  
 
 #poetry="$(which poetry)"
 
@@ -78,7 +79,7 @@ while getopts :P:f:g:j:k:o:p:t:u:v:-:hd OPT; do
 done
 shift $((OPTIND-1)) # remove parsed options and args from $@ list
 
-#debug echo instance: ${instance}
+# display usage if help flag recieved
 if [[ "${usage}" == true ]]; then usage; fi
 
 set_tunnel_user() { 
@@ -252,7 +253,7 @@ echo "${BT_TOKEN}"
 # launch mysql 
 
 #ssm_keypath+=( devops bt rds "${bt_user}" "${bt_team}" )
-BT_TOKEN
+
 
 # -----------
 # parse args.
@@ -267,10 +268,8 @@ arg_parse() {
   to_debug rds && echo mysql_args: "${mysql_args[@]}" >&3
   to_debug rds && echo rds_args: "${rds_args[@]}"   >&3
 } 
-
+exec 3>&1
 arg_parse
-
-iam_user=restricted  # default
 
 
 # Determine default RDS IAM user, based on team. 
@@ -311,7 +310,7 @@ iam_user=restricted    # default
 # handle tunnel persistence, and LogForwarding capability. 
 
 
-[[ "${BT_CLUSTER}" == "NONE" ]] && { 
+[[ "${bt_cluster}" == "NONE" ]] && { 
   echo "You must select an RDS cluster to connect with." && \
   echo "Use tab completion to select a cluster name."    && \
   exit 1
@@ -322,7 +321,7 @@ iam_user=restricted    # default
 
 # start the cycle of acquiring a tunnel. 
 # --------------------------------------
-to_debug rds && echo -e "${GREEN}M${NC}: Spinning up a tunnel for ${CLUSTER}". >&3
+to_debug rds && echo -e "${GREEN}M${NC}: Spinning up a tunnel for ${bt_cluster}". >&3
 
 # Fork and detach a process to act autonomously as a tunnel manager.  
 # Before the fork, you must first duplicate stdout to the parent. 
@@ -343,9 +342,9 @@ to_debug rds echo -e "${CYAN}T${NC}: iam_user is: ${iam_user}" >&3
 #     stdin, stdout, stderr, fd3, fd5
 # 4.) run with nohup
 
-TNL=( ${BT_LAUNCH_DIR}/rds_tunnel "${BT_CLUSTER}" )
+TNL=( ${BT_LAUNCH_DIR:-\.}/rds_tunnel_2 "${bt_cluster}" )
 echo -ne "\n\n${GREEN}M${NC}: -----------------------------------\n"
-echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${BT_CLUSTER}. \n"
+echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${bt_cluster}. \n"
 echo -ne     "${GREEN}M${NC}: -----------------------------------\n\n"
 ${TNL[@]} <&- & 
 
@@ -359,15 +358,15 @@ ${TNL[@]} <&- &
 # get an RDS IAM login token 
 # ----------------------------------------------------
 tmppath="$(get_tmppath)"  
-to_debug rdsc && echo ${PURPLE}C${NC}: GETTING TOKEN: "${bt_endpoint}"
-to_debug rdsc && echo ${PURPLE}C${NC}: vars: "${iam_user}" "${bt_endpoint}"  "${tmppath}" >&5
+to_debug rds && echo ${PURPLE}C${NC}: GETTING TOKEN: "${bt_endpoint}"
+to_debug rds && echo ${PURPLE}C${NC}: vars: "${iam_user}" "${bt_endpoint}"  "${tmppath}" >&5
 
 TOKEN="$(aws rds generate-db-auth-token \
          --hostname "${bt_endpoint}" \
          --port 3306                    \
          --username "${iam_user}")"
 
-to_debug rdsc && echo token fingerprint: "${BT_TOKEN:(-7)}"  >&5
+to_debug rds && echo token fingerprint: "${TOKEN:(-7)}"  >&5
 
 
 # write a temp file for mysql client config. 
@@ -375,7 +374,7 @@ to_debug rdsc && echo token fingerprint: "${BT_TOKEN:(-7)}"  >&5
 { 
   # for global opts.
   echo -ne "\n[client]\n"
-  echo -ne "user=\"${iam_user}\"\npassword=\"${BT_TOKEN}\"\n"
+  echo -ne "user=\"${iam_user}\"\npassword=\"${TOKEN}\"\n"
   echo -ne "host=\"127.0.0.1\"\nport=\"${bt_port}\"\n"
   echo -ne "protocol=\"TCP\"\nbind-address=\"127.0.0.1\"\n"
   echo -ne "connect_timeout=\"30\"\n"
@@ -391,7 +390,8 @@ arg_parse() {
   declare -a mysql_args
   cfg_args+=( --defaults-extra-file="${tmppath}.cfg" )
   source <( reprocess_mysql_args ${mysql_args[@]} )
-} arg_parse # ------------------------ # build the mysql command
+} 
+arg_parse # ------------------------ # build the mysql command
 # ------------------------
 export LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN=y
 
@@ -400,11 +400,11 @@ export LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN=y
 # ----------------------------------
 # (Blocks until a proxy tunnel is available.)
 #
-to_debug rdst && echo -ne ${PURPLE}C${NC}: repolling  >&5
+to_debug rds && echo -ne ${PURPLE}C${NC}: repolling  >&5
 repoll "${bt_port}" && sleep 0.1 && echo -ne "\n\n"
 
 # run the mysql client 
-to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
+to_debug rds && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
 #loader_addpath /usr/local/Cellar/mysql/8.0.29/bin
 #loader_flag mysql
 mysql --defaults-extra-file="${HOME}/tmp/rds.cfg"
