@@ -19,8 +19,7 @@ export BT="${HOME}/.bt"
 aws_defaults
 env_init
 set_team 
-exec 3>&1 5>&1  
-
+exec 3>&1 5>&1 
 #poetry="$(which poetry)"
 
 [[ -z "${BT_ROLE}" ]] && export BT_ROLE="${DEFAULT_ROLE}"
@@ -268,7 +267,7 @@ arg_parse() {
   to_debug rds && echo mysql_args: "${mysql_args[@]}" >&3
   to_debug rds && echo rds_args: "${rds_args[@]}"   >&3
 } 
-exec 3>&1
+
 arg_parse
 
 
@@ -342,7 +341,8 @@ to_debug rds echo -e "${CYAN}T${NC}: iam_user is: ${iam_user}" >&3
 #     stdin, stdout, stderr, fd3, fd5
 # 4.) run with nohup
 
-TNL=( ${BT_LAUNCH_DIR:-\.}/rds_tunnel_2 "${bt_cluster}" )
+if [[ -z "${BT_LAUNCH_DIR}" ]]; then export BT_LAUNCH_DIR=${0%/*}; fi
+TNL=( ${BT_LAUNCH_DIR}/rds_tunnel_2 "${bt_cluster}" )
 echo -ne "\n\n${GREEN}M${NC}: -----------------------------------\n"
 echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${bt_cluster}. \n"
 echo -ne     "${GREEN}M${NC}: -----------------------------------\n\n"
@@ -358,8 +358,8 @@ ${TNL[@]} <&- &
 # get an RDS IAM login token 
 # ----------------------------------------------------
 tmppath="$(get_tmppath)"  
-to_debug rds && echo ${PURPLE}C${NC}: GETTING TOKEN: "${bt_endpoint}"
-to_debug rds && echo ${PURPLE}C${NC}: vars: "${iam_user}" "${bt_endpoint}"  "${tmppath}" >&5
+to_debug rdsc && echo ${PURPLE}C${NC}: GETTING TOKEN: "${bt_endpoint}"
+to_debug rdsc && echo ${PURPLE}C${NC}: vars: "${iam_user}" "${bt_endpoint}"  "${tmppath}" >&5
 
 TOKEN="$(aws rds generate-db-auth-token \
          --hostname "${bt_endpoint}" \
@@ -381,6 +381,53 @@ to_debug rds && echo token fingerprint: "${TOKEN:(-7)}"  >&5
   echo -ne "ssl-ca=\"${BT}/certs/rds-combined-ca-bundle.pem\"\n\n"
 } > "${HOME}/tmp/rds.cfg"  2>/dev/null
 
+encoded_token=""
+for (( i=0; i<${#TOKEN}; i++ )); do
+    char=${TOKEN:$i:1}
+    case ${char} in
+        \<) char="&#60;";;
+        \>) char="&#62;";;
+        \&) char="&#38;";;
+        \') char="&#39;";;
+        \") char="&#34;";;
+    esac
+  encoded_token="${encoded_token}${char}"
+done
+
+rds_configdir="${HOME}/tmp/mysql" 
+mkdir -p "${rds_configdir}"
+cat << EOF > ${rds_configdir}/connections.xml
+<?xml version="1.0"?>
+<data grt_format="2.0">
+  <value _ptr_="0x60000277f7e0" type="list" content-type="object" content-struct-name="db.mgmt.Connection">
+    <value type="object" struct-name="db.mgmt.Connection" id="4B86B304-11F8-4345-AE54-A537F0AB6414" struct-checksum="0x96ba47d8">
+      <link type="object" struct-name="db.mgmt.Driver" key="driver">com.mysql.rdbms.mysql.driver.native</link>
+      <value type="string" key="hostIdentifier">Mysql@127.0.0.1:${bt_port}</value>
+      <value type="int" key="isDefault">0</value>
+      <value _ptr_="0x60000271d8c0" type="dict" key="modules"/>
+      <value _ptr_="0x60000271d860" type="dict" key="parameterValues">
+        <value type="string" key=""></value>
+        <value type="int" key="OPT_ENABLE_CLEARTEXT_PLUGIN">1</value>
+        <value type="string" key="SQL_MODE"></value>
+        <value type="string" key="hostName">127.0.0.1</value>
+        <value type="int" key="lastConnected">1665457310</value>
+        <value type="string" key="password">${encoded_token}</value>
+        <value type="int" key="port">${bt_port}</value>
+        <value type="string" key="schema"></value>
+        <value type="string" key="serverVersion">5.7.12-log</value>
+        <value type="string" key="sslCA">${HOME}/.bin2ools-dotfiles/bt/certs/rds-combined-ca-bundle.pem</value>
+        <value type="string" key="sslCert"></value>
+        <value type="string" key="sslCipher"></value>
+        <value type="string" key="sslKey"></value>
+        <value type="int" key="useSSL">3</value>
+        <value type="string" key="userName">${iam_user}</value>
+      </value>
+      <value type="string" key="name">${bt_cluster}</value>
+      <link type="object" struct-name="GrtObject" key="owner">CF52BA91-1D92-4B8C-87CE-54CBD2EACB6A</link>
+    </value>
+  </value>
+</data>
+EOF
 
 # -------------------
 # reprocess mysql args.
@@ -400,13 +447,16 @@ export LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN=y
 # ----------------------------------
 # (Blocks until a proxy tunnel is available.)
 #
-to_debug rds && echo -ne ${PURPLE}C${NC}: repolling  >&5
+to_debug rdst && echo -ne ${PURPLE}C${NC}: repolling  >&5
 repoll "${bt_port}" && sleep 0.1 && echo -ne "\n\n"
 
 # run the mysql client 
-to_debug rds && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
+to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
 #loader_addpath /usr/local/Cellar/mysql/8.0.29/bin
 #loader_flag mysql
-mysql --defaults-extra-file="${HOME}/tmp/rds.cfg"
+#mysql --defaults-extra-file="${HOME}/tmp/rds.cfg"
+echo "open -n /Applications/MySqlWorkbench.app --args  --configdir ${rds_configdir} --query ${bt_cluster}"
+open -n /Applications/MySqlWorkbench.app --args  --configdir ${rds_configdir} --query ${bt_cluster}
+echo -n "${TOKEN}" | pbcopy
 
  
