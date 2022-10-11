@@ -366,7 +366,7 @@ TOKEN="$(aws rds generate-db-auth-token \
          --port 3306                    \
          --username "${iam_user}")"
 
-to_debug rds && echo token fingerprint: "${TOKEN:(-7)}"  >&5
+to_debug rdsc && echo token fingerprint: "${TOKEN:(-7)}"  >&5
 
 
 # write a temp file for mysql client config. 
@@ -455,8 +455,8 @@ to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
 #loader_addpath /usr/local/Cellar/mysql/8.0.29/bin
 #loader_flag mysql
 #mysql --defaults-extra-file="${HOME}/tmp/rds.cfg"
-echo "open -n /Applications/MySqlWorkbench.app --args  --configdir ${rds_configdir} --query ${bt_cluster}"
+#echo "open -n /Applications/MySqlWorkbench.app --args  --configdir ${rds_configdir} --query ${bt_cluster}"
 open -n /Applications/MySqlWorkbench.app --args  --configdir ${rds_configdir} --query ${bt_cluster}
-echo -n "${TOKEN}" | pbcopy
+#echo -n "${TOKEN}" | pbcopy
 
  
