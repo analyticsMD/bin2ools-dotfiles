@@ -1,4 +1,11 @@
-#!/usr/bin/env /usr/local/bin/bash
+#!/usr/bin/env bash
+
+# BUGS: 
+# -----
+# instance record still have  a '%' in them
+# 'wellspan' record showing up after second db cluster registers with the same trunk.
+# ports seemingly taking up more then needed per group. 
+ 
 
 # NOTE: 
 # -----
@@ -15,143 +22,226 @@
 # in the corresponding customer stack, e.g. the tunnel host for 
 # all fairview's RDS clusters is the 'app host' for the fairview stack. 
 #
-# TODO#1: Create json lookup table by cluster name, with alternates. 
+# TODO: Create json lookup table by cluster name, with alternates. 
 # TODO: Ask about tunnel hosts for mama-mirth & airflow clusters
 # TODO: malformred bmc record. 
 # 
 #
-source "${BT}"/settings 
-autologin 
-umask 0077
-echo ...
+#source "${BT}"/settings 
+#autologin 
+r="${AWS_REGION}"
+e=cluster-cum1rxsnisml."${r}".rds.amazonaws.com
+
+#tmp_yaml="$(gmktemp -p "${HOME}"/tmp trunk_map.XXXXXXXXXXXX)"
+#touch "${tmp_yaml}" ./trunk.yaml
+
+get_instances() {
+  echo "$(aws ec2 describe-instances \
+      --filters Name=tag-key,Values=Name \
+      --query 'Reservations[*].
+                 Instances[*].{Name:Tags[?Key==`Name`]|[0].`Value`,
+                   Instance: InstanceId,
+                   PrivIp:   PrivateIpAddress
+                 }
+              '         \
+      --region "${r}" \
+  )"
+  #| sort | tr -d ' ' \
+  #  jq -r -c '.[][] | (.Name)+"|"+(.Instance)' \
+  #jq -r -c '.[][] | (.Name)+"|"+(.Instance)+"|"+(.Foo)' \
+} 
+
+INSTANCES="$(get_instances)"
+#echo "${INSTANCES}"
+
+# |[0].Value
+#--query 'DBClusters[?Status == `available`].{Stack:Tags[?Key != null]|[0].Value,[ImageId,Name].[]][?Key == `qventus:stack`]|[0].Value,ClusterName:DBClusterIdentifier,Endpoint:Endpoint}')"
+#                  [?starts_with(Name, `aws-elasticbeanstalk`) == `true`]|[].[ImageId,Name]
+
+get_clusters() {
+
+    #declare -a clusters=()
+    #END=NONE
+
+    echo "$(aws rds describe-db-clusters \
+         --region ${AWS_REGION} \
+         --query 'DBClusters[?Status == `available`].{Stack:Tags[?Value != null]|[0].Value][?Key == `qventus:stack`],
+                  ClusterName:DBClusterIdentifier,
+                  Endpoint:Endpoint}')"
+
+}
+
+#[?starts_with(ImageId, ami-) == true] 
+CLUSTERS="$(get_clusters)"
+echo "${CLUSTERS}"
+exit
 
 
-GEN_DIR="${BT}"/src
-RDS_MAPFILE="${GEN_DIR}"/rds.arr
-RDS_CMPL="${GEN_DIR}"/rds.cmpl
+    i=
+    while IFS= read -r e; do
+        (( i++ ))
+        # Cluster names are trunked to find a common root.
+        # The root is then matched with a tunnel host. 
+        n=`echo "${e}" | perl -pe 's/(^[^\.]+)\.(.*)$/\1/'`
+        clusters+=( "${n}" )
+    done< <( aws rds describe-db-clusters               \
+           --region "${r}"                               \
+           --query 'DBClusters[?Status==`available`] ' | \
+             jq '.[] | { Endpoint: .Endpoint }'       | \
+             jq -rs '.[] | .Endpoint'                 | \
+             perl -pe 's/ /\n/g'                      )
 
-# build cluster map
-declare -A cluster_map 
-declare -a clusters
-END=NONE
-echo ....
-i=
-while IFS= read -r l; do
-  (( i++ ))
-  # Cluster names are trunked to find a common root.
-  # The root is then matched with a tunnel host. 
-  [ "${END}" == "NONE" ] && END=`echo $l | perl -pe 's/(^[^\.]+)\.(.*)$/\2/'`
-  c=`echo $l | perl -nle 'print if s/(\..*)//;'`
-  t=`echo $l | perl -nle 'print if s/(\..*)// and (
-    s/-(a([\w]+)?md$|mirth.*)// or # mirth and amd  
-    s/(?<!qa)-app.*//           or # qa clusters (note negative lookbehind) 
-    s/(^\w+$)/\1/               or # fairview, e.g. 
-    s/(serverless|restore).*//  or # poc and maintenance clusters
-    s/.*(devops|common).*/\1/ )
-  '`
-  #echo "c: $c t: $t"
-  clusters+=($c)
-  k="${c}_${t}"
-  cluster_map[$k]="$t"
-done< <( aws rds describe-db-clusters                 \
-         --region us-west-2                           \
-         --query 'DBClusters[?Status==`available`]' | \
-           jq '.[] | { Endpoint: .Endpoint }'       | \
-           jq -rs '.[] | .Endpoint'                 | \
-           perl -pe 's/ /\n/g'                      )
+    echo "${clusters[@]}"
+}
 
-echo fetched ${i} clusters. 
-echo .....
-#declare -p cluster_map
+CLUSTERS="$(get_clusters | sort)"
+#echo "${CLUSTERS}"
+GEN_DIR="${BT}/data/json/aws"
+RDS_JSON="${GEN_DIR}"/rds.json
+i="$(echo "${CLUSTERS}" | perl -pe 's/ /\n/g' | wc -l)"
+echo fetched "${i}" clusters. 
 
-# build host map
-declare -A host_map
-declare -a map
-echo ">"
+build_map() { 
 
-INSTANCES=$(aws ec2 describe-instances \
-    --filters Name=tag-key,Values=Name \
-    --query 'Reservations[*].
-               Instances[*].{
-                 Instance:InstanceId,Name:Tags[?Key==`Name`]|[0].Value
-               }
-            '            \
-    --region us-west-2 | \
-    jq -r -c '.[][] | (.Name)+"|"+(.Instance)+"%%"
-          ' \
-    | tr -d ' '
+  umask 0077  
+start='{\n  "cluster": {'
+map=''
+map+="$(jq -n --arg cluster "${c}" oer \
+             --arg version "$ot" \
+             '$ARGS.named'
+)"
+end=$(jq -n --arg configId "$configid" \
+              --arg objectname "tempfile" \
+              --arg test "2021" \
+              --argjson artifacts "[$inner]" \
+              '$ARGS.named'
 )
+end='\n}'
 
+echo -ne "${start}${map}${end}"
 
+  pathEnv="cluster"
+  yq -n 'eval(strenv(pathEnv))'
+  for c in $(echo "${CLUSTERS}" | sort | perl -pe 's/ /\n/g'); do 
+      trnk="$(echo $c | perl -lne 'print if "m/[^a-z]+/" and ( 
+            s/(fairview|medstar|natividad|dignity).*/\1/ or 
+            s/(serverless|restore).*//          or
+            s/-(a([\w]+)?md$|mirth.*)//         or
+            s/(demo-[a-z]).*/\1/                or
+            s/(?<!qa)-app.*//                   or
+            s/^([a-z\-]+)-(emr).*/\2/           or
+            s/mama-mirth/mama/                  or
+            s/.*(airflow|devops|common).*/\1/ )')"
+      tr=${trnk[0]}
+      [ -n "${tr}" ] && {
+        pathEnv="${c}"
+        pathEnv2=endpoint valueEnv2="${c}.${e}" \
+        pathEnv3=trunk    valueEnv3="${tr}"  \
+        yq -n 'eval(strenv(pathEnv)) += {
+                 strenv(pathEnv2) : strenv(valueEnv2),
+                 strenv(pathEnv3) : strenv(valueEnv3)
+              }'
 
-echo ">>"
-while IFS='%%' read -r l; do
-  while IFS='|' read -r n i; do
-    #echo n: $n i: $i
-    # Each instance is trunked to find 
-    # the proper tunnel host for each stack.
-    [[ $n =~ (vpn|cron|cnc|ingestion) ]]  && continue 
-    t=$(echo $n | perl -nle 'print if ( 
-          s/airflow-.*/common/        or 
-          s/mama-mirth/mama/          or  
-          s/(?<!qa)-app.*//           ) 
-      ')
-    k=`echo ${n}_${i} | sed -e s/%//g`
-    #echo k: $k t: $t
-    host_map[$k]=[$t]
+      } || echo "WARN: no cluster trunk: ${n}" && continue
   done
-done < <(printf "${INSTANCES}" | sort) 
+  #cp ${tmp_yaml} ./trunk.yaml
+}
+
+#echo -ne "build\n\n"
+build_map
+#echo -ne "build done\n\n"
+
+add_record() {
+    echo "got here."
+    c="${1}" tr="${2}" n="${3}" i="${4}" a="${5}" port="${6}"
+    pathEnv=".cluster.${c}"                       \
+    pathEnv2=host         valueEnv2="${n}"        \
+    pathEnv3=instance     valueEnv3="${i}"        \
+    pathEnv4=ip           valueEnv4="${a}"        \
+    pathEnv5=port         valueEnv5="${port}"     \
+    yq -n 'eval(strenv(pathEnv)) += {
+                strenv(pathEnv2) : strenv(valueEnv2), 
+                strenv(pathEnv3) : strenv(valueEnv3), 
+                strenv(pathEnv4) : strenv(valueEnv4), 
+                strenv(pathEnv5) : strenv(valueEnv5) 
+    }'
+}
 
 
-cls="$(printf "${INSTANCES}" | wc -l)"
-echo fetched  ${cls} hosts.  
-#declare -p host_map
+# BUILD YAML file.
+gen_rds_yaml() {
 
-# compare trunked hosts to trunked clusters.
-# return all matches.
-p=3306
-echo ">>>"
-for cpair in ${!cluster_map[@]}; do
-  c=`echo $cpair | cut -d'_' -f 1` 
-  t=`echo $cpair | cut -d'_' -f 2` 
-  p=$(( $p + 1 ))  # for local ports.
-  for hpair in ${!host_map[@]}; do
-    
-    h=`echo $hpair | cut -d'_' -f 1` 
-    i=`echo $hpair | cut -d'_' -f 2` 
-    [[ "${host_map[$hpair]}" =~ $t ]] && \
-      map+=($h\|$i\|$t\|$p\|$c) && \
-      unset cluster_map["$cpair"] && break
+  #tmp_yaml=${1}
+  #tr="${tr}" yq '.trunk = strenv(tr)' ${tmp_yaml} 
+  r=us-west-2
+  e=cluster-cum1rxsnisml.${r}.rds.amazonaws.com
+  declare -a trunks=()
+  declare -a trunked=()
+  p=3307 num=0
+  for l in $(echo "${INSTANCES}" | sort); do
+    readarray -d'|' -t tr < <(echo "${l}")
+    n="${tr[0]}" i="${tr[1]}" a="${tr[2]}" 
+    port="$(( p + num ))"
+    (( num++ ))
+    #echo n: $n i: $i a: $a p: $p
+    [[ $n =~ (vpn|cron|cnc|ingestion|qval) ]]  && continue 
+    tr="$(echo "$n" | perl -lne 'print if "m/([^a-z]+)-/" and ( 
+        s/(fairview|medstar|natividad|dignity).*/\1/ or 
+        s/-(a([\w]+)?md$|mirth.*)//            or
+        s/(?<!qa)-app.*//                      or
+        s/(?<!demo)-[a-z].*//                  or
+        s/([\w]+)\-.*/\1/                      or
+        s/(serverless|restore|qval).*//        or
+        s/^([a-z]+)([^a-z]+).*/\1/             or
+        s/mama-mirth/mama/                     or
+        s/.*(wellspan|airflow|devops|common|emr).*/\1/   )')"
+            #qa-devops-r6g; prod-emr; non-prod-emr
+            #k="$(echo ${n}_${i} | perl -pe 's/[%\!]+//g')"
+        [[ -n "${tr}" ]] && trunks+=( "$tr|$l" )
   done
-  #declare -p cluster_map 
-done
 
-#  Print a sourceable hash of entries
-mkdir -p ${HOME}/tmp
-tmppath="$(gmktemp -p ${HOME}/tmp rds_map.XXXXXXXXXXXX)"
-cat ${BT}/inst/txt/bt_header                     > $tmppath
-echo ">>>>"
-#echo -ne 'declare -A rds=( '                   >> $tmppath
-while IFS= read -r l; do 
-  while IFS='|' read -r h i t p c; do
+  #echo "trunks: ${trunks[@]}" 
 
-    s="[\\\"$h\\\"]=\\\"$h%$i%$t%$p%$c.$END\\\""
-    s="[\\\"$h\\\"]=\\\"$h%$i%$t%$p%$c.$END\\\""
-    bash -c "echo -ne $(printf ' %q' "$s ")"    >> $tmppath
+  # For all clusters with this trunk, fill in proxy values.
+  for c in ${CLUSTERS[@]}; do
+      echo "cluster: $c"
+      for cl_tr in $(yq -n ".cluster.${c}.trunk" | echo); do
+
+          [[ "${#trunked}" -ne 0 ]] && {
+              readarray -d'|' -t tr < <( echo "${trunked[-1]}" )
+              #echo trunked: tr: ${tr[0]} cl_tr: ${cl_tr}
+              [[ -n "${cl_tr}" && "${cl_tr}" == "${tr}" ]] && {
+                  add_record "${c}" "${tr}"
+                  trunked+=( "${t}" )
+                  t="${tr}|${l}"
+                  trunks=( "${trunks[@]/$t}" )
+              } && break
+          }
+
+          for t in "${trunks[@]}"; do 
+              readarray -d'|' -t tr < <(echo "${t}")
+              #echo trunks:  tr: ${tr[0]} cl_tr: ${cl_tr}
+              [[ -n "${cl_tr}" && "${cl_tr}" == "${tr[@]}" ]] && {
+                  add_record "${c}" "${tr[@]}"
+                  trunked+=( "${t}" )
+                  t="${tr[@]}|${l}"
+                  trunks=( "${trunks[@]/$t}" )
+              } && break
+          done
+      done
   done
-done < <( printf '%s\n' "${map[@]}" | sort)
-echo -ne ' )\n'                                 >> $tmppath
-mv $tmppath "${BT}/src/rds.arr"
-rm -rf $tmppath
 
-# Print a bash completion file, for sourcing. 
-cat ${BT}/inst/txt/bt_bash_header                > $RDS_CMPL
-echo -ne '\n\ncomplete -W "\n'                  >> $RDS_CMPL
-for c in ${clusters[@]}; do
-  printf '  %s \\\n' $c                         >> $RDS_CMPL
-done
-echo -ne "\" rds\n"                             >> $RDS_CMPL
+  cls="$(echo "${INSTANCES}" | wc -l)"
+  echo fetched "${cls}" hosts.
+  #echo "$(echo trunks: ${trunks[@]} | perl -pe 's/ /\n/g' )"
+  #echo "$(echo trunked: ${trunked[@]} | perl -pe 's/ /\n/g' )"
+} 
 
-umask 0022
-echo done.
-echo ">>>>>"
+# BUILD json file (for jq)
+RDS_JSON="${HOME}/.bt/data/json/aws/rds.json"
+#gen_rds_yaml | yq -o j > "${RDS_JSON}"
+gen_rds_yaml | yq -o j
+
+
+# also: need completion generator. 
+#       need  

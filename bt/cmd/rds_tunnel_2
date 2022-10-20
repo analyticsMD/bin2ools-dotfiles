@@ -1,4 +1,4 @@
-#!/usr/bin/env /usr/local/bin/bash
+#!/usr/bin/env bash
 
 # ----------------------------
 # parse rds args
@@ -16,6 +16,7 @@ funcs="$(declare -F | grep -v '\-f _' | wc -l )" && {
 
 #export BT_DEBUG="rds"
 BT_CLUSTER=${1}    # important: all runs will have an RDS argument.
+export bt_cluster="${BT_CLUSTER}"
 
 [[ -n ${BT_CLUSTER} ]] || { export BT_CLUSTER="${1}" ;}
 script_info "${BASH_SOURCE[0]}"
@@ -84,7 +85,7 @@ TNL=( aws ssm start-session )
 TNL+=( --target "${bt_instance}" ) 
 TNL+=( --document-name AWS-StartPortForwardingSessionToRemoteHost )
 TNL+=( --parameters )
-TNL+=( '{"portNumber":["3306"],"localPortNumber":["${bt_port}"],"host":["${bt_endpoint}:3306"]}' )
+TNL+=( '{"portNumber":["3306"],"localPortNumber":["'${bt_port}'"],"host":["'${bt_endpoint}':3306"]}' )
 
 
 [[ "${BT_DEBUG}" =~ rdst ]] && unset silent || silent='>/dev/null 2>&1'

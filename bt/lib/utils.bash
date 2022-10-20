@@ -1,4 +1,4 @@
-#!/usr/bin/env /opt/homebrew/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck shell=bash
 # global settings
@@ -94,6 +94,14 @@ mysql_help() {
 
 to_debug flow && echo rds:mysql_help || true
 
+
+get_rds() { 
+    RDS_JSON="${HOME}/.bt/data/json/aws/rds.json"
+    SSM_JSON="${HOME}/.bt/data/json/aws/ssm.json"
+    bt_host="$(cat ${RDS_JSON} | jq -r '.cluster."$bt_cluster".host')"
+    bt_port="$(cat ${RDS_JSON} | jq -r '.cluster."$bt_cluster".port')"
+    
+}
 # expects a login.
 get_forwarder() { 
 
@@ -181,17 +189,17 @@ get_rds_args() {
   while (( i <= ${#rds_args[@]} )); do
     #echo i: $i A: "${rds_args[@]:$i:1}"
     case "${rds_args[@]:$i:1}" in
-  
+
       # show usage menu
       -h           | \
       -I | --help  ) help=true; shift ;;
-  
+
       # RBAC account to use
       --user    ) iam_user="${rds_args[*]:$i+1:1}";   shift 2 ;;
       --method  ) method="${rds_args[*]:$i+1:1}"; shift 2 ;; 
-          
+
      *) shift ;;
-     
+
     esac
     ((i++)) 
   done
@@ -216,11 +224,11 @@ get_mysql_args() {
   while (( "${#@}" )); do
     to_debug rds echo "now: ${1}"  
     case "${1}" in
-  
+
       # show usage menu
       -h                              | \
       -I | --help                     ) help=true; shift ;;
-  
+
       # boolen flags.
       -a | --my-boolean-flag          | \
            --disable-auto-rehash      | \
@@ -266,12 +274,12 @@ get_mysql_args() {
            --binary-mode              | \
            --print-defaults           | \
            --show-warnings            ) 
-  
+
       [[ "${1}" =~ ^\- ]] && mysql_args+=( "${@:1:1}" ) 
       shift ;;
-  
+
        # Argument flags.
-      
+
       -D | --database                 | \
            --default-character-set    | \
            --delimiter                | \
@@ -543,7 +551,7 @@ reprocess_mysql_args() {
 repoll() { 
 
   p=${1}
-  
+
   TICKS=
   to_debug rdsl && echo polling port: "${p}"   3>&1
   while ! nc -z 127.0.0.1 "${p}" >/dev/null 2>&1; do
@@ -1021,7 +1029,7 @@ cluster_info() {
   bt_endpoint|${bt_endpoint}\n          \
   bt_cluster|${bt_cluster}\n"         >&3
 
-} || true
+} 
 
 instance_info() { 
 
@@ -2807,7 +2815,7 @@ ssm_decode() {
 
 }
 
-arg_parse() { 
+arg_parse() {
 
         # Each host is tagged as part of a designated environment. 
         # get my instance_id 
@@ -2822,22 +2830,22 @@ arg_parse() {
             to_err "WARN: failed to get instance_id for this host." && \
             exit
         ) 
-        
+
 	stack=$(aws ec2 describe-tags \
         --filters "Name=resource-id,Values=${instance_id}" | \
         jq -r '(.Tags[]|select(.Key=="qventus:stack")|.Value)')
     to_err setting stack to: ${stack}
-   
+
     if [ "${help}" == "true" ]; then 
         usage
     fi
 
     rgx='^/'
-    if [[ ! -z "${key}" && "$key" =~ "${rgx}" ]]; then 
+    if [[ ! -z "${key}" && "$key" =~ "${rgx}" ]]; then
         to_err "ERROR: key is not of the proper format."
         usage
-    fi 
-} 
+    fi
+}
 
 # Compare the contents of an ssm key to that of a file.
 # Report differneces as a diff.

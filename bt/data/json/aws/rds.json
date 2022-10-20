@@ -35,7 +35,7 @@
       "port": "3313"
     },
     "demo-a-amd": {
-      "endpoint": "demo-a-amd.cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com",
+      "endpoint": "demo-a-amd.",
       "trunk": "demo-a",
       "host": "demo-a-app-container",
       "instance": "i-09c8bbb764a10145b%",
@@ -280,8 +280,8 @@
     "saintlukes-amd": {
       "endpoint": "saintlukes-amd.",
       "trunk": "saintlukes",
-      "host": "saintlukes-qval",
-      "instance": "i-0c08be047c31594e4%",
+      "host": "saintlukes-ingestion",
+      "instance": "i-086e1f41b702ae275",
       "port": "3381"
     },
     "sutter-amd": {
@@ -308,8 +308,8 @@
     "uams-amd": {
       "endpoint": "uams-amd.",
       "trunk": "uams",
-      "host": "uams-qval",
-      "instance": "i-0367ab0f1b9999411%",
+      "host": "uams-ingestion",
+      "instance": "i-064b5ba9cb4b73191",
       "port": "3391"
     },
     "unitypoint-amd": {

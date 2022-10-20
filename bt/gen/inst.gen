@@ -17,8 +17,8 @@ gen_inst() {
   declare -a tmp
   tmp+=( "$(aws ec2 describe-instances \
           --output json \
-          --region us-west-2 \
-          --filters Name=tag-key,Values=Name \
+          --region ${AWS_REGION} \
+          --filters Name=tag-key,Values=Name,Name!=qval\
           --query 'Reservations[*].Instances[*].{
                    Instance:InstanceId,
                    Name:Tags[?Key==`Name`]|[0].Value,

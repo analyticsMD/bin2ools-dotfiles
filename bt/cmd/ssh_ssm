@@ -1,4 +1,4 @@
-#!/usr/bin/env  /opt/homebrewj/bin/bash
+#!/usr/bin/env  bash
 # shellcheck shell=bash disable=SC1083 format=SC1083
 
 export LOADER=legacy

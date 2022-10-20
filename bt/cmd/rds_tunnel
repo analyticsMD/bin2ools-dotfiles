@@ -1,9 +1,10 @@
-#!/usr/bin/env /usr/local/bin/bash
+#!/usr/bin/env bash
 
 # ----------------------------
 # parse rds args
 # ----------------------------
 
+exec 3>&1 5>&1             # redirect 3 and 5 to the pipeline; 
 export LOADER=legacy
 unset SOURCE_FILES
 
@@ -14,14 +15,6 @@ funcs="$(declare -F | grep -v '\-f _' | wc -l )" && {
 }
 
 #declare -F > compare_funcs_2
-
-# (no mysql args needed here.)
-arg_parse() {
-  declare -a rds_args
-  source <(get_rds_args "${@}") 
-}
-
-arg_parse
 
 # Team first, then other. 
 set_team 
@@ -46,6 +39,10 @@ source <(echo "$("${BT}"/utils/path -s -x 2>/dev/null)" )
 
 [[ -z "${BT_ROLE}" ]] && export BT_ROLE="${DEFAULT_ROLE}"
 autologin "${BT_ROLE}"
+
+[[ -n ${BT_CLUSTER} ]] || { export BT_CLUSTER="${1}" ;}
+script_info "${BASH_SOURCE[0]}"
+cluster_info "${BT_CLUSTER}"
 
 # other, misc.
 unset SOURCE_FILES

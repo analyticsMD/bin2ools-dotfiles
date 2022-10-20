@@ -180,7 +180,7 @@ TNL=( ${BT_LAUNCH_DIR}/rds_tunnel "${BT_CLUSTER}" )
 echo -ne "\n\n${GREEN}M${NC}: -----------------------------------\n"
 echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${BT_CLUSTER}. \n"
 echo -ne     "${GREEN}M${NC}: -----------------------------------\n\n"
-${TNL[@]} <&- & 
+${TNL[@]} <&- &
 
 # wait for tunnel. 
 # 
@@ -200,7 +200,7 @@ TOKEN="$(aws rds generate-db-auth-token \
          --port 3306                    \
          --username "${iam_user}")"
 
-to_debug rdsc && echo token fingerprint: "${TOKEN:(-7)}"  >&5
+to_debug rdsc && echo token fingerprint: "${TOKEN: -7}"  >&5
 
 
 # write a temp file for mysql client config. 
