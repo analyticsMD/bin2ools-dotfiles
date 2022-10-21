@@ -1,4 +1,4 @@
-#!/usr/bin/env /opt/homebrew/bin/bash
+#!/usr/bin/env bash
 
 #export BASH5="$(which bash)"
 echo PATH="$PATH"

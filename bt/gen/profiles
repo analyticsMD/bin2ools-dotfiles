@@ -1,4 +1,4 @@
-#!/usr/bin/env /opt/homebrew/bin/bash
+#!/usr/bin/env bash
 # shellcheck disable=SC2148,SC2034
 # -----------------------------------------------------------------
 
