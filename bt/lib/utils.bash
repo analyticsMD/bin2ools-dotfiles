@@ -159,8 +159,9 @@ parse_rds_args() {
     rds_args=(   "${args[@]:1:${#args[@]}}"      )
   }
  
-  echo "$(get_rds_args ${rds_args[@]})" 
-  echo "$(get_mysql_args ${mysql_args[@]})" 
+  echo "$(get_rds_args ${rds_args[@]})"
+  #echo "$(get_mysql_args ${mysql_args[@]})"
+  echo "${mysql_args[@]@A}"
 } || true
 
 to_debug flow && echo rds:split_rds_args || true
