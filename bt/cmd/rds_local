@@ -96,7 +96,7 @@ arg_parse() {
   declare -a mysql_args=() || echo "No mysql args."  # mysql args (after the -- )
   source <(parse_rds_args "${args[@]}")
   
-  mysql_args=($(echo -ne "QV_SQL_ENC" && /bin/echo "${mysql_args[@]}" | gzip | gbase64 -w 0))
+  mysql_args=("$(echo -ne "QV_SQL_ENC" && /bin/echo "${mysql_args[@]}" | gzip | gbase64 -w 0)")
   to_debug rds && echo mysql_args: "${mysql_args[@]}" >&3
   to_debug rds && echo rds_args: "${rds_args[@]}"   >&3
   echo "${rds_args[@]@A}"
@@ -227,7 +227,7 @@ to_debug rdsc && echo token fingerprint: "${TOKEN: -7}"  >&5
 arg_reprocess() {
   #cfg_args+=( --defaults-extra-file="${tmppath}.cfg" )
   #source <( reprocess_mysql_args ${mysql_args[@]} )
-  cfg_args=($(echo "${mysql_args[@]}" | perl -pe "s/QV_SQL_ENC//" | gbase64 -d | zcat))
+  cfg_args=("$(echo "${mysql_args[@]}" | perl -pe "s/QV_SQL_ENC//" | gbase64 -d | zcat)")
 }
 arg_reprocess
 
@@ -249,6 +249,6 @@ to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
 #loader_addpath /usr/local/Cellar/mysql/8.0.29/bin
 #loader_flag mysql
 echo Args: ${mysql_args[@]}
-mysql_cmd="mysql --defaults-extra-file=\"${HOME}/tmp/rds.cfg\" ${cfg_args[@]}"
+mysql_cmd="mysql --defaults-extra-file=\"${HOME}/tmp/rds.cfg\" ${cfg_args[*]}"
 #mysql --defaults-extra-file="${HOME}/tmp/rds.cfg" ${cfg_args[*]}
-eval $mysql_cmd
+eval "$mysql_cmd"
