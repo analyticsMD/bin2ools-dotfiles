@@ -332,6 +332,20 @@
       "host": "wellspan-qval",
       "instance": "i-09cf155342a294e6c%",
       "port": "3397"
+    },
+    "qv-uw2-trmchealth-amd": {
+      "endpoint": "qv-uw2-trmchealth-amd.",
+      "trunk": "trmchealth",
+      "host": "qv-trmchealth-app-container",
+      "instance": "i-086827a1a9b5f6ecb%",
+      "port": "3398"
+    },
+    "qv-uw2-umiamihealth-amd": {
+      "endpoint": "qv-uw2-umiamihealth-amd.",
+      "trunk": "umiamihealth",
+      "host": "qv-umiamihealth-app-container",
+      "instance": "i-0a54ae4a66e3a7f03%",
+      "port": "3399"
     }
-  }
+	}
 }
