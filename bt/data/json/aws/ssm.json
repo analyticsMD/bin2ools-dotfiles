@@ -1182,5 +1182,37 @@
       "PrivAddr": "10.102.2.73",
       "KeyName": "ec2-user"
     }
+  },
+  {
+    "qv-trmchealth-app-container": {
+      "Instance": "i-086827a1a9b5f6ecb",
+      "Name": "qv-trmchealth-app-container",
+      "PrivAddr": "10.102.8.18",
+      "KeyName": "ec2-user"
+    }
+  },
+  {
+    "qv-trmchealth-app-cron": {
+      "Instance": "i-03725a1ab1c1efe64",
+      "Name": "qv-trmchealth-app-cron",
+      "PrivAddr": "10.102.8.43",
+      "KeyName": "ec2-user"
+    }
+  },
+  {
+    "qv-umiamihealth-app-container": {
+      "Instance": "i-0a54ae4a66e3a7f03",
+      "Name": "qv-umiamihealth-app-container",
+      "PrivAddr": "10.102.10.5",
+      "KeyName": "ec2-user"
+    }
+  },
+  {
+    "qv-umiamihealth-app-cron": {
+      "Instance": "i-044161354c7c32c2b",
+      "Name": "qv-umiamihealth-app-cron",
+      "PrivAddr": "10.102.10.21",
+      "KeyName": "ec2-user"
+    }
   }
 ]
