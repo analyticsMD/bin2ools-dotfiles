@@ -191,7 +191,7 @@ to_debug rds echo -e "${CYAN}T${NC}: iam_user is: ${iam_user}" >&3
 #     stdin, stdout, stderr, fd3, fd5
 # 4.) run with nohup
 
-TNL=( ${BT_LAUNCH_DIR}/rds_tunnel "${BT_CLUSTER}" )
+TNL=( ${BT_LAUNCH_DIR}/rds_tunnel_2 "${BT_CLUSTER}" )
 echo -ne "\n\n${GREEN}M${NC}: -----------------------------------\n"
 echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${BT_CLUSTER}. \n"
 echo -ne     "${GREEN}M${NC}: -----------------------------------\n\n"
@@ -211,7 +211,7 @@ to_debug rdsc && echo ${PURPLE}C${NC}: GETTING TOKEN: "${bt_endpoint}"
 to_debug rdsc && echo ${PURPLE}C${NC}: vars: "${iam_user}" "${bt_endpoint}"  "${tmppath}" >&5
 
 TOKEN="$(aws rds generate-db-auth-token \
-         --hostname "${bt_endpoint}" \
+         --hostname "${bt_endpoint}cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com" \
          --port 3306                    \
          --username "${iam_user}")"
 
