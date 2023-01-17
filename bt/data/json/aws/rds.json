@@ -2,350 +2,360 @@
   "cluster": {
     "airflowcommonvpc-cluster": {
       "endpoint": "airflowcommonvpc-cluster.",
-      "trunk": "airflowcommonvpc",
-      "host": "demo-b-web",
-      "instance": "i-02aaecf3978d7c598%"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3310,
+      "trunk": "airflow"
     },
     "allinahealth-amd": {
       "endpoint": "allinahealth-amd.",
-      "trunk": "allinahealth",
-      "host": "allinahealth-app-container",
-      "instance": "i-055a9fd817755c6e3%",
-      "port": "3308"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3311,
+      "trunk": "allinahealth"
     },
     "bmc-amd": {
       "endpoint": "bmc-amd.",
-      "trunk": "bmc",
-      "host": "bmc-qval",
-      "instance": "i-0f4b7d31d0cf0ae83%",
-      "port": "3310"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3312,
+      "trunk": "bmc"
     },
     "bsmhealth-amd": {
       "endpoint": "bsmhealth-amd.",
-      "trunk": "bsmhealth",
-      "host": "bsmhealth-app-container",
-      "instance": "i-04e2ba3ef372bc824%",
-      "port": "3311"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3313,
+      "trunk": "bsmhealth"
     },
     "conehealth-amd": {
       "endpoint": "conehealth-amd.",
-      "trunk": "conehealth",
-      "host": "conehealth-qval",
-      "instance": "i-06a81f209b4a15eec%",
-      "port": "3313"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3314,
+      "trunk": "conehealth"
     },
     "demo-a-amd": {
       "endpoint": "demo-a-amd.",
-      "trunk": "demo-a",
-      "host": "demo-a-app-container",
-      "instance": "i-09c8bbb764a10145b%",
-      "port": "3314"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3315,
+      "trunk": "demo-a"
     },
     "demo-b-amd": {
       "endpoint": "demo-b-amd.",
-      "trunk": "demo-b",
-      "host": "demo-b-app-container",
-      "instance": "i-07c78fe7f7b85bef6%",
-      "port": "3315"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3316,
+      "trunk": "demo-b"
     },
     "demo-c-amd": {
       "endpoint": "demo-c-amd.",
-      "trunk": "demo-c",
-      "host": "demo-c-app-container",
-      "instance": "i-081687061a08c325f%",
-      "port": "3316"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3317,
+      "trunk": "demo-c"
     },
     "demo-d-amd": {
       "endpoint": "demo-d-amd.",
-      "trunk": "demo-d",
-      "host": "demo-d-app-container",
-      "instance": "i-0aae43067e4726fe9%",
-      "port": "3317"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3318,
+      "trunk": "demo-d"
     },
     "demo-e-amd": {
       "endpoint": "demo-e-amd.",
-      "trunk": "demo-e",
-      "host": "demo-e-app-container",
-      "instance": "i-00561dbf6a7ac6a64%",
-      "port": "3318"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3319,
+      "trunk": "demo-e"
     },
     "demo-f-amd": {
       "endpoint": "demo-f-amd.",
-      "trunk": "demo-f",
-      "host": "demo-f-app-container",
-      "instance": "i-0297f6b60e84d5324%",
-      "port": "3319"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3320,
+      "trunk": "demo-f"
     },
     "dignity-amd": {
       "endpoint": "dignity-amd.",
-      "trunk": "dignity",
-      "host": "dignity-qval",
-      "instance": "i-0413f347b20d022c4%",
-      "port": "3322"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3321,
+      "trunk": "dignity"
     },
     "dignity-mirthdb-rds": {
       "endpoint": "dignity-mirthdb-rds.",
-      "trunk": "dignity",
-      "host": "dignity-qval",
-      "instance": "i-0413f347b20d022c4%",
-      "port": "3323"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3322,
+      "trunk": "dignity"
     },
     "emory-amd": {
       "endpoint": "emory-amd.",
-      "trunk": "emory",
-      "host": "emory-qval",
-      "instance": "i-03f586e019faab165%",
-      "port": "3330"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3323,
+      "trunk": "emory"
     },
     "emory-mirthdb-for-nginx2": {
       "endpoint": "emory-mirthdb-for-nginx2.",
-      "trunk": "emory",
-      "host": "emory-qval",
-      "instance": "i-03f586e019faab165%",
-      "port": "3331"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3324,
+      "trunk": "emory"
     },
-    "fairview-amd": {
-      "endpoint": "fairview-amd.",
-      "trunk": "fairview",
-      "host": "fairview-qval",
-      "instance": "i-028aaabc35642575d%",
-      "port": "3338"
+    "fairview": {
+      "endpoint": "fairview.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3325,
+      "trunk": "fairview"
     },
     "fairview-analyticsmd": {
       "endpoint": "fairview-analyticsmd.",
-      "trunk": "fairview",
-      "host": "fairview-qval",
-      "instance": "i-028aaabc35642575d%",
-      "port": "3339"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3326,
+      "trunk": "fairview"
     },
     "honorhealth-amd": {
       "endpoint": "honorhealth-amd.",
-      "trunk": "honorhealth",
-      "host": "honorhealth-qval",
-      "instance": "i-0497f9d7cdacfb4db%",
-      "port": "3342"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3327,
+      "trunk": "honorhealth"
     },
     "kaiser-amd": {
       "endpoint": "kaiser-amd.",
-      "trunk": "kaiser",
-      "host": "kaiser-app-container",
-      "instance": "i-0ee12fc18025a84ec%",
-      "port": "3343"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3328,
+      "trunk": "kaiser"
     },
     "keckmedicine-amd": {
       "endpoint": "keckmedicine-amd.",
-      "trunk": "keckmedicine",
-      "host": "keckmedicine-app-container",
-      "instance": "i-0bc22bb05f2f7f3b7%",
-      "port": "3344"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3329,
+      "trunk": "keckmedicine"
     },
     "mama-mirth-cluster": {
       "endpoint": "mama-mirth-cluster.",
-      "trunk": "mama",
-      "host": "mama-mirth",
-      "instance": "i-059f03f369ca1d926%",
-      "port": "3345"
-    },
-    "marshfield-amd": {
-      "endpoint": "marshfield-amd.",
-      "trunk": "marshfield",
-      "host": "marshfield-qval",
-      "instance": "i-03ecce34de0469c91%",
-      "port": "3348"
-    },
-    "medstar2-amd": {
-      "endpoint": "medstar2-amd.",
-      "trunk": "medstar",
-      "host": "medstar2-qval",
-      "instance": "i-0f43417fa5e505661%",
-      "port": "3349"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3330,
+      "trunk": "mama"
     },
     "medstar-mirthdb": {
       "endpoint": "medstar-mirthdb.",
-      "trunk": "medstar",
-      "host": "medstar2-qval",
-      "instance": "i-0f43417fa5e505661%",
-      "port": "3350"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3332,
+      "trunk": "medstar"
+    },
+    "medstar2-amd": {
+      "endpoint": "medstar2-amd.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3331,
+      "trunk": "medstar2"
     },
     "mercynet-amd": {
       "endpoint": "mercynet-amd.",
-      "trunk": "mercynet",
-      "host": "mercynet-web",
-      "instance": "i-982b3c6e%",
-      "port": "3357"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3333,
+      "trunk": "mercynet"
     },
     "mercynet-mirth2-bk-db-cluster": {
       "endpoint": "mercynet-mirth2-bk-db-cluster.",
-      "trunk": "mercynet",
-      "host": "mercynet-web",
-      "instance": "i-982b3c6e%",
-      "port": "3358"
-    },
-    "natividad3-amd": {
-      "endpoint": "natividad3-amd.",
-      "trunk": "natividad",
-      "host": "natividad3-qval",
-      "instance": "i-0fef049a27d10e7ff%",
-      "port": "3359"
-    },
-    "natividad3-serverless-rds": {
-      "endpoint": "natividad3-serverless-rds.",
-      "trunk": "natividad",
-      "host": "natividad3-qval",
-      "instance": "i-0fef049a27d10e7ff%",
-      "port": "3360"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3334,
+      "trunk": "mercynet"
     },
     "natividad-mirthdb": {
       "endpoint": "natividad-mirthdb.",
-      "trunk": "natividad",
-      "host": "natividad3-qval",
-      "instance": "i-0fef049a27d10e7ff%",
-      "port": "3361"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3337,
+      "trunk": "natividad"
+    },
+    "natividad-mirthdb-restore-test-cluster": {
+      "endpoint": "natividad-mirthdb-restore-test-cluster.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3338,
+      "trunk": "natividad"
+    },
+    "natividad3-amd": {
+      "endpoint": "natividad3-amd.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3335,
+      "trunk": "natividad3"
+    },
+    "natividad3-serverless-rds": {
+      "endpoint": "natividad3-serverless-rds.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3336,
+      "trunk": "natividad3"
     },
     "non-prod-emr": {
       "endpoint": "non-prod-emr.",
-      "trunk": "non",
-      "host": "demo-b-app-container",
-      "instance": "i-07c78fe7f7b85bef6%"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3339,
+      "trunk": "emr"
     },
     "nyp-amd": {
       "endpoint": "nyp-amd.",
-      "trunk": "nyp",
-      "host": "nyp-web",
-      "instance": "i-0d3cb18aec36eba34%",
-      "port": "3368"
-    },
-    "nyp-mirthdb2": {
-      "endpoint": "nyp-mirthdb2.",
-      "trunk": "nyp",
-      "host": "nyp-web",
-      "instance": "i-0d3cb18aec36eba34%",
-      "port": "3369"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3340,
+      "trunk": "nyp"
     },
     "nyp-mirthdb-cluster": {
       "endpoint": "nyp-mirthdb-cluster.",
-      "trunk": "nyp",
-      "host": "nyp-web",
-      "instance": "i-0d3cb18aec36eba34%",
-      "port": "3370"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3342,
+      "trunk": "nyp"
+    },
+    "nyp-mirthdb2": {
+      "endpoint": "nyp-mirthdb2.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3341,
+      "trunk": "nyp"
     },
     "prod-emr": {
       "endpoint": "prod-emr.",
-      "trunk": "prod",
-      "host": "demo-b-app-container",
-      "instance": "i-07c78fe7f7b85bef6%"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3343,
+      "trunk": "emr"
     },
     "qa-app-01-amd": {
       "endpoint": "qa-app-01-amd.",
-      "trunk": "qa-app-01",
-      "host": "qa-app-01-app",
-      "instance": "i-0e6791c96839425fa%",
-      "port": "3371"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3344,
+      "trunk": "qa-app-01"
     },
     "qa-app-02-amd": {
       "endpoint": "qa-app-02-amd.",
-      "trunk": "qa-app-02",
-      "host": "qa-app-02-app",
-      "instance": "i-03a51a9bfd3edab99%",
-      "port": "3372"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3345,
+      "trunk": "qa-app-02"
     },
     "qa-app-03-amd": {
       "endpoint": "qa-app-03-amd.",
-      "trunk": "qa-app-03",
-      "host": "qa-app-03-app",
-      "instance": "i-0d756be5600f12e9f%",
-      "port": "3373"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3346,
+      "trunk": "qa-app-03"
+    },
+    "qa-app-03-amd-cluster": {
+      "endpoint": "qa-app-03-amd-cluster.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3347,
+      "trunk": "qa-app-05"
     },
     "qa-app-04-amd": {
       "endpoint": "qa-app-04-amd.",
-      "trunk": "qa-app-04",
-      "host": "qa-app-04-app-container",
-      "instance": "i-0655bf3da2b49c86a%",
-      "port": "3374"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3348,
+      "trunk": "qa-app-04"
     },
     "qa-app-05-amd": {
       "endpoint": "qa-app-05-amd.",
-      "trunk": "qa-app-05",
-      "host": "qa-app-05-app-container",
-      "instance": "i-05e83023b1841fbe3%",
-      "port": "3375"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3349,
+      "trunk": "qa-app-05"
     },
     "qa-devops-r6g": {
       "endpoint": "qa-devops-r6g.",
-      "trunk": "qa",
-      "host": "qa-jenkins",
-      "instance": "i-0037b8d86f7987339%",
-      "port": "3378"
-    },
-    "saintlukes-amd": {
-      "endpoint": "saintlukes-amd.",
-      "trunk": "saintlukes",
-      "host": "saintlukes-ingestion",
-      "instance": "i-086e1f41b702ae275",
-      "port": "3381"
-    },
-    "sutter-amd": {
-      "endpoint": "sutter-amd.",
-      "trunk": "sutter",
-      "host": "sutter-qval",
-      "instance": "i-002028c5a1233f7f4%",
-      "port": "3386"
-    },
-    "sutter-mirthdb-cluster": {
-      "endpoint": "sutter-mirthdb-cluster.",
-      "trunk": "sutter",
-      "host": "sutter-qval",
-      "instance": "i-002028c5a1233f7f4%",
-      "port": "3387"
-    },
-    "thedacare-amd": {
-      "endpoint": "thedacare-amd.",
-      "trunk": "thedacare",
-      "host": "thedacare-app-container",
-      "instance": "i-0c2f478a4dbcc04aa%",
-      "port": "3388"
-    },
-    "uams-amd": {
-      "endpoint": "uams-amd.",
-      "trunk": "uams",
-      "host": "uams-ingestion",
-      "instance": "i-064b5ba9cb4b73191",
-      "port": "3391"
-    },
-    "unitypoint-amd": {
-      "endpoint": "unitypoint-amd.",
-      "trunk": "unitypoint",
-      "host": "unitypoint-qval",
-      "instance": "i-02a024b0277365181%",
-      "port": "3393"
-    },
-    "uvahealth-amd": {
-      "endpoint": "uvahealth-amd.",
-      "trunk": "uvahealth",
-      "host": "uvahealth-app-container",
-      "instance": "i-039547d21bbc90275%",
-      "port": "3394"
-    },
-    "wellspan-amd": {
-      "endpoint": "wellspan-amd.",
-      "trunk": "wellspan",
-      "host": "wellspan-qval",
-      "instance": "i-09cf155342a294e6c%",
-      "port": "3397"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3350,
+      "trunk": "qa"
     },
     "qv-uw2-trmchealth-amd": {
       "endpoint": "qv-uw2-trmchealth-amd.",
-      "trunk": "trmchealth",
-      "host": "qv-trmchealth-app-container",
-      "instance": "i-086827a1a9b5f6ecb%",
-      "port": "3398"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3351,
+      "trunk": "trmchealth"
     },
     "qv-uw2-umiamihealth-amd": {
       "endpoint": "qv-uw2-umiamihealth-amd.",
-      "trunk": "umiamihealth",
-      "host": "qv-umiamihealth-app-container",
-      "instance": "i-0a54ae4a66e3a7f03%",
-      "port": "3399"
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3352,
+      "trunk": "umiamihealth"
+    },
+    "saintlukes-amd": {
+      "endpoint": "saintlukes-amd.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3353,
+      "trunk": "saintlukes"
+    },
+    "sutter-amd": {
+      "endpoint": "sutter-amd.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3354,
+      "trunk": "sutter"
+    },
+    "sutter-mirthdb-cluster": {
+      "endpoint": "sutter-mirthdb-cluster.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3355,
+      "trunk": "sutter"
+    },
+    "thedacare-amd": {
+      "endpoint": "thedacare-amd.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3356,
+      "trunk": "thedacare"
+    },
+    "uams-amd": {
+      "endpoint": "uams-amd.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3357,
+      "trunk": "uams"
+    },
+    "unitypoint-amd": {
+      "endpoint": "unitypoint-amd.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3358,
+      "trunk": "unitypoint"
+    },
+    "uvahealth-amd": {
+      "endpoint": "uvahealth-amd.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3359,
+      "trunk": "uvahealth"
+    },
+    "wellspan-amd": {
+      "endpoint": "wellspan-amd.",
+      "host": "common-vpn-pritunl",
+      "instance": "i-08bccced8545e15b3",
+      "port": 3360,
+      "trunk": "wellspan"
     }
-	}
+  }
 }
