@@ -38,14 +38,10 @@ e=cluster-cum1rxsnisml."${r}".rds.amazonaws.com
 get_instances() {
   echo "$(aws ec2 describe-instances \
       --filters Name=tag-key,Values=Name \
-      --query 'Reservations[*].
-                 Instances[*].{Name:Tags[?Key==`Name`]|[0].`Value`,
-                   Instance: InstanceId,
-                   PrivIp:   PrivateIpAddress
-                 }
-              '         \
+      --query 'Reservations[*].Instances[*]'         \
       --region "${r}" \
   )"
+  #  --query 'Reservations[*].Instances[*].{Name:Tags[?Key==`Name`]|[0].`Value`,Instance: InstanceId,PrivIp:   PrivateIpAddress}'         \
   #| sort | tr -d ' ' \
   #  jq -r -c '.[][] | (.Name)+"|"+(.Instance)' \
   #jq -r -c '.[][] | (.Name)+"|"+(.Instance)+"|"+(.Foo)' \
@@ -58,6 +54,7 @@ INSTANCES="$(get_instances)"
 #--query 'DBClusters[?Status == `available`].{Stack:Tags[?Key != null]|[0].Value,[ImageId,Name].[]][?Key == `qventus:stack`]|[0].Value,ClusterName:DBClusterIdentifier,Endpoint:Endpoint}')"
 #                  [?starts_with(Name, `aws-elasticbeanstalk`) == `true`]|[].[ImageId,Name]
 
+         #--query 'DBClusters[?Status == `available`].{Stack:Tags[?Key != null]|[0].Value][?Key == `qventus:stack`], ClusterName:DBClusterIdentifier, Endpoint:Endpoint}')"
 get_clusters() {
 
     #declare -a clusters=()
@@ -65,16 +62,14 @@ get_clusters() {
 
     echo "$(aws rds describe-db-clusters \
          --region ${AWS_REGION} \
-         --query 'DBClusters[?Status == `available`].{Stack:Tags[?Value != null]|[0].Value][?Key == `qventus:stack`],
-                  ClusterName:DBClusterIdentifier,
-                  Endpoint:Endpoint}')"
+         --query 'DBClusters[?Status == `available`]')"
 
 }
 
 #[?starts_with(ImageId, ami-) == true] 
 CLUSTERS="$(get_clusters)"
-echo "${CLUSTERS}"
-exit
+#echo "${CLUSTERS}"
+#exit
 
 
     i=
@@ -92,12 +87,12 @@ exit
              perl -pe 's/ /\n/g'                      )
 
     echo "${clusters[@]}"
-}
+
 
 CLUSTERS="$(get_clusters | sort)"
 #echo "${CLUSTERS}"
 GEN_DIR="${BT}/data/json/aws"
-RDS_JSON="${GEN_DIR}"/rds.json
+RDS_JSON="${GEN_DIR}"/rds.json.test
 i="$(echo "${CLUSTERS}" | perl -pe 's/ /\n/g' | wc -l)"
 echo fetched "${i}" clusters. 
 
@@ -184,14 +179,14 @@ gen_rds_yaml() {
     port="$(( p + num ))"
     (( num++ ))
     #echo n: $n i: $i a: $a p: $p
-    [[ $n =~ (vpn|cron|cnc|ingestion|qval) ]]  && continue 
+    [[ $n =~ (vpn|cron|cnc|ingestion) ]]  && continue 
     tr="$(echo "$n" | perl -lne 'print if "m/([^a-z]+)-/" and ( 
         s/(fairview|medstar|natividad|dignity).*/\1/ or 
         s/-(a([\w]+)?md$|mirth.*)//            or
         s/(?<!qa)-app.*//                      or
         s/(?<!demo)-[a-z].*//                  or
         s/([\w]+)\-.*/\1/                      or
-        s/(serverless|restore|qval).*//        or
+        s/(serverless|restore).*//        or
         s/^([a-z]+)([^a-z]+).*/\1/             or
         s/mama-mirth/mama/                     or
         s/.*(wellspan|airflow|devops|common|emr).*/\1/   )')"

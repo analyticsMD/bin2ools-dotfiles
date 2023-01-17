@@ -26,13 +26,13 @@
 
 # -----------------------------------------------------------
 export LOADER=legacy
-
+echo V.
 . ${HOME}/.bt/lib/utils.bash 
 
 # no need to source configs, when
 # we are running as a standalone app. 
 set_team 
-
+echo V..
 unset SOURCE_FILES
 export NOISE="quiet"
 
@@ -40,6 +40,7 @@ export DEFAULT_ACCOUNT="prod"
 export DEFAULT_ROLE="${DEFAULT_ACCOUNT}-${BT_TEAM}"
 [[ -z "${BT_ACCOUNT}" ]] && { export BT_ACCOUNT="${DEFAULT_ACCOUNT}" ;} 
 
+echo V...
 
 # fall back to aws-sso-util when devops isn't available.
 export AWSLIB="devops"
@@ -53,6 +54,7 @@ export AWSLIB="devops"
 } 
 source <(echo "$("${BT}"/utils/path -s 2>/dev/null)" ) 
 #poetry="$(which poetry)"
+echo V...
 
 [[ -z "${BT_ROLE}" ]] && export BT_ROLE="${DEFAULT_ROLE}"
 autologin "${BT_ROLE}" 
@@ -60,6 +62,7 @@ autologin "${BT_ROLE}"
 
 set -m
 mkdir -p ${HOME/tmp}
+echo V....
 
 # set file descriptors for IPC.
 exec 3>&1 5>&1             # redirect 3 and 5 to the pipeline; 
@@ -67,13 +70,16 @@ exec 3>&1 5>&1             # redirect 3 and 5 to the pipeline;
                            # (closed in the parent.)
 #1>&4- 1>&6-
 
-#export BT_DEBUG="rds"
-BT_CLUSTER=${1}    # important: all runs will have an RDS argument.
-
+export BT_DEBUG="rds"
+export BT_CLUSTER=${1}    # important: all runs will have an RDS argument.
+echo VV
 [[ -n ${BT_CLUSTER} ]] || { export BT_CLUSTER="${1}" ;}
 script_info "${BASH_SOURCE[0]}"
+echo VV. ${BT_CLUSTER}
 cluster_info "${BT_CLUSTER}"
-
+echo VV..
+get_rds
+echo VV...
 to_debug rds && echo BT_LAUNCH_DIR: ${BT_LAUNCH_DIR} \
                      BT_PKG_DIR: "${BT_PKG_DIR}"
 
@@ -153,6 +159,11 @@ iam_user=restricted    # default
   echo "Use tab completion to select a cluster name."    && \
   exit 1
 }
+  echo "bt_port: $bt_port"
+  echo "bt_host: $bt_host"
+  echo "bt_endpoint: $bt_endpoint"
+  echo "bt_instance: $bt_instance"
+  echo "bt_trunk: $bt_trunk"
 
 # Set up a forking, multiplexing,
 # connection forwarder for encrypted RDS sessions.
@@ -219,6 +230,7 @@ to_debug rdsc && echo token fingerprint: "${TOKEN: -7}"  >&5
   echo -ne "ssl-ca=\"${BT}/certs/rds-combined-ca-bundle.pem\"\n\n"
 } > "${HOME}/tmp/rds.cfg"  2>/dev/null
 
+echo .
 
 # -------------------
 # reprocess mysql args.
@@ -230,7 +242,7 @@ arg_reprocess() {
   cfg_args=("$(echo "${mysql_args[@]}" | perl -pe "s/QV_SQL_ENC//" | gbase64 -d | zcat)")
 }
 arg_reprocess
-
+echo ..
 # ------------------------
 # build the mysql command
 # ------------------------
@@ -244,6 +256,7 @@ export LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN=y
 to_debug rdst && echo -ne ${PURPLE}C${NC}: repolling  >&5
 repoll "${bt_port}" && sleep 0.1 && echo -ne "\n\n"
 
+echo ...
 # run the mysql client 
 to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
 #loader_addpath /usr/local/Cellar/mysql/8.0.29/bin

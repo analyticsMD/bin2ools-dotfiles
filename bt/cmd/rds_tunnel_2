@@ -17,6 +17,7 @@ funcs="$(declare -F | grep -v '\-f _' | wc -l )" && {
 #export BT_DEBUG="rds"
 BT_CLUSTER=${1}    # important: all runs will have an RDS argument.
 export bt_cluster="${BT_CLUSTER}"
+export BT_CLUSTER="${BT_CLUSTER}"
 
 [[ -n ${BT_CLUSTER} ]] || { export BT_CLUSTER="${1}" ;}
 script_info "${BASH_SOURCE[0]}"

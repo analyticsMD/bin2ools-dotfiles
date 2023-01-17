@@ -18,7 +18,7 @@ get_python_exec() {
         exit 1
     }
     # NOTE: BT always uses the latest patch release of 3.10. 
-     
+
     THIS_PYTHON="$(ls ${THIS_CELLAR}/python@${HOMEBREW_PYTHON} | sort -rV | head -n 1)"
     #echo THIS_PYTHON: "${THIS_PYTHON}"
     [[ -z "${THIS_PYTHON}" || -e "${THIS_PYTHON}" ]] && { 
@@ -36,7 +36,7 @@ get_python_exec() {
         echo "       requirement of the bintools platform." 
         exit 1
     } 
-    
+
     echo "${THIS_EXEC}"
 } 
 
@@ -87,7 +87,7 @@ rds_usage () {
 
 to_debug flow && echo rds:rds_usage || true
 
-mysql_help() { 
+mysql_help() {
 
   echo "mysql client help here."
 } || true
@@ -96,12 +96,22 @@ to_debug flow && echo rds:mysql_help || true
 
 
 get_rds() { 
-    RDS_JSON="${HOME}/.bt/data/json/aws/rds.json"
-    SSM_JSON="${HOME}/.bt/data/json/aws/ssm.json"
-    bt_host="$(cat ${RDS_JSON} | jq -r '.cluster."$bt_cluster".host')"
-    bt_port="$(cat ${RDS_JSON} | jq -r '.cluster."$bt_cluster".port')"
-    
+    BT_CLUSTER=${1:-$BT_CLUSTER}
+    echo BT_CLUSTER: $BT_CLUSTER
+    export RDS_JSON="${HOME}/.bt/data/json/aws/rds.json"
+    export SSM_JSON="${HOME}/.bt/data/json/aws/ssm.json"
+    export bt_host="$(cat ${RDS_JSON} | jq -r ".cluster.\"$BT_CLUSTER\".host")"
+    export bt_port="$(cat ${RDS_JSON} | jq -r ".cluster.\"$BT_CLUSTER\".port")"
+    export bt_endpoint="$(cat ${RDS_JSON} | jq -r ".cluster.\"$BT_CLUSTER\".endpoint")"
+    export bt_instance="$(cat ${RDS_JSON} | jq -r ".cluster.\"$BT_CLUSTER\".instance")"
+    export bt_trunk="$(cat ${RDS_JSON} | jq -r ".cluster.\"$BT_CLUSTER\".trunk")"
+    echo bt_host="$bt_host"
+    echo bt_port="$bt_port"
+    echo bt_endpoint="$bt_endpoint"
+    echo bt_instance="$bt_instance"
+    echo bt_trunk="$bt_trunk"
 }
+
 # expects a login.
 get_forwarder() { 
 
@@ -109,31 +119,19 @@ get_forwarder() {
     echo "FATAL: Problem determining your TEAM." 
     echo "       Please contact DevOps."
     exit 1
-  } 
-
-  this="${1:-NONE}"
-  # look up cluster info.
-  #to_debug rds find_in_rds "${this}"
-  stats="$(find_in_rds "${this}")" 
-
-  to_debug rds echo stats: $stats  
-  h="$(echo "${stats}"  | cut -d'%' -f 1)"
-  in="$(echo "${stats}" | cut -d'%' -f 2)"
-  t="$(echo "${stats}"  | cut -d'%' -f 3)"
-  p="$(echo "${stats}"  | cut -d'%' -f 4)"
-  e="$(echo "${stats}"  | cut -d'%' -f 5)"
-
-  to_debug rds echo -ne "h: ${h}\ni: ${in}\nt: ${t}\np: ${p}\ne: ${e}\n"
-  [[ -z "${e}" ]] && { 
-    echo "FATAL: Could not get variables for cluster ${this}."
-    return 1
   }
+
+  get_rds ${BT_CLUSTER}
+
+  #this="${1:-NONE}"
+  this="${1:-$BT_CLUSTER}"
+  # look up cluster info.
 
   this=${1:-"NONE"}
   declare -A fwdr
-  fwdr=(  [hostname]="$h"  [instance]="$in"   ) 
-  fwdr+=( [trunk]="$t"         [port]="${p}"  )
-  fwdr+=( [endpoint]="${e}" [cluster]="$this" )
+  fwdr=(  [bt_hostname]="$h"  [bt_instance]="$in"   ) 
+  fwdr+=( [bt_trunk]="$t"         [bt_port]="${p}"  )
+  fwdr+=( [bt_endpoint]="${e}" [bt_cluster]="$this" )
   echo "${fwdr[@]@A}"
 
 } || true
@@ -981,12 +979,13 @@ arg_split() {
 to_debug flow && echo "utils:find_in_rds" || true
 
 find_in_rds() {
-  this=${1}
-  declare -A rds_map 
-  source "${BT}"/src/rds_map.src
-  for l in $(printf '%s\n' "${rds_map[@]}"); do 
-    echo "$l" | perl -nle "print \"$l\" if /${this}/" 
-  done
+  get_rds ${1}
+  #this=${1}
+  #declare -A rds_map 
+  #source "${BT}"/src/rds_map.src
+  #for l in $(printf '%s\n' "${rds_map[@]}"); do 
+  #  echo "$l" | perl -nle "print \"$l\" if /${this}/" 
+  #done
 } || true
 
 
@@ -994,42 +993,50 @@ find_in_rds() {
 
 cluster_info() { 
 
-  BT_CLUSTER="${1:-"${BT_CLUSTER}"}"
+  #BT_CLUSTER="${1:-"${BT_CLUSTER}"}"
   [[ -z "${BT_CLUSTER}" ]] && { 
     echo "FATAL: No BT_CLUSTER set." && exit
   }
-
+  echo V
   # target info
   # -----------
   # get the proper record from the 
   # larger array of all clusters.
   [[ -n "${BT_CLUSTER}" ]] && { 
     export BT_CLUSTER="${BT_CLUSTER}"
-    export BT_CLUSTER_ARRAY="$(get_forwarder "${BT_CLUSTER}")"
+    #export BT_CLUSTER_ARRAY="$(get_forwarder "${BT_CLUSTER}")"
+    export BT_CLUSTER_ARRAY="$(get_rds "${BT_CLUSTER}")"
   } 
- 
+
+  echo VV 
   # parse record
   declare -A fwdr
-  source <(echo "${BT_CLUSTER_ARRAY}")
-  to_debug rdst && echo ${CYAN}T${NC}: echo fwdr: "${fwdr[@]@A}" >&3
+
+  #echo "${BT_CLUSTER_ARRAY}"
+  #source <(echo "${BT_CLUSTER_ARRAY}")
+  #to_debug rdst && echo ${CYAN}T${NC}: echo fwdr: "${fwdr[@]@A}" >&3
+
+  echo VV..
+  get_rds ${BT_CLUSTER}
 
   # export relevant info for this target.
-  export bt_hostname="${fwdr[hostname]}" \
-         bt_instance="${fwdr[instance]}" \
-         bt_trunk="${fwdr[trunk]}"       \
-         bt_port="${fwdr[port]}"         \
-         bt_endpoint="${fwdr[endpoint]}" \
-         bt_cluster="${fwdr[cluster]}"
+  #export bt_hostname="${fwdr[hostname]}" \
+  #       bt_instance="${fwdr[instance]}" \
+  #       bt_trunk="${fwdr[trunk]}"       \
+  #       bt_port="${fwdr[port]}"         \
+  #       bt_endpoint="${fwdr[endpoint]}" \
+  #       bt_cluster="${fwdr[cluster]}"
 
-
+  echo VV...
   to_debug rdst && echo "${CYAN}T${NC}: \
   bt_hostname|${bt_hostname}\n          \
   bt_instance|${bt_instance}\n          \
   bt_trunk|${bt_trunk}\n                \
   bt_port|${bt_port}\n                  \
   bt_endpoint|${bt_endpoint}\n          \
-  bt_cluster|${bt_cluster}\n"         >&3
+  bt_cluster|${bt_cluster}\n"         >&2
 
+  echo VVV
 } 
 
 instance_info() { 
@@ -2872,7 +2879,6 @@ deps() {
             exit 1
         fi
     done
-    
 }
 
 set_path() {
