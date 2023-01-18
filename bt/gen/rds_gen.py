@@ -56,7 +56,8 @@ def truncate_endpoint(endpoint):
     
     return trunc
 
-def get_ec2(instances, trunk):
+def get_jump_host(instances, trunk):
+    # This function is no longer used.  Kept here to preserve the logic, in case its ever needed again
     #print(f"Checking {trunk}...")
     name = ""
     id = ""
@@ -123,7 +124,8 @@ if __name__ == "__main__":
                 # Cluster doesn't have a "stack" tag
                 rds_json["cluster"][db_id]['trunk'] = truncate_endpoint(rds_json["cluster"][db_id]['endpoint'])
             #(rds_json["cluster"][db_id]['host'], rds_json["cluster"][db_id]['instance']) = \
-            #    get_ec2(instances, rds_json["cluster"][db_id]['trunk'])
+            #    get_jump_host(instances, rds_json["cluster"][db_id]['trunk'])
+            # No longer using get_jump_host.  Hard-coding jump host to the pritunl instance.
             rds_json["cluster"][db_id]['host'] = "common-vpn-pritunl"
             rds_json["cluster"][db_id]['instance'] = "i-08bccced8545e15b3"
 
