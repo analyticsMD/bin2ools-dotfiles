@@ -34,6 +34,7 @@ def get_rds_clusters(session):
         print(f"Couldn't get SSO Token for {[aws_profile_name]}.  Are you logged in? ({err})")
     return clusters
 
+
 def truncate_endpoint(endpoint):
     # Truncate the endpoint - for old clusters that don't have a "stack" tag
     # We'll want to keep these ordered by length, decreasing, to avoid collisions.
@@ -55,6 +56,7 @@ def truncate_endpoint(endpoint):
     trunc = trunc.replace("-db", "")
     
     return trunc
+
 
 def get_jump_host(instances, trunk):
     # This function is no longer used.  Kept here to preserve the logic, in case its ever needed again
@@ -100,15 +102,19 @@ def save_rds_json(rds_json):
         outfile.write(json_output)
 
 
-if __name__ == "__main__":
-    aws_profile_name = 'prod-arch'
-    session = boto3.Session(profile_name=aws_profile_name)
-    clusters, instances, rds_json = {}, {}, {}
+def save_ssm_json(ssm_json):
+    HOME = os.getenv("HOME", "None")
+    json_file = f"{HOME}/.bt/data/json/aws/ssm.json"
+    json_output = json.dumps(ssm_json, sort_keys=True, indent=2)
+
+    with open(json_file, "w") as outfile:
+        outfile.write(json_output)
+
+
+def build_rds_json(clusters):
+    rds_json = {}
     rds_json["cluster"] = {}
     local_port = 3310
-    clusters = get_rds_clusters(session)
-    instances = get_ec2_instances(session)
-
     for cluster in clusters:
         if cluster['Status'] == "available":
             db_id = cluster['DBClusterIdentifier']
@@ -128,9 +134,42 @@ if __name__ == "__main__":
             # No longer using get_jump_host.  Hard-coding jump host to the pritunl instance.
             rds_json["cluster"][db_id]['host'] = "common-vpn-pritunl"
             rds_json["cluster"][db_id]['instance'] = "i-08bccced8545e15b3"
-
             #print(f"{cluster['DBClusterIdentifier']}")
             #print(f"{cluster['Endpoint']}")
+    return rds_json
 
+
+def build_ssm_json(instances):
+    ssm_json = []
+    name_tag = ""
+    index = 0
+    for instance in instances:
+        if instance['State']['Name'] == "running":
+            name_tag = ""
+            instance_json = {}
+            for tag in instance['Tags']:
+                if tag['Key'] == "Name":
+                    name_tag = tag['Value']
+                    instance_json = {}
+                    instance_json[name_tag] = {}
+                    instance_json[name_tag]['Name'] = name_tag
+            if name_tag != "":
+                instance_json[name_tag]['Instance'] = instance['InstanceId']
+                instance_json[name_tag]['PrivAddr'] = instance['PrivateIpAddress']
+                instance_json[name_tag]['KeyName'] = instance['KeyName']
+                ssm_json.append(instance_json)
+            #if name_tag == "medstar2-ingestion-01":
+            #    print(instance)
+    return ssm_json
+
+if __name__ == "__main__":
+    aws_profile_name = 'prod-arch'
+    session = boto3.Session(profile_name=aws_profile_name)
+    clusters, instances, rds_json, ssm_json = {}, {}, {}, {}
+    clusters = get_rds_clusters(session)
+    instances = get_ec2_instances(session)
+    rds_json = build_rds_json(clusters)
     save_rds_json(rds_json)
+    ssm_json = build_ssm_json(instances)
+    save_ssm_json(ssm_json)
     #print(json.dumps(rds_json, sort_keys=True, indent=2))
