@@ -6,7 +6,7 @@ Brewfile.lock.json
 # Folder view configuration files
 .DS_Store
 Desktop.ini
-./idea/**
+.idea/**
 
 # Thumbnail cache files
 ._*
