@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 
 #AWSUME_FLAG - what awsumepy told the shell to do
 #AWSUME_n - the data from awsumepy

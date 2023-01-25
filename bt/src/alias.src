@@ -12,7 +12,7 @@ if [[ -n "${profile[@]}" ]]; then
   # shellcheck disable=SC2236,SC2015
   if [[ ! -z "${profile[expiration]+_}" ]]; then
   # if active, write the profile back..
-    seconds="$(echo "${profile[expiration]}" | ddiff -E -qf %s now)"
+    seconds="$(echo "${profile[expiration]}" | ddiff -S -qf %s now)"
   fi
 fi
 

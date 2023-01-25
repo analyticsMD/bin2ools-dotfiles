@@ -439,7 +439,7 @@ ssh_master_socket() {
 #
 get_tmppath() { 
 
-  tmppath="$(gmktemp -p "${HOME}"/tmp rds.XXXXXXXXXXXX)"
+  tmppath="$(mktemp -p "${HOME}"/tmp rds.XXXXXXXXXXXX)"
 
   echo "${tmppath}"
 }  || true
@@ -673,7 +673,7 @@ socket_peek() {
 # 
 close_socket() {
 
-  #tmppath="$(gmktemp -p ${HOME}/tmp ${this}.XXXXXXXXXXXX)"
+  #tmppath="$(mktemp -p ${HOME}/tmp ${this}.XXXXXXXXXXXX)"
   #tmpfile="${tmppath##*/}" 
   
   #fee_fifo_fum="${HOME}"/.ssh/sockets/${tmpfile}.fifo
@@ -1483,7 +1483,7 @@ cache_inst() {
     ### build an associative array of hosts and descriptors.
     ### ----------------------------------------------------
     mkdir -p "${HOME}/tmp"
-    tmppath="$(gmktemp -p "${HOME}"/tmp inst_map.XXXXXXXXXXXX)"
+    tmppath="$(mktemp -p "${HOME}"/tmp inst_map.XXXXXXXXXXXX)"
     echo -ne 'declare -A inst_map=( ' > "$tmppath" 
     while IFS= read -r l; do 
       while IFS=',' read -r n i ip k pp; do
@@ -1948,7 +1948,7 @@ sts() {
 
 
 ppt() { 
-  t="$(echo "${ts}" | ddiff -E -qf %S now)"
+  t="$(echo "${ts}" | ddiff -S -qf %S now)"
   X="$(gdate --utc -d "0 + ${t} seconds" +"%Hh:%Mm:%Ss")"
   pr= tt= pt= 
   # construct a header.
@@ -2011,7 +2011,7 @@ to_debug flow && echo "utils:script_info" || true
 # Get info about the running script. 
 script_info() {
   SRC=${1:-"${BASH_SOURCE[0]}"}
-  THIS_SCRIPT="$(greadlink -f "${SRC}")"
+  THIS_SCRIPT="$(readlink -f "${SRC}")"
   BT_LAUNCH_DIR="$(dirname "${THIS_SCRIPT}")"
   BT_PKG_DIR="$(dirname "${BT_LAUNCH_DIR}")"
   export BT_LAUNCH_DIR="${BT_LAUNCH_DIR}" BT_PKG_DIR="${BT_PKG_DIR}"
@@ -2613,7 +2613,7 @@ autologin() {
   to_debug lgin && echo -ne "VARS: cmd: |$cmd| ts: |$ts| sso: |$sso|\n"
   #[[ -z "${ts}" ]] && echo -e "${YELLOW}WARNING${NC}: Timestamp not parsed."
 
-  t="$(echo "${ts}" | ddiff -E -qf %S now)"
+  t="$(echo "${ts}" | ddiff -S -qf %S now)"
   to_debug lgin echo ts: $ts sso: $sso cmd: $cmd
 
   [[ -n "$t" && "$t" =~ [0-9]+ && "$t" -gt 0 ]] && { 

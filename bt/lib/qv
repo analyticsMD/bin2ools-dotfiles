@@ -224,7 +224,7 @@ dg_login() {
   e=( ${symbols[@]:17}   ) 
   for e in $(this_peek | jq -r '.expires[]'); do
     #echo -ne $e:
-    exp=$(echo ${e} | ddiff -i '%s' -Eqf %S now)
+    exp=$(echo ${e} | ddiff -i '%s' -Sqf %S now)
     x+=( ${e}: ${exp} ) 
   done 
 
