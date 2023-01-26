@@ -997,7 +997,6 @@ cluster_info() {
   [[ -z "${BT_CLUSTER}" ]] && { 
     echo "FATAL: No BT_CLUSTER set." && exit
   }
-  echo V
   # target info
   # -----------
   # get the proper record from the 
@@ -1008,7 +1007,6 @@ cluster_info() {
     export BT_CLUSTER_ARRAY="$(get_rds "${BT_CLUSTER}")"
   } 
 
-  echo VV 
   # parse record
   declare -A fwdr
 
@@ -1016,7 +1014,6 @@ cluster_info() {
   #source <(echo "${BT_CLUSTER_ARRAY}")
   #to_debug rdst && echo ${CYAN}T${NC}: echo fwdr: "${fwdr[@]@A}" >&3
 
-  echo VV..
   get_rds ${BT_CLUSTER}
 
   # export relevant info for this target.
@@ -1027,7 +1024,6 @@ cluster_info() {
   #       bt_endpoint="${fwdr[endpoint]}" \
   #       bt_cluster="${fwdr[cluster]}"
 
-  echo VV...
   to_debug rdst && echo "${CYAN}T${NC}: \
   bt_hostname|${bt_hostname}\n          \
   bt_instance|${bt_instance}\n          \
@@ -1036,7 +1032,6 @@ cluster_info() {
   bt_endpoint|${bt_endpoint}\n          \
   bt_cluster|${bt_cluster}\n"         >&2
 
-  echo VVV
 } 
 
 instance_info() { 

@@ -311,7 +311,7 @@
     "sutter-amd": {
       "endpoint": "sutter-amd.",
       "host": "common-vpn-pritunl",
-      "instance": "i-08b4756bd4a1490f6",
+      "instance": "i-08bccced8545e15b3",
       "port": 3354,
       "trunk": "sutter"
     },
