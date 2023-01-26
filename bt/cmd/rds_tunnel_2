@@ -87,7 +87,7 @@ TNL+=( --target "${bt_instance}" )
 TNL+=( --document-name AWS-StartPortForwardingSessionToRemoteHost )
 TNL+=( --parameters )
 TNL+=( '{"portNumber":["3306"],"localPortNumber":["'${bt_port}'"],"host":["'${bt_endpoint}cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com'"]}' )
-echo ${TNL[*]}
+#echo ${TNL[*]}
 
 [[ "${BT_DEBUG}" =~ rdst ]] && unset silent || silent='>/dev/null 2>&1'
 

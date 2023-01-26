@@ -67,7 +67,6 @@ exec 3>&1 5>&1             # redirect 3 and 5 to the pipeline;
 
 #export BT_DEBUG="rds"
 export BT_CLUSTER=${1}    # important: all runs will have an RDS argument.
-echo VV
 [[ -n ${BT_CLUSTER} ]] || { export BT_CLUSTER="${1}" ;}
 script_info "${BASH_SOURCE[0]}"
 cluster_info "${BT_CLUSTER}"
