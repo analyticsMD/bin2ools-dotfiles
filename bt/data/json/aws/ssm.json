@@ -926,5 +926,37 @@
       "Name": "qv-umiamihealth-app-cron",
       "PrivAddr": "10.102.10.21"
     }
+  },
+	{
+    "qv-bannerhealth-app-container": {
+      "Instance": "i-054d5c836969c257e",
+      "KeyName": "ec2-user",
+      "Name": "qv-bannerhealth-app-container",
+      "PrivAddr": "10.102.12.4"
+    }
+  },
+  {
+    "qv-bannerhealth-app-cron": {
+      "Instance": "i-0de9e7bdce697028c",
+      "KeyName": "ec2-user",
+      "Name": "qv-bannerhealth-app-cron",
+      "PrivAddr": "10.102.12.47"
+    }
+  },
+  {
+    "qv-sharp-app-container": {
+      "Instance": "i-018696712cff198eb",
+      "KeyName": "ec2-user",
+      "Name": "qv-sharp-app-container",
+      "PrivAddr": "10.102.16.13"
+    }
+  },
+  {
+    "qv-sharp-app-cron": {
+      "Instance": "i-0b6deca74742b7e60",
+      "KeyName": "ec2-user",
+      "Name": "qv-sharp-app-cron",
+      "PrivAddr": "10.102.16.43"
+    }
   }
 ]
