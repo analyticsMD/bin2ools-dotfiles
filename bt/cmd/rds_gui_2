@@ -1,7 +1,5 @@
 #!/usr/bin/env /usr/local/bin/bash
-
 bt_cluster=${1}
-bt_endpoint=${bt_cluster}.cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com
 
 # rds_gui
 # -------
@@ -102,7 +100,7 @@ declare -a ssm_keypath
 # get all default vars
 get_defaults() { 
     export bt_region=us-west-2
-    export bt_account="${DEFAULT_ACCOUNT}"
+    export bt_account="${BT_ACCOUNT}"
     export bt_team="${BT_TEAM}"   
     export bt_user="${BT_USER}"
     export bt_iam_user="$(set_iam_user)"
@@ -111,28 +109,32 @@ get_defaults() {
     export bt_out="ssm"       # (ssm|file|pbcopy|var|-)
     declare -a ssm_keypath
     ssm_keypath+=( devops bt rds "${bt_user}" "${bt_team}" )
-    ssm_keypath+=( "${bt_account}" "${bt_cluster}" "${bt_iam_user}" )
+    ssm_keypath+=( "${BT_ACCOUNT}" "${bt_cluster}" "${bt_iam_user}" )
     export bt_out_ssm_keypath="$(join_by '/' ${ssm_keypath[@]} )"
     export bt_out_file="${HOME}/tmp/bt_out"
     export bt_out_var="bt_var"
     export bt_gui="dbv"       # (dbv|wb|dg)
     export bt_tunnel="ssm"    # (ssm|ssh)
-    export rds_json="${BT}/data/json/aws/rds.json"
+    export bt_json="${BT}/data/json/aws/rds.json"
+    export ssm_json="${BT}/data/json/aws/ssm.json"
 }
 
 get_defaults 
 
-get_settings() { 
+get_settings() {
     export bt_cluster="${1}" 
-    [ -z "${bt_cluster}" ] && { 
+    [ -z "${bt_cluster}" ] && {
         echo "${RED}FATAL${NC}: No cluster set."   
         exit 1
     }
-    export bt_host="$(cat ${rds_json} | jq -r ".cluster.\"${bt_cluster}\".host")"
-    export bt_host_ip="$(cat ${rds_json} | jq -r ".cluster.\"${bt_cluster}\".ip")"
-    #export bt_end="$(cat ${rds_json} | jq -r ".cluster.\"${bt_cluster}\".endpoint")"
-    export bt_port="$(cat ${rds_json} | jq -r ".cluster.\"${bt_cluster}\".port")"
-    export bt_instance="$(cat ${rds_json} | jq -r ".cluster.\"${bt_cluster}\".instance" | perl -pe 's/%//g')"
+    export bt_host="$(cat ${bt_json} | jq -r ".cluster.\"${bt_cluster}\".host")"
+    export bt_endpoint="$(cat ${bt_json} | jq -r ".cluster.\"${bt_cluster}\".endpoint")"
+    export bt_port="$(cat ${bt_json} | jq -r ".cluster.\"${bt_cluster}\".port")"
+    export bt_instance="$(cat ${bt_json} | jq -r ".cluster.\"${bt_cluster}\".instance" | perl -pe 's/%//g')"
+    export bt_host_ip="$(cat ${ssm_json} | jq -r --arg bt_instance "${bt_instance}" '.[][]|select(.Instance == $bt_instance) | .PrivAddr')"
+    echo -ne "bt_host: ${bt_host}\nbt_endpoint: ${bt_endpoint}\n"
+    echo -ne "bt_port: ${bt_port}\nbt_instance: ${bt_instance}\n"
+    echo -ne "bt_host_ip: ${bt_host_ip}\n"
 }
 
 get_settings ${bt_cluster}
@@ -148,29 +150,29 @@ verify_settings() {
 
     # check vars
     declare -a critical_vars=()
-    critical_vars+=( bt_cluster bt_region bt_account bt_team )
+    critical_vars+=( bt_cluster bt_region bt_account bt_team bt_instance )
     critical_vars+=( bt_user bt_iam_user bt_ssh_user bt_ssh_keypath )
-    critical_vars+=( bt_out bt_gui bt_tunnel rds_json bt_host_ip )
+    critical_vars+=( bt_out bt_gui bt_tunnel bt_json ssm_json bt_host_ip )
     for v in ${critical_vars[@]}; do
         this="\$${v}"
-        [[ -z "${this}" ]] && { 
+        [[ -z "${this}" ]] && {
             echo "${RED}FATAL:${NC} No \$${v} var." ;
             code=1
         } 
     done 
 
     # check rds data file. 
-    [ ! -f "${rds_json}" ] && { 
+    [[ ! -f "${bt_json}" || ! -f "${ssm_json}" ]] && {
         echo "${RED}FATAL:${NC} No rds.json file." ;
         code=1
-    } 
+    }
 
     # report anything bad or missing.
     [[ -z "${code}" ]] && { 
         echo "Exiting due to above errors."
         exit 1 
     }
-} 
+}
 
 #verify_settings
 
@@ -178,42 +180,38 @@ echo Generate token
 
 ### generate a new ssm token 
 TOKEN="$(aws rds generate-db-auth-token \
-         --hostname "${bt_cluster}"    \
+         --hostname "${bt_endpoint}"    \
          --port 3306                    \
          --username "${bt_iam_user}")"
 
 export BT_TOKEN="${TOKEN}"
-echo BT_TOKEN: ${BT_TOKEN: -7}
+echo TOKEN: "${TOKEN:(-7)}"
 ### create new tunnel
 
 # generate ssh mini-config
 tmp_ssh_config="$(get_tmppath)"
-tmp_json_file="$(get_tmppath)"
-echo '{"portNumber":["3306"],"localPortNumber":["'${bt_port}'"],"host":["'${bt_endpoint}'"]}' > ${tmp_json_file}
-CMD="file://${tmp_json_file}"
-
 cat << EOF > "${tmp_ssh_config}"
-Host "${bt_host}" "${bt_cluster}"
+
+Host ${bt_host} ${bt_cluster}.
   Hostname "${bt_host_ip}"
   ForwardAgent "yes"
   User "${bt_ssh_user}"
   IdentityFile "${bt_ssh_keypath}"
   StrictHostKeyChecking no
-  ProxyCommand aws ssm start-session --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters ${CMD} --region "${AWS_REGION}" --target "${bt_instance}"
+  ProxyCommand bash -c "aws ssm start-session --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters \"portNumber=3306\",\"localPortNumber=${bt_port}\",\"host=${bt_endpoint}\" --region ${bt_region} --target \"${bt_instance}\""
 ##[thedacare-amd]=thedacare-app-container%i-0c2f478a4dbcc04aa%thedacare%3333%thedacare-amd.cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com
-EOF
 
-echo CONFIG
-cat ${tmp_ssh_config}
+EOF
+echo ProxyCommand bash -c "aws ssm start-session --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters \"portNumber=3306\",\"localPortNumber=${bt_port}\",\"host=${bt_endpoint}\" --region ${bt_region} --target \"${bt_instance}\""
+
+echo tmp_ssh_config: ${tmp_ssh_config}
+
 echo fork tunnel subprocess
 
 ### -- start tunnel. Fork into background. 
-#echo ssh -tt -F "${tmp_ssh_config}" "${bt_cluster}" 
-#( ssh -A -tt -F "${tmp_ssh_config}" "${bt_cluster}" ) &
-( aws ssm start-session \
-      --document-name AWS-StartPortForwardingSessionToRemoteHost             \
-      --parameters "${CMD}" --region "${AWS_REGION}" --target "${bt_instance}" \
-) &
+echo ssh -tt -F "${tmp_ssh_config}" "${bt_cluster}"
+( ssh -A -tt -F "${tmp_ssh_config}" "${bt_cluster}" ) &
+
 
 
 ### spawn the gui tool
@@ -222,34 +220,42 @@ echo fork tunnel subprocess
 
 
 echo login protocols
-echo /${bt_out_ssm_keypath}
+echo key: /${bt_out_ssm_keypath}
 ### EXPERIMENT WITH LOGIN
 ### 
 ### write token to ssm keys 
 
-OLD_TOKEN="$(aws secretsmanager get-secret-value \
-            --secret-id "/${bt_out_ssm_keypath}" | jq -r '.SecretString')"
+OLD_TOKEN="$(aws secretsmanager get-secret-value                    \
+            --secret-id "/${bt_out_ssm_keypath}" || echo -ne "FAIL" \
+)"
 
-echo OLD_TOKEN: "${OLD_TOKEN: -7}"
-
-[[ -z "${OLD_TOKEN}" ]] && {
-    echo '.'
-    status="$(aws secretsmanager create-secret \
-        --name "/${bt_out_ssm_keypath}" --secret-string "${BT_TOKEN}")"
-} || {
-    echo '..'
-    status="$(aws secretsmanager put-secret-value \
-        --secret-id "/${bt_out_ssm_keypath}" \
-        --secret-string "${BT_TOKEN}")"
-    echo '...'
+[[ "${OLD_TOKEN}" == "FAIL" ]] && { 
+    echo "WARNING: token secret not present.  Fixing..."
+    key_statue="$(aws secretsmanager create-secret \
+        --name "/${bt_out_ssm_keypath}" \
+        --secret-string "DUMMY" || echo -ne "FAIL"
+    )"
+    [[ "${key_status}" == "FAIL" ]] && { 
+        echo "FATAL: failed to create keypath: ${bt_out_ssm_keypath}."
+        exit 1
+    } 
 }
-echo '....'
-WRITTEN_TOKEN="$(aws secretsmanager get-secret-value \
-            --secret-id "/${bt_out_ssm_keypath}" | jq -r '.SecretString')"
 
-echo "WRITTEN_TOKEN: ${WRITTEN_TOKEN: -7}"
-echo "${WRITTEN_TOKEN}" | pbcopy
-echo '.....'
+status="$(aws secretsmanager put-secret-value \
+    --secret-id "/${bt_out_ssm_keypath}" \
+    --secret-string "${BT_TOKEN}"
+)"
+
+echo status: ${status}
+
+BT_TOKEN="$(aws secretsmanager get-secret-value \
+            --secret-id "/${bt_out_ssm_keypath}"
+)"
+
+echo "${BT_TOKEN}" | pbcopy
+
+echo "TOKEN:\n" echo "${BT_TOKEN}"
+
 #/Applications/MySQLWorkbench.app/Contents/MacOS/MySQLWorkbench --query demo-a-amd
 
 
@@ -279,7 +285,7 @@ arg_parse() {
   to_debug rds && echo rds_args: "${rds_args[@]}"   >&3
 } 
 
-arg_parse
+#arg_parse
 
 
 # Determine default RDS IAM user, based on team. 
@@ -336,7 +342,7 @@ to_debug rds && echo -e "${GREEN}M${NC}: Spinning up a tunnel for ${bt_cluster}"
 # Fork and detach a process to act autonomously as a tunnel manager.  
 # Before the fork, you must first duplicate stdout to the parent. 
 
-method=ssm
+# method=ssm
 
 # --------------------------------
 # Determine iam_user
@@ -346,22 +352,20 @@ to_debug rds echo -e "${CYAN}T${NC}: iam_user is: ${iam_user}" >&3
 
 # Pulling out all the stops to spawn
 # an independent process. MacOS isn't helping. 
-# 1.) double fork
-# 2.) new session
+# 1.) double fork # 2.) new session
 # 3.) close all filehandles: 
 #     stdin, stdout, stderr, fd3, fd5
 # 4.) run with nohup
 
 if [[ -z "${BT_LAUNCH_DIR}" ]]; then export BT_LAUNCH_DIR=${0%/*}; fi
-TNL=( ${BT_LAUNCH_DIR}/rds_tunnel_2 "${bt_cluster}" )
-
-echo TNL: "${TNL[@]}"
-
+#TNL=( ${BT_LAUNCH_DIR}/rds_tunnel_2 "${bt_cluster}" )
+echo before tunnel
+TNL=( rds_tunnel_2 "${bt_cluster}" )
 echo -ne "\n\n${GREEN}M${NC}: -----------------------------------\n"
 echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${bt_cluster}. \n"
 echo -ne     "${GREEN}M${NC}: -----------------------------------\n\n"
-${TNL[@]} <&- &
-
+${TNL[@]} <&- & 
+echo after tunnel
 # wait for tunnel. 
 # 
 # shellcheck disable=SC2015
@@ -375,18 +379,17 @@ tmppath="$(get_tmppath)"
 to_debug rdsc && echo ${PURPLE}C${NC}: GETTING TOKEN: "${bt_endpoint}"
 to_debug rdsc && echo ${PURPLE}C${NC}: vars: "${iam_user}" "${bt_endpoint}"  "${tmppath}" >&5
 
-BT_TOKEN="$(aws rds generate-db-auth-token \
+TOKEN="$(aws rds generate-db-auth-token \
          --hostname "${bt_endpoint}" \
          --port 3306                    \
          --username "${iam_user}")"
 
-
-to_debug rdsc && echo token fingerprint: "${BT_TOKEN: -7}"  >&5
+to_debug rdsc && echo token fingerprint: "${TOKEN:(-7)}"  >&5
 
 
 # write a temp file for mysql client config. 
 # -----------------------------------------------
-{ 
+{
   # for global opts.
   echo -ne "\n[client]\n"
   echo -ne "user=\"${iam_user}\"\npassword=\"${TOKEN}\"\n"
@@ -397,9 +400,8 @@ to_debug rdsc && echo token fingerprint: "${BT_TOKEN: -7}"  >&5
 } > "${HOME}/tmp/rds.cfg"  2>/dev/null
 
 encoded_token=""
-
-for (( i=0; i<${#BT_TOKEN}; i++ )); do
-    char=${BT_TOKEN:$i:1}
+for (( i=0; i<${#TOKEN}; i++ )); do
+    char=${TOKEN:$i:1}
     case ${char} in
         \<) char="&#60;";;
         \>) char="&#62;";;
@@ -454,7 +456,7 @@ arg_parse() {
   cfg_args+=( --defaults-extra-file="${tmppath}.cfg" )
   source <( reprocess_mysql_args ${mysql_args[@]} )
 } 
-arg_parse # ------------------------ # build the mysql command
+#arg_parse # ------------------------ # build the mysql command
 # ------------------------
 export LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN=y
 
@@ -472,6 +474,8 @@ to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
 #loader_flag mysql
 #mysql --defaults-extra-file="${HOME}/tmp/rds.cfg"
 #echo "open -n /Applications/MySqlWorkbench.app --args  --configdir ${rds_configdir} --query ${bt_cluster}"
+#open -n /Applications/MySqlWorkbench.app --args  --configdir ${rds_configdir} #--query ${bt_cluster}
 open -n /Applications/MySqlWorkbench.app --args  --configdir ${rds_configdir} --query ${bt_cluster}
 #echo -n "${TOKEN}" | pbcopy
 
+ 

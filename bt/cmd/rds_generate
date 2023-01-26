@@ -1,4 +1,4 @@
-#!/usr/bin/env /usr/local/bin/bash
+#!/usr/bin/env bash
 
 # NOTE: 
 # -----
@@ -20,12 +20,18 @@
 # TODO: malformred bmc record. 
 # 
 #
-source "${BT}"/settings 
-autologin 
+#BT_DEBUG=yes
+
+export BT="${HOME}/.bt"
+. ${BT}/lib/utils.bash 
+
+# NOTE: Generators always update their arrays and completion
+# files in ${HOME}/.bt/src.  They DO NOT update the values
+# within the packages themselves. If the packages detect a
+# newer file in the dotfiles dir at run time, then they use it. 
+#
+# 
 umask 0077
-echo ...
-
-
 GEN_DIR="${BT}"/src
 RDS_MAPFILE="${GEN_DIR}"/rds.arr
 RDS_CMPL="${GEN_DIR}"/rds.cmpl
@@ -34,10 +40,8 @@ RDS_CMPL="${GEN_DIR}"/rds.cmpl
 declare -A cluster_map 
 declare -a clusters
 END=NONE
-echo ....
-i=
+
 while IFS= read -r l; do
-  (( i++ ))
   # Cluster names are trunked to find a common root.
   # The root is then matched with a tunnel host. 
   [ "${END}" == "NONE" ] && END=`echo $l | perl -pe 's/(^[^\.]+)\.(.*)$/\2/'`
@@ -53,22 +57,16 @@ while IFS= read -r l; do
   clusters+=($c)
   k="${c}_${t}"
   cluster_map[$k]="$t"
-done< <( aws rds describe-db-clusters                 \
-         --region us-west-2                           \
+done< <( aws rds describe-db-clusters \
+         --region us-west-2 \
          --query 'DBClusters[?Status==`available`]' | \
-           jq '.[] | { Endpoint: .Endpoint }'       | \
-           jq -rs '.[] | .Endpoint'                 | \
-           perl -pe 's/ /\n/g'                      )
-
-echo fetched ${i} clusters. 
-echo .....
-#declare -p cluster_map
+         jq '.[] | { Endpoint: .Endpoint }' | \
+         jq -rs '.[] | .Endpoint' )
+echo -ne Got ${GREEN}clusters${NC}."\n" 
 
 # build host map
 declare -A host_map
 declare -a map
-echo ">"
-
 INSTANCES=$(aws ec2 describe-instances \
     --filters Name=tag-key,Values=Name \
     --query 'Reservations[*].
@@ -82,9 +80,6 @@ INSTANCES=$(aws ec2 describe-instances \
     | tr -d ' '
 )
 
-
-
-echo ">>"
 while IFS='%%' read -r l; do
   while IFS='|' read -r n i; do
     #echo n: $n i: $i
@@ -94,6 +89,7 @@ while IFS='%%' read -r l; do
     t=$(echo $n | perl -nle 'print if ( 
           s/airflow-.*/common/        or 
           s/mama-mirth/mama/          or  
+          ! /qval/                    or  
           s/(?<!qa)-app.*//           ) 
       ')
     k=`echo ${n}_${i} | sed -e s/%//g`
@@ -102,21 +98,17 @@ while IFS='%%' read -r l; do
   done
 done < <(printf "${INSTANCES}" | sort) 
 
-
-cls="$(printf "${INSTANCES}" | wc -l)"
-echo fetched  ${cls} hosts.  
-#declare -p host_map
-
+echo -ne Got ${GREEN}hosts${NC}."\n"  
+echo -ne Can take up to ${PURPLE}\(60\)${NC} seconds..."\n"
+echo -ne \(Please be patient.\) "\n\n" 
 # compare trunked hosts to trunked clusters.
 # return all matches.
 p=3306
-echo ">>>"
 for cpair in ${!cluster_map[@]}; do
   c=`echo $cpair | cut -d'_' -f 1` 
   t=`echo $cpair | cut -d'_' -f 2` 
   p=$(( $p + 1 ))  # for local ports.
   for hpair in ${!host_map[@]}; do
-    
     h=`echo $hpair | cut -d'_' -f 1` 
     i=`echo $hpair | cut -d'_' -f 2` 
     [[ "${host_map[$hpair]}" =~ $t ]] && \
@@ -129,23 +121,20 @@ done
 #  Print a sourceable hash of entries
 mkdir -p ${HOME}/tmp
 tmppath="$(gmktemp -p ${HOME}/tmp rds_map.XXXXXXXXXXXX)"
-cat ${BT}/inst/txt/bt_header                     > $tmppath
-echo ">>>>"
-#echo -ne 'declare -A rds=( '                   >> $tmppath
+echo "# HEADER_GOES_HERE."                       > $tmppath
+echo -ne 'declare -A rds_map=('                 >> $tmppath
 while IFS= read -r l; do 
   while IFS='|' read -r h i t p c; do
-
-    s="[\\\"$h\\\"]=\\\"$h%$i%$t%$p%$c.$END\\\""
-    s="[\\\"$h\\\"]=\\\"$h%$i%$t%$p%$c.$END\\\""
+    s="[$c]=$h%$i%$t%$p%$c.$END"
     bash -c "echo -ne $(printf ' %q' "$s ")"    >> $tmppath
-  done
+  done 
 done < <( printf '%s\n' "${map[@]}" | sort)
-echo -ne ' )\n'                                 >> $tmppath
-mv $tmppath "${BT}/src/rds.arr"
+echo -ne ")\n"                                  >> $tmppath
+mv $tmppath "./gen/rds_map.gen"
 rm -rf $tmppath
 
 # Print a bash completion file, for sourcing. 
-cat ${BT}/inst/txt/bt_bash_header                > $RDS_CMPL
+# echo "# HEADER_GOES_HERE.                      > $RDS_CMPL
 echo -ne '\n\ncomplete -W "\n'                  >> $RDS_CMPL
 for c in ${clusters[@]}; do
   printf '  %s \\\n' $c                         >> $RDS_CMPL
@@ -153,5 +142,7 @@ done
 echo -ne "\" rds\n"                             >> $RDS_CMPL
 
 umask 0022
-echo done.
-echo ">>>>>"
+echo reloading...
+. ./rds_complete  
+echo -ne ${GREEN}done${NC}.
+

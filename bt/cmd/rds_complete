@@ -19,7 +19,6 @@
 
 complete -W "
   airflowcommonvpc-cluster \
-  allinahealth-amd \
   bmc-amd \
   bsmhealth-amd \
   conehealth-amd \
@@ -34,12 +33,12 @@ complete -W "
   emory-amd \
   emory-mirthdb-for-nginx2 \
   fairview \
-  fairview-amd \
   fairview-analyticsmd \
   honorhealth-amd \
   kaiser-amd \
   keckmedicine-amd \
   mama-mirth-cluster \
+  marshfield-amd \
   medstar2-amd \
   medstar-mirthdb \
   mercynet-amd \
@@ -47,11 +46,10 @@ complete -W "
   natividad3-amd \
   natividad3-serverless-rds \
   natividad-mirthdb \
-  non-prod-emr \
+  non-prod-ehr \
   nyp-amd \
   nyp-mirthdb2 \
   nyp-mirthdb-cluster \
-  prod-emr \
   qa-app-01-amd \
   qa-app-02-amd \
   qa-app-03-amd \
@@ -66,4 +64,5 @@ complete -W "
   unitypoint-amd \
   uvahealth-amd \
   wellspan-amd \
-" rds
+" rds rds_gui rds_local rds_tunnel rds_connect rds_complete rds_alias
+

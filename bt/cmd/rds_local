@@ -89,17 +89,21 @@ to_debug rds && echo this_team: ${BT_TEAM}  >&3
 # -----------
 
 help=false
+declare -a args=( "${@}" )
 # returns sourceable arrays for rds and mysql params
 arg_parse() { 
   declare -a rds_args=() || echo "No rds args."  # rds args (before the -- )
   declare -a mysql_args=() || echo "No mysql args."  # mysql args (after the -- )
   source <(parse_rds_args "${args[@]}")
   
+  mysql_args=("$(echo -ne "QV_SQL_ENC" && /bin/echo "${mysql_args[@]}" | gzip | gbase64 -w 0)")
   to_debug rds && echo mysql_args: "${mysql_args[@]}" >&3
   to_debug rds && echo rds_args: "${rds_args[@]}"   >&3
+  echo "${rds_args[@]@A}"
+  echo "${mysql_args[@]@A}"
 } 
 
-arg_parse
+source <(arg_parse "${args[@]}")
 
 iam_user=restricted  # default
 
@@ -180,7 +184,7 @@ TNL=( ${BT_LAUNCH_DIR}/rds_tunnel "${BT_CLUSTER}" )
 echo -ne "\n\n${GREEN}M${NC}: -----------------------------------\n"
 echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${BT_CLUSTER}. \n"
 echo -ne     "${GREEN}M${NC}: -----------------------------------\n\n"
-${TNL[@]} <&- & 
+${TNL[@]} <&- &
 
 # wait for tunnel. 
 # 
@@ -200,7 +204,7 @@ TOKEN="$(aws rds generate-db-auth-token \
          --port 3306                    \
          --username "${iam_user}")"
 
-to_debug rdsc && echo token fingerprint: "${TOKEN:(-7)}"  >&5
+to_debug rdsc && echo token fingerprint: "${TOKEN: -7}"  >&5
 
 
 # write a temp file for mysql client config. 
@@ -220,12 +224,12 @@ to_debug rdsc && echo token fingerprint: "${TOKEN:(-7)}"  >&5
 # reprocess mysql args.
 # -------------------
 # NOTE: This includes decoding in-line SQL.
-arg_parse() { 
-  declare -a mysql_args
-  cfg_args+=( --defaults-extra-file="${tmppath}.cfg" )
-  source <( reprocess_mysql_args ${mysql_args[@]} )
+arg_reprocess() {
+  #cfg_args+=( --defaults-extra-file="${tmppath}.cfg" )
+  #source <( reprocess_mysql_args ${mysql_args[@]} )
+  cfg_args=("$(echo "${mysql_args[@]}" | perl -pe "s/QV_SQL_ENC//" | gbase64 -d | zcat)")
 }
-arg_parse
+arg_reprocess
 
 # ------------------------
 # build the mysql command
@@ -244,4 +248,7 @@ repoll "${bt_port}" && sleep 0.1 && echo -ne "\n\n"
 to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
 #loader_addpath /usr/local/Cellar/mysql/8.0.29/bin
 #loader_flag mysql
-mysql --defaults-extra-file="${HOME}/tmp/rds.cfg"
+echo Args: ${mysql_args[@]}
+mysql_cmd="mysql --defaults-extra-file=\"${HOME}/tmp/rds.cfg\" ${cfg_args[*]}"
+#mysql --defaults-extra-file="${HOME}/tmp/rds.cfg" ${cfg_args[*]}
+eval "$mysql_cmd"

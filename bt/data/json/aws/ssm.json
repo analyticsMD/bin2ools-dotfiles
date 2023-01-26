@@ -2,1185 +2,961 @@
   {
     "mercynet-web": {
       "Instance": "i-982b3c6e",
+      "KeyName": "loadbalancer",
       "Name": "mercynet-web",
-      "PrivAddr": "10.20.0.5",
-      "KeyName": "loadbalancer"
+      "PrivAddr": "10.20.0.5"
     }
   },
   {
     "emory-ingestion-web": {
       "Instance": "i-eac40d36",
+      "KeyName": "amdkeypair",
       "Name": "emory-ingestion-web",
-      "PrivAddr": "173.0.0.97",
-      "KeyName": "amdkeypair"
+      "PrivAddr": "173.0.0.97"
     }
   },
   {
     "medstar2-ingestion-01": {
       "Instance": "i-e2ef9938",
+      "KeyName": "loadbalancer",
       "Name": "medstar2-ingestion-01",
-      "PrivAddr": "10.20.8.5",
-      "KeyName": "loadbalancer"
+      "PrivAddr": "10.20.8.5"
     }
   },
   {
     "dignity-ingestion-web-vpn": {
       "Instance": "i-05339815d0ea213a0",
+      "KeyName": "amdkeypair",
       "Name": "dignity-ingestion-web-vpn",
-      "PrivAddr": "10.20.12.203",
-      "KeyName": "amdkeypair"
+      "PrivAddr": "10.20.12.203"
     }
   },
   {
     "mercynet-ingestion": {
       "Instance": "i-0430b8190b0b19323",
+      "KeyName": "rl-amd-share2",
       "Name": "mercynet-ingestion",
-      "PrivAddr": "10.20.0.127",
-      "KeyName": "rl-amd-share2"
-    }
-  },
-  {
-    "dignity-ingestion-02": {
-      "Instance": "i-065880e23f46ff3d8",
-      "Name": "dignity-ingestion-02",
-      "PrivAddr": "10.20.12.164",
-      "KeyName": "rl-amd-share2"
-    }
-  },
-  {
-    "jenkins-master": {
-      "Instance": "i-0e9fb0b3e2bdf3874",
-      "Name": "jenkins-master",
-      "PrivAddr": "172.31.44.203",
-      "KeyName": "rl-amd-share2"
+      "PrivAddr": "10.20.0.127"
     }
   },
   {
     "emory-mirth-db": {
       "Instance": "i-03d23d75dfe79fb44",
+      "KeyName": "rl-amd-share2",
       "Name": "emory-mirth-db",
-      "PrivAddr": "173.0.1.89",
-      "KeyName": "rl-amd-share2"
-    }
-  },
-  {
-    "nyp-web": {
-      "Instance": "i-0d3cb18aec36eba34",
-      "Name": "nyp-web",
-      "PrivAddr": "10.1.1.77",
-      "KeyName": "rl-amd-share2"
+      "PrivAddr": "173.0.1.89"
     }
   },
   {
     "sutter-ingestion": {
       "Instance": "i-066769dbfac47747e",
+      "KeyName": "rl-amd-share2",
       "Name": "sutter-ingestion",
-      "PrivAddr": "10.6.1.231",
-      "KeyName": "rl-amd-share2"
+      "PrivAddr": "10.6.1.231"
     }
   },
   {
     "nyp-ingestion": {
       "Instance": "i-0d27854dcf3a589aa",
+      "KeyName": "rl-amd-share2",
       "Name": "nyp-ingestion",
-      "PrivAddr": "10.1.1.191",
-      "KeyName": "rl-amd-share2"
-    }
-  },
-  {
-    "staging-db": {
-      "Instance": "i-0bc0e2a95c1258687",
-      "Name": "staging-db",
-      "PrivAddr": "10.2.2.250",
-      "KeyName": "rl-amd-share2"
-    }
-  },
-  {
-    "staging-web": {
-      "Instance": "i-01fff90f7afa6fcc3",
-      "Name": "staging-web",
-      "PrivAddr": "10.2.1.73",
-      "KeyName": "rl-amd-share2"
+      "PrivAddr": "10.1.1.191"
     }
   },
   {
     "natividad3-ingestion": {
       "Instance": "i-0c9bf297244161139",
+      "KeyName": "rl-amd-share2",
       "Name": "natividad3-ingestion",
-      "PrivAddr": "10.20.6.248",
-      "KeyName": "rl-amd-share2"
-    }
-  },
-  {
-    "Golden-DB-Structures": {
-      "Instance": "i-0066894ce6effed66",
-      "Name": "Golden-DB-Structures",
-      "PrivAddr": "10.1.1.227",
-      "KeyName": "rl-amd-share2"
-    }
-  },
-  {
-    "nexus": {
-      "Instance": "i-0077972eaa9fd31db",
-      "Name": "nexus",
-      "PrivAddr": "10.1.1.5",
-      "KeyName": "rl-amd-share2"
+      "PrivAddr": "10.20.6.248"
     }
   },
   {
     "mama-mirth": {
       "Instance": "i-059f03f369ca1d926",
+      "KeyName": "centos",
       "Name": "mama-mirth",
-      "PrivAddr": "172.31.26.163",
-      "KeyName": "centos"
+      "PrivAddr": "172.31.26.163"
     }
   },
   {
     "wellspan-ingestion": {
       "Instance": "i-062409c2a69197e0a",
+      "KeyName": "ec2-user",
       "Name": "wellspan-ingestion",
-      "PrivAddr": "10.17.3.208",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.17.3.208"
     }
   },
   {
     "common-vpn-mongodb": {
       "Instance": "i-06db6d448a50261c6",
+      "KeyName": "ec2-user",
       "Name": "common-vpn-mongodb",
-      "PrivAddr": "10.102.4.26",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.4.26"
     }
   },
   {
     "common-vpn-pritunl": {
       "Instance": "i-08bccced8545e15b3",
+      "KeyName": "ec2-user",
       "Name": "common-vpn-pritunl",
-      "PrivAddr": "10.102.3.10",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "airflow-master": {
-      "Instance": "i-04f63757e74bf67be",
-      "Name": "airflow-master",
-      "PrivAddr": "10.102.4.29",
-      "KeyName": "airflowTest"
+      "PrivAddr": "10.102.3.10"
     }
   },
   {
     "common-ingestion": {
       "Instance": "i-0f71ccaf476249fe7",
+      "KeyName": "ec2-user",
       "Name": "common-ingestion",
-      "PrivAddr": "10.102.4.61",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.4.61"
     }
   },
   {
     "cnc-metricbeat-02": {
       "Instance": "i-0ad99075205dc919f",
+      "KeyName": "ec2-user",
       "Name": "cnc-metricbeat-02",
-      "PrivAddr": "10.102.3.118",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "dignity-qval": {
-      "Instance": "i-0413f347b20d022c4",
-      "Name": "dignity-qval",
-      "PrivAddr": "10.20.13.96",
-      "KeyName": "centos"
-    }
-  },
-  {
-    "mercynet-qval": {
-      "Instance": "i-085fca4170fd2f108",
-      "Name": "mercynet-qval",
-      "PrivAddr": "10.20.1.247",
-      "KeyName": "centos"
+      "PrivAddr": "10.102.3.118"
     }
   },
   {
     "common-vpn-pritunl-02": {
       "Instance": "i-0e5d4dd2d3d5250b9",
+      "KeyName": "ec2-user",
       "Name": "common-vpn-pritunl-02",
-      "PrivAddr": "10.102.1.90",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "honorhealth-qval": {
-      "Instance": "i-0497f9d7cdacfb4db",
-      "Name": "honorhealth-qval",
-      "PrivAddr": "10.102.37.22",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.1.90"
     }
   },
   {
     "honorhealth-app": {
       "Instance": "i-0191d37311355d21d",
+      "KeyName": "ec2-user",
       "Name": "honorhealth-app",
-      "PrivAddr": "10.102.37.8",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "marshfield-app": {
-      "Instance": "i-0bf238a03d0a7ebd0",
-      "Name": "marshfield-app",
-      "PrivAddr": "10.102.38.8",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "marshfield-qval": {
-      "Instance": "i-03ecce34de0469c91",
-      "Name": "marshfield-qval",
-      "PrivAddr": "10.102.38.58",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.37.8"
     }
   },
   {
     "demo-a-web": {
       "Instance": "i-0ad079261cafa06f3",
+      "KeyName": "ec2-user",
       "Name": "demo-a-web",
-      "PrivAddr": "10.33.11.151",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.11.151"
     }
   },
   {
     "qa-app-02-app": {
       "Instance": "i-03a51a9bfd3edab99",
+      "KeyName": "ec2-user",
       "Name": "qa-app-02-app",
-      "PrivAddr": "10.33.102.5",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.102.5"
     }
   },
   {
     "qa-app-03-app": {
       "Instance": "i-0d756be5600f12e9f",
+      "KeyName": "ec2-user",
       "Name": "qa-app-03-app",
-      "PrivAddr": "10.33.103.32",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.103.32"
     }
   },
   {
     "qa-app-01-app": {
       "Instance": "i-0e6791c96839425fa",
+      "KeyName": "ec2-user",
       "Name": "qa-app-01-app",
-      "PrivAddr": "10.33.101.7",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.101.7"
     }
   },
   {
     "demo-b-web": {
       "Instance": "i-02aaecf3978d7c598",
+      "KeyName": "ec2-user",
       "Name": "demo-b-web",
-      "PrivAddr": "10.33.20.139",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.20.139"
     }
   },
   {
     "demo-c-web": {
       "Instance": "i-07f3ce44918854806",
+      "KeyName": "ec2-user",
       "Name": "demo-c-web",
-      "PrivAddr": "10.33.30.137",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.30.137"
     }
   },
   {
     "demo-e-web": {
       "Instance": "i-0c234b8048ab1ffa2",
+      "KeyName": "ec2-user",
       "Name": "demo-e-web",
-      "PrivAddr": "10.33.50.140",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.50.140"
     }
   },
   {
     "demo-d-web": {
       "Instance": "i-08cf6208fdcb63fce",
+      "KeyName": "ec2-user",
       "Name": "demo-d-web",
-      "PrivAddr": "10.33.40.135",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.40.135"
     }
   },
   {
     "honorhealth-app-new": {
       "Instance": "i-0e12916b517478a3e",
+      "KeyName": "ec2-user",
       "Name": "honorhealth-app-new",
-      "PrivAddr": "10.102.37.26",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "marshfield-app-new": {
-      "Instance": "i-07374643ab2a17d3f",
-      "Name": "marshfield-app-new",
-      "PrivAddr": "10.102.38.13",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.37.26"
     }
   },
   {
     "wellspan-app-new": {
       "Instance": "i-0509a7ac8dc094b7d",
+      "KeyName": "ec2-user",
       "Name": "wellspan-app-new",
-      "PrivAddr": "10.102.36.32",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.36.32"
     }
   },
   {
     "uams-app-container": {
       "Instance": "i-06d1737ff3ad003e2",
+      "KeyName": "ec2-user",
       "Name": "uams-app-container",
-      "PrivAddr": "10.102.39.12",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "uams-qval": {
-      "Instance": "i-0367ab0f1b9999411",
-      "Name": "uams-qval",
-      "PrivAddr": "10.102.39.14",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.39.12"
     }
   },
   {
     "uams-app": {
       "Instance": "i-06ac4f723ba68b4f2",
+      "KeyName": "ec2-user",
       "Name": "uams-app",
-      "PrivAddr": "10.102.39.36",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.39.36"
     }
   },
   {
     "demo-f-app-container": {
       "Instance": "i-0297f6b60e84d5324",
+      "KeyName": "ec2-user",
       "Name": "demo-f-app-container",
-      "PrivAddr": "10.33.60.55",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.60.55"
     }
   },
   {
     "demo-f-web": {
       "Instance": "i-0db2603785a95ca28",
+      "KeyName": "ec2-user",
       "Name": "demo-f-web",
-      "PrivAddr": "10.33.60.148",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.60.148"
     }
   },
   {
     "aws-backup": {
       "Instance": "i-0b212629463432a76",
+      "KeyName": "ec2-user",
       "Name": "aws-backup",
-      "PrivAddr": "10.102.2.217",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.2.217"
     }
   },
   {
     "sutter-app-container": {
       "Instance": "i-0264563116de108e7",
+      "KeyName": "ec2-user",
       "Name": "sutter-app-container",
-      "PrivAddr": "10.102.35.23",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.35.23"
     }
   },
   {
     "fairview-app-container": {
       "Instance": "i-05d1eb19adb80147b",
+      "KeyName": "ec2-user",
       "Name": "fairview-app-container",
-      "PrivAddr": "10.102.23.25",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.23.25"
     }
   },
   {
     "dignity-app-container": {
       "Instance": "i-0143686b89677b444",
+      "KeyName": "ec2-user",
       "Name": "dignity-app-container",
-      "PrivAddr": "10.102.20.60",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.20.60"
     }
   },
   {
     "emory-app-container": {
       "Instance": "i-071e782ac42009739",
+      "KeyName": "ec2-user",
       "Name": "emory-app-container",
-      "PrivAddr": "10.102.22.31",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "saintlukes-qval": {
-      "Instance": "i-0c08be047c31594e4",
-      "Name": "saintlukes-qval",
-      "PrivAddr": "10.102.40.12",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.22.31"
     }
   },
   {
     "saintlukes-app": {
       "Instance": "i-025bb5dd9b7f8448a",
+      "KeyName": "ec2-user",
       "Name": "saintlukes-app",
-      "PrivAddr": "10.102.40.29",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.40.29"
     }
   },
   {
     "nyp-app-container": {
       "Instance": "i-05c0c603dd0930fa1",
+      "KeyName": "ec2-user",
       "Name": "nyp-app-container",
-      "PrivAddr": "10.102.29.57",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.29.57"
     }
   },
   {
     "saintlukes-app-container": {
       "Instance": "i-0c635a2f5559fc36f",
+      "KeyName": "ec2-user",
       "Name": "saintlukes-app-container",
-      "PrivAddr": "10.102.40.61",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.40.61"
     }
   },
   {
     "mercynet-app-container": {
       "Instance": "i-07941fe2b44275f92",
+      "KeyName": "ec2-user",
       "Name": "mercynet-app-container",
-      "PrivAddr": "10.102.26.6",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "temp-test": {
-      "Instance": "i-090ad87adf5f09d04",
-      "Name": "temp-test",
-      "PrivAddr": "10.33.103.41",
-      "KeyName": "centos"
-    }
-  },
-  {
-    "bmc-qval": {
-      "Instance": "i-0f4b7d31d0cf0ae83",
-      "Name": "bmc-qval",
-      "PrivAddr": "10.102.43.44",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.26.6"
     }
   },
   {
     "bmc-app-container": {
       "Instance": "i-05398053f8a63defa",
+      "KeyName": "ec2-user",
       "Name": "bmc-app-container",
-      "PrivAddr": "10.102.43.61",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.43.61"
     }
   },
   {
     "bmc-app-cron": {
       "Instance": "i-0b4682370e1992c5c",
+      "KeyName": "ec2-user",
       "Name": "bmc-app-cron",
-      "PrivAddr": "10.102.43.32",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.43.32"
     }
   },
   {
     "qa-app-04-app-cron": {
       "Instance": "i-00e6c542f0428e556",
+      "KeyName": "ec2-user",
       "Name": "qa-app-04-app-cron",
-      "PrivAddr": "10.33.104.35",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.104.35"
     }
   },
   {
     "qa-app-04-app-container": {
       "Instance": "i-0655bf3da2b49c86a",
+      "KeyName": "ec2-user",
       "Name": "qa-app-04-app-container",
-      "PrivAddr": "10.33.104.8",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.104.8"
     }
   },
   {
     "demo-e-app-container": {
       "Instance": "i-00561dbf6a7ac6a64",
+      "KeyName": "ec2-user",
       "Name": "demo-e-app-container",
-      "PrivAddr": "10.33.50.26",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.50.26"
     }
   },
   {
     "demo-d-app-container": {
       "Instance": "i-0aae43067e4726fe9",
+      "KeyName": "ec2-user",
       "Name": "demo-d-app-container",
-      "PrivAddr": "10.33.40.59",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.40.59"
     }
   },
   {
     "demo-c-app-container": {
       "Instance": "i-081687061a08c325f",
+      "KeyName": "ec2-user",
       "Name": "demo-c-app-container",
-      "PrivAddr": "10.33.30.41",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.30.41"
     }
   },
   {
     "demo-b-app-container": {
       "Instance": "i-07c78fe7f7b85bef6",
+      "KeyName": "ec2-user",
       "Name": "demo-b-app-container",
-      "PrivAddr": "10.33.20.33",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.20.33"
     }
   },
   {
     "unitypoint-app-cron": {
       "Instance": "i-0ad3847793f12a9f1",
+      "KeyName": "ec2-user",
       "Name": "unitypoint-app-cron",
-      "PrivAddr": "10.102.44.53",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "unitypoint-qval": {
-      "Instance": "i-02a024b0277365181",
-      "Name": "unitypoint-qval",
-      "PrivAddr": "10.102.44.7",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.44.53"
     }
   },
   {
     "unitypoint-app-container": {
       "Instance": "i-0a6dc629cea7657e6",
+      "KeyName": "ec2-user",
       "Name": "unitypoint-app-container",
-      "PrivAddr": "10.102.44.22",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "staging-app": {
-      "Instance": "i-07936c215156b6d1c",
-      "Name": "staging-app",
-      "PrivAddr": "10.2.2.213",
-      "KeyName": "rl-amd-share2"
-    }
-  },
-  {
-    "sutter-mirth-2": {
-      "Instance": "i-0f19018483f81bf15",
-      "Name": "sutter-mirth-2",
-      "PrivAddr": "10.6.1.75",
-      "KeyName": "amdkeypair"
-    }
-  },
-  {
-    "staging-nat": {
-      "Instance": "i-020c2f23a886d9041",
-      "Name": "staging-nat",
-      "PrivAddr": "10.2.1.72",
-      "KeyName": "centos"
+      "PrivAddr": "10.102.44.22"
     }
   },
   {
     "fairview-ingestion": {
       "Instance": "i-0a2a4c61b395f95f3",
+      "KeyName": "centos",
       "Name": "fairview-ingestion",
-      "PrivAddr": "10.13.1.36",
-      "KeyName": "centos"
+      "PrivAddr": "10.13.1.36"
     }
   },
   {
     "emory-mirth-new": {
       "Instance": "i-0c0fdb0fa3bba19d4",
+      "KeyName": "centos",
       "Name": "emory-mirth-new",
-      "PrivAddr": "173.0.0.39",
-      "KeyName": "centos"
-    }
-  },
-  {
-    "demo3": {
-      "Instance": "i-0f2aaa1d920ad664c",
-      "Name": "demo3",
-      "PrivAddr": "172.31.5.165",
-      "KeyName": "centos"
+      "PrivAddr": "173.0.0.39"
     }
   },
   {
     "medstar2-ingestion": {
       "Instance": "i-0501db67c005ea8fe",
+      "KeyName": "centos",
       "Name": "medstar2-ingestion",
-      "PrivAddr": "10.20.8.122",
-      "KeyName": "centos"
-    }
-  },
-  {
-    "nyp-qval": {
-      "Instance": "i-061e77c855dc79821",
-      "Name": "nyp-qval",
-      "PrivAddr": "10.1.2.8",
-      "KeyName": "centos"
-    }
-  },
-  {
-    "sutter-qval": {
-      "Instance": "i-002028c5a1233f7f4",
-      "Name": "sutter-qval",
-      "PrivAddr": "10.6.2.60",
-      "KeyName": "centos"
+      "PrivAddr": "10.20.8.122"
     }
   },
   {
     "fairview-innovareus": {
       "Instance": "i-03278ad8457413c0f",
+      "KeyName": "centos",
       "Name": "fairview-innovareus",
-      "PrivAddr": "10.13.1.210",
-      "KeyName": "centos"
-    }
-  },
-  {
-    "natividad3-qval": {
-      "Instance": "i-0fef049a27d10e7ff",
-      "Name": "natividad3-qval",
-      "PrivAddr": "10.20.7.159",
-      "KeyName": "centos"
-    }
-  },
-  {
-    "emory-qval": {
-      "Instance": "i-03f586e019faab165",
-      "Name": "emory-qval",
-      "PrivAddr": "173.0.1.133",
-      "KeyName": "centos"
+      "PrivAddr": "10.13.1.210"
     }
   },
   {
     "wellspan-app": {
       "Instance": "i-05b16f6eef4aff34c",
+      "KeyName": "ec2-user",
       "Name": "wellspan-app",
-      "PrivAddr": "10.17.2.73",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "wellspan-qval": {
-      "Instance": "i-09cf155342a294e6c",
-      "Name": "wellspan-qval",
-      "PrivAddr": "10.17.2.55",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.17.2.73"
     }
   },
   {
     "honorhealth-ingestion": {
       "Instance": "i-09bc1a3e345f84b35",
+      "KeyName": "ec2-user",
       "Name": "honorhealth-ingestion",
-      "PrivAddr": "10.102.37.221",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "marshfield-ingestion": {
-      "Instance": "i-0081cbd70170baaf8",
-      "Name": "marshfield-ingestion",
-      "PrivAddr": "10.102.38.221",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "fairview-qval": {
-      "Instance": "i-028aaabc35642575d",
-      "Name": "fairview-qval",
-      "PrivAddr": "10.13.2.110",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "medstar2-qval": {
-      "Instance": "i-0f43417fa5e505661",
-      "Name": "medstar2-qval",
-      "PrivAddr": "10.20.9.166",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.37.221"
     }
   },
   {
     "qa-jenkins": {
       "Instance": "i-0037b8d86f7987339",
+      "KeyName": "ec2-user",
       "Name": "qa-jenkins",
-      "PrivAddr": "10.33.1.136",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.1.136"
     }
   },
   {
     "fairview-innovareus-dev": {
       "Instance": "i-06c4d3c7a3f45b872",
+      "KeyName": "centos",
       "Name": "fairview-innovareus-dev",
-      "PrivAddr": "10.13.1.165",
-      "KeyName": "centos"
+      "PrivAddr": "10.13.1.165"
     }
   },
   {
     "wildfire": {
       "Instance": "i-0a957c58c919e9c9d",
+      "KeyName": "ec2-user",
       "Name": "wildfire",
-      "PrivAddr": "10.33.2.89",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.2.89"
     }
   },
   {
     "uams-ingestion": {
       "Instance": "i-064b5ba9cb4b73191",
+      "KeyName": "ec2-user",
       "Name": "uams-ingestion",
-      "PrivAddr": "10.102.39.197",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.39.197"
     }
   },
   {
     "saintlukes-ingestion": {
       "Instance": "i-086e1f41b702ae275",
+      "KeyName": "ec2-user",
       "Name": "saintlukes-ingestion",
-      "PrivAddr": "10.102.40.216",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.40.216"
     }
   },
   {
     "natividad3-app-cron": {
       "Instance": "i-045141801b9faa062",
+      "KeyName": "ec2-user",
       "Name": "natividad3-app-cron",
-      "PrivAddr": "10.20.7.24",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.20.7.24"
     }
   },
   {
     "cnc-metricbeat": {
       "Instance": "i-050bb6429eb701373",
+      "KeyName": "ec2-user",
       "Name": "cnc-metricbeat",
-      "PrivAddr": "10.102.5.186",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.5.186"
     }
   },
   {
     "Test for SF": {
       "Instance": "i-0d46901020d787434",
+      "KeyName": "centos",
       "Name": "Test for SF",
-      "PrivAddr": "10.102.32.206",
-      "KeyName": "centos"
+      "PrivAddr": "10.102.32.206"
     }
   },
   {
     "bmc-ingestion": {
       "Instance": "i-034d9671786a1da07",
+      "KeyName": "ec2-user",
       "Name": "bmc-ingestion",
-      "PrivAddr": "10.102.43.214",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.43.214"
     }
   },
   {
     "demo-a-app-container": {
       "Instance": "i-09c8bbb764a10145b",
+      "KeyName": "ec2-user",
       "Name": "demo-a-app-container",
-      "PrivAddr": "10.33.11.116",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.11.116"
     }
   },
   {
     "medstar2-app-cron": {
       "Instance": "i-05bb929e1fe5a068e",
+      "KeyName": "ec2-user",
       "Name": "medstar2-app-cron",
-      "PrivAddr": "10.20.9.155",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.20.9.155"
     }
   },
   {
     "unitypoint-ingestion": {
       "Instance": "i-00e0e30fde2c37d45",
+      "KeyName": "ec2-user",
       "Name": "unitypoint-ingestion",
-      "PrivAddr": "10.102.44.198",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.44.198"
     }
   },
   {
     "conehealth-ingestion": {
       "Instance": "i-0b18e8359434004d3",
+      "KeyName": "ec2-user",
       "Name": "conehealth-ingestion",
-      "PrivAddr": "10.102.45.197",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.45.197"
     }
   },
   {
     "bsmhealth-ingestion": {
       "Instance": "i-0166cd1a5aa3be2d6",
+      "KeyName": "ec2-user",
       "Name": "bsmhealth-ingestion",
-      "PrivAddr": "10.102.46.197",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.46.197"
     }
   },
   {
     "keckmedicine-ingestion": {
       "Instance": "i-014bf49f5d09ad1fd",
+      "KeyName": "ec2-user",
       "Name": "keckmedicine-ingestion",
-      "PrivAddr": "10.102.47.221",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.47.221"
     }
   },
   {
-    "cnc-test-dushyant": {
+    "cnc-test": {
       "Instance": "i-01b165c2f180c98c7",
-      "Name": "cnc-test-dushyant",
-      "PrivAddr": "10.102.4.126",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "conehealth-qval": {
-      "Instance": "i-06a81f209b4a15eec",
-      "Name": "conehealth-qval",
-      "PrivAddr": "10.102.45.17",
-      "KeyName": "ec2-user"
+      "KeyName": "ec2-user",
+      "Name": "cnc-test",
+      "PrivAddr": "10.102.4.126"
     }
   },
   {
     "conehealth-app-container": {
       "Instance": "i-09691b3e7123b214c",
+      "KeyName": "ec2-user",
       "Name": "conehealth-app-container",
-      "PrivAddr": "10.102.45.24",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.45.24"
     }
   },
   {
     "conehealth-app-cron": {
       "Instance": "i-0af89d9e17f1c2a36",
+      "KeyName": "ec2-user",
       "Name": "conehealth-app-cron",
-      "PrivAddr": "10.102.45.60",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.45.60"
     }
   },
   {
     "bsmhealth-app-cron": {
       "Instance": "i-07b15c8feecf1ce81",
+      "KeyName": "ec2-user",
       "Name": "bsmhealth-app-cron",
-      "PrivAddr": "10.102.46.21",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.46.21"
     }
   },
   {
     "bsmhealth-app-container": {
       "Instance": "i-04e2ba3ef372bc824",
+      "KeyName": "ec2-user",
       "Name": "bsmhealth-app-container",
-      "PrivAddr": "10.102.46.24",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.46.24"
     }
   },
   {
     "keckmedicine-app-container": {
       "Instance": "i-0bc22bb05f2f7f3b7",
+      "KeyName": "ec2-user",
       "Name": "keckmedicine-app-container",
-      "PrivAddr": "10.102.47.18",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.47.18"
     }
   },
   {
     "keckmedicine-app-cron": {
       "Instance": "i-0c7e05f26730bf1bb",
+      "KeyName": "ec2-user",
       "Name": "keckmedicine-app-cron",
-      "PrivAddr": "10.102.47.45",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.47.45"
     }
   },
   {
     "test_alb_connection": {
       "Instance": "i-0d9530f4706daed52",
+      "KeyName": "ec2-user",
       "Name": "test_alb_connection",
-      "PrivAddr": "10.102.1.42",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.1.42"
     }
   },
   {
     "natividad3-app-container": {
       "Instance": "i-03e77501bf9228baf",
+      "KeyName": "ec2-user",
       "Name": "natividad3-app-container",
-      "PrivAddr": "10.102.28.13",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.28.13"
     }
   },
   {
     "medstar2-app-container-new": {
       "Instance": "i-0855e166b774dfc0c",
+      "KeyName": "ec2-user",
       "Name": "medstar2-app-container-new",
-      "PrivAddr": "10.102.25.36",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.25.36"
     }
   },
   {
     "airflow-test": {
       "Instance": "i-0a81e4cc08547e4f8",
+      "KeyName": "ec2-user",
       "Name": "airflow-test",
-      "PrivAddr": "10.102.4.13",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.4.13"
     }
   },
   {
     "thedacare-app-container": {
       "Instance": "i-0c2f478a4dbcc04aa",
+      "KeyName": "ec2-user",
       "Name": "thedacare-app-container",
-      "PrivAddr": "10.102.48.51",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.48.51"
     }
   },
   {
     "thedacare-app-cron": {
       "Instance": "i-00cd6713ae5fa6679",
+      "KeyName": "ec2-user",
       "Name": "thedacare-app-cron",
-      "PrivAddr": "10.102.48.22",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.48.22"
     }
   },
   {
     "mercynet-rhapsody": {
       "Instance": "i-0a1848364f2b622ef",
+      "KeyName": "ec2-user",
       "Name": "mercynet-rhapsody",
-      "PrivAddr": "10.20.1.113",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.20.1.113"
     }
   },
   {
     "qa-app-05-app-cron": {
       "Instance": "i-085346c62d7d58044",
+      "KeyName": "ec2-user",
       "Name": "qa-app-05-app-cron",
-      "PrivAddr": "10.33.105.48",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.105.48"
     }
   },
   {
     "qa-app-05-app-container": {
       "Instance": "i-05e83023b1841fbe3",
+      "KeyName": "ec2-user",
       "Name": "qa-app-05-app-container",
-      "PrivAddr": "10.33.105.19",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.105.19"
     }
   },
   {
     "mercynet-app-cron": {
       "Instance": "i-0a2c9539fba40dfb5",
+      "KeyName": "ec2-user",
       "Name": "mercynet-app-cron",
-      "PrivAddr": "10.20.1.127",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.20.1.127"
     }
   },
   {
     "dignity-app-cron": {
       "Instance": "i-0763687325a32796f",
+      "KeyName": "ec2-user",
       "Name": "dignity-app-cron",
-      "PrivAddr": "10.20.13.86",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.20.13.86"
     }
   },
   {
     "fairview-app-cron": {
       "Instance": "i-0fdce8cb7d4fb1476",
+      "KeyName": "ec2-user",
       "Name": "fairview-app-cron",
-      "PrivAddr": "10.13.4.67",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.13.4.67"
     }
   },
   {
     "qa-app-03-ingestion": {
       "Instance": "i-069cf86b162423010",
+      "KeyName": "ec2-user",
       "Name": "qa-app-03-ingestion",
-      "PrivAddr": "10.33.103.133",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.103.133"
     }
   },
   {
     "qa-app-02-ingestion": {
       "Instance": "i-0d64a7d800aa6d18a",
+      "KeyName": "ec2-user",
       "Name": "qa-app-02-ingestion",
-      "PrivAddr": "10.33.102.142",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.102.142"
     }
   },
   {
     "qa-app-01-ingestion": {
       "Instance": "i-000e1d0bec0d7f45f",
+      "KeyName": "ec2-user",
       "Name": "qa-app-01-ingestion",
-      "PrivAddr": "10.33.101.135",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.101.135"
     }
   },
   {
     "qa-automation-box": {
       "Instance": "i-0e3e200ad08f16e19",
+      "KeyName": "ec2-user",
       "Name": "qa-automation-box",
-      "PrivAddr": "10.33.2.32",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.2.32"
     }
   },
   {
     "thedacare-ingestion": {
       "Instance": "i-0f355b79ffaf66e28",
+      "KeyName": "ec2-user",
       "Name": "thedacare-ingestion",
-      "PrivAddr": "10.102.48.203",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.48.203"
     }
   },
   {
     "sutter-app-cron": {
       "Instance": "i-08b4756bd4a1490f6",
+      "KeyName": "ec2-user",
       "Name": "sutter-app-cron",
-      "PrivAddr": "10.6.2.133",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.6.2.133"
     }
   },
   {
     "emory-app-cron": {
       "Instance": "i-02a1380b95e12520f",
+      "KeyName": "ec2-user",
       "Name": "emory-app-cron",
-      "PrivAddr": "173.0.1.246",
-      "KeyName": "ec2-user"
+      "PrivAddr": "173.0.1.246"
     }
   },
   {
     "qa-bastion": {
       "Instance": "i-0c1a4d5c5efa301b4",
+      "KeyName": "ec2-user",
       "Name": "qa-bastion",
-      "PrivAddr": "10.33.1.144",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.33.1.144"
     }
   },
   {
     "nyp-app-cron": {
       "Instance": "i-0ae402121aef7828e",
+      "KeyName": "ec2-user",
       "Name": "nyp-app-cron",
-      "PrivAddr": "10.1.2.73",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.1.2.73"
     }
   },
   {
     "test-for-inspector-public": {
       "Instance": "i-051911bf5e6228de5",
+      "KeyName": "ec2-user",
       "Name": "test-for-inspector-public",
-      "PrivAddr": "10.102.1.10",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.1.10"
     }
   },
   {
     "qventus-openvas-server": {
       "Instance": "i-07dafefde6f16291e",
+      "KeyName": "ec2-user",
       "Name": "qventus-openvas-server",
-      "PrivAddr": "172.31.8.221",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "dushyant_test": {
-      "Instance": "i-0f4ef7525d8c1a49d",
-      "Name": "dushyant_test",
-      "PrivAddr": "10.102.2.187",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "Great scott!! Hackathon Q4 2021": {
-      "Instance": "i-0a7845e2466303cd8",
-      "Name": "Great scott!! Hackathon Q4 2021",
-      "PrivAddr": "10.33.1.16",
-      "KeyName": "ec2-user"
+      "PrivAddr": "172.31.8.221"
     }
   },
   {
     "uvahealth-ingestion": {
       "Instance": "i-0cb5ce5612ef79a20",
+      "KeyName": "ec2-user",
       "Name": "uvahealth-ingestion",
-      "PrivAddr": "10.102.49.221",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.49.221"
     }
   },
   {
     "kaiser-ingestion": {
       "Instance": "i-0f6c58e03ba500fca",
+      "KeyName": "ec2-user",
       "Name": "kaiser-ingestion",
-      "PrivAddr": "10.102.50.218",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.50.218"
     }
   },
   {
     "allinahealth-ingestion": {
       "Instance": "i-0aada4f4168fadf08",
+      "KeyName": "ec2-user",
       "Name": "allinahealth-ingestion",
-      "PrivAddr": "10.102.51.220",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.51.220"
     }
   },
   {
     "uvahealth-app-cron": {
       "Instance": "i-00877674b222886d9",
+      "KeyName": "ec2-user",
       "Name": "uvahealth-app-cron",
-      "PrivAddr": "10.102.49.38",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.49.38"
     }
   },
   {
     "uvahealth-app-container": {
       "Instance": "i-039547d21bbc90275",
+      "KeyName": "ec2-user",
       "Name": "uvahealth-app-container",
-      "PrivAddr": "10.102.49.33",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.49.33"
     }
   },
   {
     "kaiser-app-container": {
       "Instance": "i-0ee12fc18025a84ec",
+      "KeyName": "ec2-user",
       "Name": "kaiser-app-container",
-      "PrivAddr": "10.102.50.16",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.50.16"
     }
   },
   {
     "kaiser-app-cron": {
       "Instance": "i-0c299851f28ac241c",
+      "KeyName": "ec2-user",
       "Name": "kaiser-app-cron",
-      "PrivAddr": "10.102.50.55",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.50.55"
     }
   },
   {
     "allinahealth-app-cron": {
       "Instance": "i-08b20b88b7cdd8868",
+      "KeyName": "ec2-user",
       "Name": "allinahealth-app-cron",
-      "PrivAddr": "10.102.51.33",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.51.33"
     }
   },
   {
     "allinahealth-app-container": {
       "Instance": "i-055a9fd817755c6e3",
+      "KeyName": "ec2-user",
       "Name": "allinahealth-app-container",
-      "PrivAddr": "10.102.51.54",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.51.54"
     }
   },
   {
     "Server for M1 Mac Testing": {
       "Instance": "i-0a6c66350628b68ab",
+      "KeyName": "ec2-user",
       "Name": "Server for M1 Mac Testing",
-      "PrivAddr": "172.31.40.187",
-      "KeyName": "ec2-user"
-    }
-  },
-  {
-    "rasa-deployment": {
-      "Instance": "i-0c35941761754a499",
-      "Name": "rasa-deployment",
-      "PrivAddr": "10.33.5.132",
-      "KeyName": "hobbit.pem"
-    }
-  },
-  {
-    "tgw-test": {
-      "Instance": "i-058ecf7d33403ad6e",
-      "Name": "tgw-test",
-      "PrivAddr": "10.20.7.150",
-      "KeyName": "ec2-user"
+      "PrivAddr": "172.31.40.187"
     }
   },
   {
     "jenkins": {
       "Instance": "i-0f05c4ab23c34d3d1",
+      "KeyName": "ec2-user",
       "Name": "jenkins",
-      "PrivAddr": "10.102.2.73",
-      "KeyName": "ec2-user"
+      "PrivAddr": "10.102.2.73"
+    }
+  },
+  {
+    "qv-trmchealth-app-container": {
+      "Instance": "i-086827a1a9b5f6ecb",
+      "KeyName": "ec2-user",
+      "Name": "qv-trmchealth-app-container",
+      "PrivAddr": "10.102.8.18"
+    }
+  },
+  {
+    "qv-trmchealth-app-cron": {
+      "Instance": "i-03725a1ab1c1efe64",
+      "KeyName": "ec2-user",
+      "Name": "qv-trmchealth-app-cron",
+      "PrivAddr": "10.102.8.43"
+    }
+  },
+  {
+    "qv-umiamihealth-app-container": {
+      "Instance": "i-0a54ae4a66e3a7f03",
+      "KeyName": "ec2-user",
+      "Name": "qv-umiamihealth-app-container",
+      "PrivAddr": "10.102.10.5"
+    }
+  },
+  {
+    "qv-umiamihealth-app-cron": {
+      "Instance": "i-044161354c7c32c2b",
+      "KeyName": "ec2-user",
+      "Name": "qv-umiamihealth-app-cron",
+      "PrivAddr": "10.102.10.21"
+    }
+  },
+	{
+    "qv-bannerhealth-app-container": {
+      "Instance": "i-054d5c836969c257e",
+      "KeyName": "ec2-user",
+      "Name": "qv-bannerhealth-app-container",
+      "PrivAddr": "10.102.12.4"
+    }
+  },
+  {
+    "qv-bannerhealth-app-cron": {
+      "Instance": "i-0de9e7bdce697028c",
+      "KeyName": "ec2-user",
+      "Name": "qv-bannerhealth-app-cron",
+      "PrivAddr": "10.102.12.47"
+    }
+  },
+  {
+    "qv-sharp-app-container": {
+      "Instance": "i-018696712cff198eb",
+      "KeyName": "ec2-user",
+      "Name": "qv-sharp-app-container",
+      "PrivAddr": "10.102.16.13"
+    }
+  },
+  {
+    "qv-sharp-app-cron": {
+      "Instance": "i-0b6deca74742b7e60",
+      "KeyName": "ec2-user",
+      "Name": "qv-sharp-app-cron",
+      "PrivAddr": "10.102.16.43"
     }
   }
 ]
