@@ -97,7 +97,7 @@ to_debug flow && echo rds:mysql_help || true
 
 get_rds() { 
     BT_CLUSTER=${1:-$BT_CLUSTER}
-    echo BT_CLUSTER: $BT_CLUSTER
+    to_debug rds && echo BT_CLUSTER: $BT_CLUSTER
     export RDS_JSON="${HOME}/.bt/data/json/aws/rds.json"
     export SSM_JSON="${HOME}/.bt/data/json/aws/ssm.json"
     export bt_host="$(cat ${RDS_JSON} | jq -r ".cluster.\"$BT_CLUSTER\".host")"
@@ -105,11 +105,11 @@ get_rds() {
     export bt_endpoint="$(cat ${RDS_JSON} | jq -r ".cluster.\"$BT_CLUSTER\".endpoint")"
     export bt_instance="$(cat ${RDS_JSON} | jq -r ".cluster.\"$BT_CLUSTER\".instance")"
     export bt_trunk="$(cat ${RDS_JSON} | jq -r ".cluster.\"$BT_CLUSTER\".trunk")"
-    echo bt_host="$bt_host"
-    echo bt_port="$bt_port"
-    echo bt_endpoint="$bt_endpoint"
-    echo bt_instance="$bt_instance"
-    echo bt_trunk="$bt_trunk"
+    to_debug rds && echo bt_host="$bt_host"
+    to_debug rds && echo bt_port="$bt_port"
+    to_debug rds && echo bt_endpoint="$bt_endpoint"
+    to_debug rds && echo bt_instance="$bt_instance"
+    to_debug rds && echo bt_trunk="$bt_trunk"
 }
 
 # expects a login.

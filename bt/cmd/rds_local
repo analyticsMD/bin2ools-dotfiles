@@ -187,7 +187,7 @@ ${TNL[@]} <&- &
 # 
 # shellcheck disable=SC2015
 [[ -z "${bt_port}" ]] && echo "FATAL: port not set." && exit
-echo bt_port: $bt_port
+to_debug rdsc && echo bt_port: $bt_port
 # get ready for response.
 # ----------------------------------------------------
 # get an RDS IAM login token 
@@ -244,7 +244,7 @@ repoll "${bt_port}" && sleep 0.1 && echo -ne "\n\n"
 to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
 #loader_addpath /usr/local/Cellar/mysql/8.0.29/bin
 #loader_flag mysql
-echo Args: ${mysql_args[@]}
+to_debug rdsc && echo Args: ${mysql_args[@]}
 mysql_cmd="mysql --defaults-extra-file=\"${HOME}/tmp/rds.cfg\" ${cfg_args[*]}"
 #mysql --defaults-extra-file="${HOME}/tmp/rds.cfg" ${cfg_args[*]}
 eval "$mysql_cmd"
