@@ -43,6 +43,7 @@ autologin "${BT_ROLE}"
 [[ -n ${BT_CLUSTER} ]] || { export BT_CLUSTER="${1}" ;}
 script_info "${BASH_SOURCE[0]}"
 cluster_info "${BT_CLUSTER}"
+get_rds
 
 # other, misc.
 unset SOURCE_FILES

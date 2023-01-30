@@ -26,13 +26,11 @@
 
 # -----------------------------------------------------------
 export LOADER=legacy
-
 . ${HOME}/.bt/lib/utils.bash 
 
 # no need to source configs, when
 # we are running as a standalone app. 
 set_team 
-
 unset SOURCE_FILES
 export NOISE="quiet"
 
@@ -68,12 +66,11 @@ exec 3>&1 5>&1             # redirect 3 and 5 to the pipeline;
 #1>&4- 1>&6-
 
 #export BT_DEBUG="rds"
-BT_CLUSTER=${1}    # important: all runs will have an RDS argument.
-
+export BT_CLUSTER=${1}    # important: all runs will have an RDS argument.
 [[ -n ${BT_CLUSTER} ]] || { export BT_CLUSTER="${1}" ;}
 script_info "${BASH_SOURCE[0]}"
 cluster_info "${BT_CLUSTER}"
-
+get_rds
 to_debug rds && echo BT_LAUNCH_DIR: ${BT_LAUNCH_DIR} \
                      BT_PKG_DIR: "${BT_PKG_DIR}"
 
@@ -180,7 +177,7 @@ to_debug rds echo -e "${CYAN}T${NC}: iam_user is: ${iam_user}" >&3
 #     stdin, stdout, stderr, fd3, fd5
 # 4.) run with nohup
 
-TNL=( ${BT_LAUNCH_DIR}/rds_tunnel "${BT_CLUSTER}" )
+TNL=( ${BT_LAUNCH_DIR}/rds_tunnel_2 "${BT_CLUSTER}" )
 echo -ne "\n\n${GREEN}M${NC}: -----------------------------------\n"
 echo -ne     "${GREEN}M${NC}: Spawning tunnel for ${BT_CLUSTER}. \n"
 echo -ne     "${GREEN}M${NC}: -----------------------------------\n\n"
@@ -190,7 +187,7 @@ ${TNL[@]} <&- &
 # 
 # shellcheck disable=SC2015
 [[ -z "${bt_port}" ]] && echo "FATAL: port not set." && exit
-echo bt_port: $bt_port
+to_debug rdsc && echo bt_port: $bt_port
 # get ready for response.
 # ----------------------------------------------------
 # get an RDS IAM login token 
@@ -200,7 +197,7 @@ to_debug rdsc && echo ${PURPLE}C${NC}: GETTING TOKEN: "${bt_endpoint}"
 to_debug rdsc && echo ${PURPLE}C${NC}: vars: "${iam_user}" "${bt_endpoint}"  "${tmppath}" >&5
 
 TOKEN="$(aws rds generate-db-auth-token \
-         --hostname "${bt_endpoint}" \
+         --hostname "${bt_endpoint}cluster-cum1rxsnisml.us-west-2.rds.amazonaws.com" \
          --port 3306                    \
          --username "${iam_user}")"
 
@@ -230,7 +227,6 @@ arg_reprocess() {
   cfg_args=("$(echo "${mysql_args[@]}" | perl -pe "s/QV_SQL_ENC//" | gbase64 -d | zcat)")
 }
 arg_reprocess
-
 # ------------------------
 # build the mysql command
 # ------------------------
@@ -248,7 +244,7 @@ repoll "${bt_port}" && sleep 0.1 && echo -ne "\n\n"
 to_debug rdsc && echo -e ${PURPLE}C${NC}: command: "${CFG[@]}"  >&5
 #loader_addpath /usr/local/Cellar/mysql/8.0.29/bin
 #loader_flag mysql
-echo Args: ${mysql_args[@]}
+to_debug rdsc && echo Args: ${mysql_args[@]}
 mysql_cmd="mysql --defaults-extra-file=\"${HOME}/tmp/rds.cfg\" ${cfg_args[*]}"
 #mysql --defaults-extra-file="${HOME}/tmp/rds.cfg" ${cfg_args[*]}
 eval "$mysql_cmd"
